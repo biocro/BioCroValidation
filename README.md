@@ -1,3 +1,7 @@
+<!-- badges: start -->
+[![R-CMD-check](https://github.com/biocro/BioCroValidation/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/biocro/BioCroValidation/actions/workflows/R-CMD-check.yaml)
+<!-- badges: end -->
+
 ## BioCroValidation
 
 **BioCroValidation** is a collection of tools for helping to validate BioCro
