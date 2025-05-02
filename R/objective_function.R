@@ -5,6 +5,38 @@ check_data_driver_pairs <- function(model_definition, data_driver_pairs) {
         stop('`data_driver_pairs` must have names')
     }
 
+    has_elements <- sapply(data_driver_pairs, function(x) {
+        'drivers' %in% names(x) && 'data' %in% names(x)
+    })
+
+    if (any(!has_elements)) {
+        missing_elements <- names(data_driver_pairs)[!has_elements]
+
+        msg <- paste(
+            'The following data-driver pairs are missing a `drivers` element,',
+            'a `data` element, or both:',
+            paste(missing_elements, collapse = ', ')
+        )
+
+        stop(msg)
+    }
+
+    has_time <- sapply(data_driver_pairs, function(x) {
+        'time' %in% colnames(x[['data']])
+    })
+
+    if (any(!has_time)) {
+        missing_time <- names(data_driver_pairs)[!has_time]
+
+        msg <- paste(
+            'The following data-driver pairs are missing a `time` column',
+            'in their `data` element:',
+            paste(missing_time, collapse = ', ')
+        )
+
+        stop(msg)
+    }
+
     valid_definitions <- sapply(data_driver_pairs, function(ddp) {
         BioCro::validate_dynamical_system_inputs(
             model_definition[['initial_values']],
@@ -67,6 +99,7 @@ get_model_runner <- function(
     independent_arg_names,
     initial_independent_arg_values,
     dependent_arg_function,
+    post_process_function,
     ddp
 )
 {
@@ -106,7 +139,13 @@ get_model_runner <- function(
                     c(x, as.numeric(dependent_arg_function(x_for_dependent_arg_func)))
                 }
 
-                partial_func(x_for_partial)
+                initial_res <- partial_func(x_for_partial)
+
+                if (is.null(post_process_function)) {
+                    initial_res
+                } else {
+                    post_process_function(initial_res)
+                }
             }
         },
         error = function(e) {as.character(e)}
@@ -115,7 +154,12 @@ get_model_runner <- function(
 
 # Helping function for checking the model runners; will throw an error if a
 # problem is detected, and will otherwise be silent with no return value.
-check_runners <- function(model_runners, initial_independent_arg_values) {
+check_runners <- function(
+    model_runners,
+    initial_independent_arg_values,
+    full_data_definitions
+)
+{
     # First check for runners that could not be created
     bad_runners <- sapply(model_runners, is.character)
 
@@ -157,7 +201,65 @@ check_runners <- function(model_runners, initial_independent_arg_values) {
         stop(msg)
     }
 
+    # Now make sure each runner produces the necessary columns in its output
+    expected_columns <- as.character(full_data_definitions)
+
+    missing_columns <- lapply(model_runners, function(runner) {
+        runner_result <- runner(as.numeric(initial_independent_arg_values))
+        expected_columns[!expected_columns %in% colnames(runner_result)]
+    })
+
+    bad_outputs <- sapply(missing_columns, function(x) {
+        length(x) > 0
+    })
+
+    if (any(bad_outputs)) {
+        msg <- 'Some data columns were missing from the following runner outputs:'
+
+        for (i in seq_along(bad_outputs)) {
+            if (bad_outputs[i]) {
+                msg <- append(
+                    msg,
+                    paste0(
+                        names(model_runners)[i], ': ',
+                        paste(missing_columns[[i]], collapse = ', ')
+                    )
+                )
+            }
+        }
+
+        stop(paste(msg, collapse = '\n'))
+    }
+
     return(invisible(NULL))
+}
+
+# Helping function for getting a "data definition list," which specifies the
+# names of the `data` columns as they appear in the simulation output
+get_data_definition_list <- function(data_driver_pairs, user_data_definitions) {
+    # First get all the column names found in the observed data
+    all_data_colnames <-
+        lapply(data_driver_pairs, function(x) {colnames(x[['data']])})
+
+    all_data_colnames <- unlist(all_data_colnames)
+
+    all_data_colnames <- all_data_colnames[!duplicated(all_data_colnames)]
+
+    # Remove the `time` column
+    all_data_colnames <- all_data_colnames[all_data_colnames != 'time']
+
+    # Build the data definition list
+    data_definitions <- lapply(all_data_colnames, function(cn) {
+        if (cn %in% names(user_data_definitions)) {
+            user_data_definitions[[cn]]
+        } else {
+            cn
+        }
+    })
+
+    names(data_definitions) <- all_data_colnames
+
+    data_definitions
 }
 
 objective_function <- function(
@@ -165,7 +267,9 @@ objective_function <- function(
     data_driver_pairs,
     independent_arg_names,
     initial_independent_arg_values,
-    dependent_arg_function = NULL
+    data_definitions,
+    dependent_arg_function = NULL,
+    post_process_function = NULL
 )
 {
     # Check the data-driver pairs
@@ -184,10 +288,19 @@ objective_function <- function(
             independent_arg_names,
             initial_independent_arg_values,
             dependent_arg_function,
+            post_process_function,
             ddp
         )
     })
 
+    # Get the full data definition list
+    full_data_definitions <-
+        get_data_definition_list(data_driver_pairs, data_definitions)
+
     # Check the model runners
-    check_runners(model_runners, initial_independent_arg_values)
+    check_runners(
+        model_runners,
+        initial_independent_arg_values,
+        full_data_definitions
+    )
 }
