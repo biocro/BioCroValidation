@@ -39,8 +39,6 @@ quantity_weights <- list(
     Pod = 1
 )
 
-normalization_method <- 'mean_max'
-
 # Run tests
 test_that('An objective function can be created', {
     obj_fun <- expect_silent(
@@ -49,9 +47,8 @@ test_that('An objective function can be created', {
             ddps,
             independent_arg_names,
             initial_independent_arg_values,
-            data_definitions,
             quantity_weights,
-            normalization_method,
+            data_definitions = data_definitions,
             post_process_function = post_process_function
         )
     )
@@ -62,9 +59,8 @@ test_that('An objective function can be created', {
             ddps[1],
             independent_arg_names,
             initial_independent_arg_values,
-            data_definitions,
             quantity_weights,
-            normalization_method,
+            data_definitions = data_definitions,
             post_process_function = post_process_function
         )
     )
@@ -75,9 +71,8 @@ test_that('An objective function can be created', {
             ddps,
             independent_arg_names,
             initial_independent_arg_values,
-            data_definitions,
             quantity_weights,
-            normalization_method,
+            data_definitions = data_definitions,
             dependent_arg_function = dependent_arg_function,
             post_process_function = post_process_function
         )
@@ -91,9 +86,8 @@ test_that('Bad definitions are detected', {
             within(ddps, {ambient_2005$drivers$temp = NULL}),
             independent_arg_names,
             initial_independent_arg_values,
-            data_definitions,
             quantity_weights,
-            normalization_method,
+            data_definitions = data_definitions,
             post_process_function = post_process_function
         ),
         'The following drivers did not form a valid dynamical system: ambient_2005'
@@ -107,9 +101,8 @@ test_that('Independent argument names must be consistent', {
             ddps,
             independent_arg_names,
             c(),
-            data_definitions,
             quantity_weights,
-            normalization_method,
+            data_definitions = data_definitions,
             post_process_function = post_process_function
         ),
         '`independent_arg_names` and `initial_independent_arg_values` must have the same length'
@@ -121,9 +114,8 @@ test_that('Independent argument names must be consistent', {
             ddps,
             independent_arg_names,
             list(arg1 = 1, arg2 = 2),
-            data_definitions,
             quantity_weights,
-            normalization_method,
+            data_definitions = data_definitions,
             post_process_function = post_process_function
         ),
         'The following arguments are included in `initial_independent_arg_values` but not `independent_arg_names`: arg1, arg2'
@@ -135,9 +127,8 @@ test_that('Independent argument names must be consistent', {
             ddps,
             independent_arg_names,
             as.numeric(initial_independent_arg_values),
-            data_definitions,
             quantity_weights,
-            normalization_method,
+            data_definitions = data_definitions,
             post_process_function = post_process_function
         ),
         '`initial_independent_arg_values` must have names'
@@ -151,9 +142,8 @@ test_that('Bad argument names are detected', {
             ddps,
             c(independent_arg_names, 'bad_arg_name'),
             c(initial_independent_arg_values, list(bad_arg_name = 1)),
-            data_definitions,
             quantity_weights,
-            normalization_method,
+            data_definitions = data_definitions,
             post_process_function = post_process_function
         ),
         'Model runners could not be created for the following drivers:
@@ -170,9 +160,8 @@ test_that('Model failures are detected', {
             ddps,
             independent_arg_names,
             initial_independent_arg_values,
-            data_definitions,
             quantity_weights,
-            normalization_method,
+            data_definitions = data_definitions,
             post_process_function = post_process_function
         ),
         'The model could not be run with the following drivers:
@@ -189,9 +178,8 @@ test_that('Data-driver pairs must be complete', {
             within(ddps, {ambient_2002$data = NULL; ambient_2005$drivers = NULL}),
             independent_arg_names,
             initial_independent_arg_values,
-            data_definitions,
             quantity_weights,
-            normalization_method,
+            data_definitions = data_definitions,
             post_process_function = post_process_function
         ),
         'The following data-driver pairs are missing a `drivers` element, a `data` element, or both: ambient_2002, ambient_2005'
@@ -205,9 +193,8 @@ test_that('Data must have a `time` column', {
             within(ddps, {ambient_2002$data$time = NULL}),
             independent_arg_names,
             initial_independent_arg_values,
-            data_definitions,
             quantity_weights,
-            normalization_method,
+            data_definitions = data_definitions,
             post_process_function = post_process_function
         ),
         'The following data-driver pairs are missing a `time` column in their `data` element: ambient_2002'
@@ -221,9 +208,8 @@ test_that('Missing simulation outputs are detected', {
             ddps,
             independent_arg_names,
             initial_independent_arg_values,
-            data_definitions,
             quantity_weights,
-            normalization_method
+            data_definitions = data_definitions
         ),
         'Some data columns were missing from the following runner outputs:
 ambient_2002: Pod
@@ -239,9 +225,8 @@ test_that('Out-of-range times are detected', {
             within(ddps, {ambient_2002$data$time <- ambient_2002$data$time + 1e5}),
             independent_arg_names,
             initial_independent_arg_values,
-            data_definitions,
             quantity_weights,
-            normalization_method,
+            data_definitions = data_definitions,
             post_process_function = post_process_function
         ),
         'Some observed times were missing from the following runner outputs:
@@ -257,9 +242,8 @@ test_that('Weights must be supplied for all measured quantities', {
             ddps,
             independent_arg_names,
             initial_independent_arg_values,
-            data_definitions,
             list(),
-            normalization_method,
+            data_definitions = data_definitions,
             post_process_function = post_process_function
         ),
         'Weights were not supplied for the following measured quantities: Leaf, Stem, Pod'
@@ -273,9 +257,9 @@ test_that('Bad normalization methods are detected', {
             ddps,
             independent_arg_names,
             initial_independent_arg_values,
-            data_definitions,
             quantity_weights,
-            'bad_normalization_method',
+            normalization_method = 'bad_normalization_method',
+            data_definitions = data_definitions,
             post_process_function = post_process_function
         ),
         'Unsupported normalization_method: bad_normalization_method'
@@ -289,9 +273,8 @@ test_that('Bad return values are detected', {
             ddps,
             independent_arg_names,
             initial_independent_arg_values,
-            data_definitions,
             quantity_weights,
-            normalization_method,
+            data_definitions = data_definitions,
             post_process_function = post_process_function,
             extra_penalty_function = function(x) {NA}
         ),

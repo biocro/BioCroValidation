@@ -498,9 +498,9 @@ objective_function <- function(
     data_driver_pairs,
     independent_arg_names,
     initial_independent_arg_values,
-    data_definitions,
     quantity_weights,
-    normalization_method,
+    data_definitions = list(),
+    normalization_method = 'mean_max',
     dependent_arg_function = NULL,
     post_process_function = NULL,
     extra_penalty_function = NULL
