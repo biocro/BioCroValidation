@@ -1,3 +1,6 @@
+# Specify test settings
+TOLERANCE <- 1e-6
+
 # Specify key inputs to use for these tests
 model <- BioCro::soybean
 model$ode_solver <- BioCro::default_ode_solvers[['homemade_euler']]
@@ -40,7 +43,8 @@ quantity_weights <- list(
 )
 
 # Run tests
-test_that('An objective function can be created', {
+test_that('Objective functions can be created and behave as expected', {
+    # Two data-driver pairs, no dependent arguments
     obj_fun <- expect_silent(
         objective_function(
             model,
@@ -53,6 +57,13 @@ test_that('An objective function can be created', {
         )
     )
 
+    expect_equal(
+        obj_fun(as.numeric(initial_ind_arg_values)),
+        0.06316674,
+        tolerance = TOLERANCE
+    )
+
+    # One data-driver pair, no dependent arguments
     obj_fun <- expect_silent(
         objective_function(
             model,
@@ -65,6 +76,13 @@ test_that('An objective function can be created', {
         )
     )
 
+    expect_equal(
+        obj_fun(as.numeric(initial_ind_arg_values)),
+        0.02607073,
+        tolerance = TOLERANCE
+    )
+
+    # Two data-driver pairs, with dependent arguments
     obj_fun <- expect_silent(
         objective_function(
             model,
@@ -76,6 +94,12 @@ test_that('An objective function can be created', {
             dependent_arg_function = dependent_arg_function,
             post_process_function = post_process_function
         )
+    )
+
+    expect_equal(
+        obj_fun(as.numeric(initial_ind_arg_values)),
+        0.06686873,
+        tolerance = TOLERANCE
     )
 })
 

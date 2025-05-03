@@ -157,14 +157,7 @@ get_model_runner <- function(
 
 # Helping function for checking the model runners; will throw an error if a
 # problem is detected, and will otherwise be silent with no return value.
-check_runners <- function(
-    data_driver_pairs,
-    model_runners,
-    initial_ind_arg_values,
-    full_data_definitions
-)
-{
-    # First check for runners that could not be created
+check_runners <- function(model_runners) {
     bad_runners <- sapply(model_runners, is.character)
 
     if (any(bad_runners)) {
@@ -179,23 +172,24 @@ check_runners <- function(
         stop(msg)
     }
 
-    # Now check for runners that cannot be evaluated
-    runner_eval_msg <- sapply(model_runners, function(runner) {
-        runner_result <- tryCatch(
-            runner(as.numeric(initial_ind_arg_values)),
-            error = function(e) {as.character(e)}
-        )
+    return(invisible(NULL))
+}
 
-        if (is.character(runner_result)) {
-            runner_result
-        } else {
-            ''
-        }
-    })
+# Helping function for checking the initial model runner results; will throw an
+# error if a problem is detected, and will otherwise be silent with no return
+# value.
+check_runner_results <- function(
+    initial_runner_res,
+    full_data_definitions,
+    data_driver_pairs
+)
+{
+    # Check for runners that could not be evaluated
+    bad_res <- sapply(initial_runner_res, is.character)
 
-    if (any(runner_eval_msg != '')) {
-        bad_runner_names <- names(model_runners)[runner_eval_msg != '']
-        bad_runner_msg <- runner_eval_msg[runner_eval_msg != '']
+    if (any(bad_res)) {
+        bad_runner_names <- names(initial_runner_res)[bad_res]
+        bad_runner_msg   <- initial_runner_res[bad_res]
 
         msg <- paste0(
             'The model could not be run with the following drivers:\n',
@@ -205,15 +199,10 @@ check_runners <- function(
         stop(msg)
     }
 
-    # Run each runner
-    runner_results <- lapply(model_runners, function(runner) {
-        runner(as.numeric(initial_ind_arg_values))
-    })
-
-    # Now make sure each runner produces the necessary columns in its output
+    # Make sure each runner produces the necessary columns in its output
     expected_columns <- as.character(full_data_definitions)
 
-    missing_columns <- lapply(runner_results, function(res) {
+    missing_columns <- lapply(initial_runner_res, function(res) {
         expected_columns[!expected_columns %in% colnames(res)]
     })
 
@@ -229,7 +218,7 @@ check_runners <- function(
                 msg <- append(
                     msg,
                     paste0(
-                        names(model_runners)[i], ': ',
+                        names(initial_runner_res)[i], ': ',
                         paste(missing_columns[[i]], collapse = ', ')
                     )
                 )
@@ -240,8 +229,8 @@ check_runners <- function(
     }
 
     # Make sure the output from each runner includes the observed times
-    times_out_of_range <- lapply(seq_along(runner_results), function(i) {
-        res <- runner_results[[i]]
+    times_out_of_range <- lapply(seq_along(initial_runner_res), function(i) {
+        res <- initial_runner_res[[i]]
 
         min_time <- min(res[['time']])
         max_time <- max(res[['time']])
@@ -267,7 +256,7 @@ check_runners <- function(
                 msg <- append(
                     msg,
                     paste0(
-                        names(model_runners)[i], ': ',
+                        names(initial_runner_res)[i], ': ',
                         paste(times_out_of_range[[i]], collapse = ', ')
                     )
                 )
@@ -278,6 +267,16 @@ check_runners <- function(
     }
 
     return(invisible(NULL))
+}
+
+# Helping function for running each runner with the initial argument values
+get_initial_runner_res <- function(model_runners, initial_ind_arg_values) {
+    lapply(model_runners, function(runner) {
+        tryCatch(
+            runner(as.numeric(initial_ind_arg_values)),
+            error = function(e) {as.character(e)}
+        )
+    })
 }
 
 # Helping function for checking the objective function; will throw an error if a
@@ -350,15 +349,13 @@ get_long_form_data <- function(data_driver_pairs, full_data_definitions) {
 
 # Helping function for getting time indices
 add_time_indices <- function(
-    model_runners,
+    initial_runner_res,
     initial_ind_arg_values,
     long_form_data
 )
 {
     for (i in seq_along(long_form_data)) {
-        runner <- model_runners[[i]]
-        res    <- runner(as.numeric(initial_ind_arg_values))
-
+        res   <- initial_runner_res[[i]]
         dataf <- long_form_data[[i]]
 
         indices <- sapply(dataf[, 'time'], function(x) {
@@ -550,11 +547,17 @@ objective_function <- function(
         get_data_definition_list(data_driver_pairs, data_definitions)
 
     # Check the model runners
-    check_runners(
-        data_driver_pairs,
-        model_runners,
-        initial_ind_arg_values,
-        full_data_definitions
+    check_runners(model_runners)
+
+    # Get initial model runner results
+    initial_runner_res <-
+        get_initial_runner_res(model_runners, initial_ind_arg_values)
+
+    # Check the initial model runner results
+    check_runner_results(
+        initial_runner_res,
+        full_data_definitions,
+        data_driver_pairs
     )
 
     # Get the long-form data
@@ -563,7 +566,7 @@ objective_function <- function(
 
     # Find indices corresponding to the measured time points
     long_form_data <- add_time_indices(
-        model_runners,
+        initial_runner_res,
         initial_ind_arg_values,
         long_form_data
     )
