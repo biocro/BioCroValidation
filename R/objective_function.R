@@ -277,6 +277,22 @@ check_runners <- function(
     return(invisible(NULL))
 }
 
+# Helping function for checking the objective function; will throw an error if a
+# problem is detected, and will otherwise be silent with no return value.
+check_obj_fun <- function(obj_fun, initial_independent_arg_values) {
+    initial_error <- obj_fun(as.numeric(initial_independent_arg_values))
+
+    if (!is.finite(initial_error)) {
+        stop(
+            'The objective function did not return a finite value when using ',
+            'the initial argument values; instead, it returned: ',
+            initial_error
+        )
+    }
+
+    return(invisible(NULL))
+}
+
 # Helping function for getting a "data definition list," which specifies the
 # names of the `data` columns as they appear in the simulation output
 get_data_definition_list <- function(data_driver_pairs, user_data_definitions)
@@ -450,6 +466,33 @@ error_from_res <- function(
     penalty + sum(errors)
 }
 
+# Helping function that forms the overall objective function
+get_obj_fun <- function(
+    model_runners,
+    long_form_data,
+    processed_weights,
+    normalization_method,
+    extra_penalty_function
+)
+{
+    function(x) {
+        errors <- sapply(seq_along(model_runners), function(i) {
+            runner <- model_runners[[i]]
+            res    <- runner(x)
+
+            error_from_res(
+                res,
+                long_form_data[[i]],
+                processed_weights,
+                normalization_method,
+                extra_penalty_function
+            )
+        })
+
+        sum(errors)
+    }
+}
+
 objective_function <- function(
     model_definition,
     data_driver_pairs,
@@ -508,37 +551,21 @@ objective_function <- function(
     )
 
     # Process the quantity weights
-    processed_weights <- process_quantity_weights(quantity_weights, long_form_data)
+    processed_weights <-
+        process_quantity_weights(quantity_weights, long_form_data)
 
-    # Create and test the total error function
-    total_error_function <- function(x) {
-        errors <- sapply(seq_along(model_runners), function(i) {
-            runner <- model_runners[[i]]
-            res    <- runner(x)
+    # Create the objective function
+    obj_fun <- get_obj_fun(
+        model_runners,
+        long_form_data,
+        processed_weights,
+        normalization_method,
+        extra_penalty_function
+    )
 
-            error_from_res(
-                res,
-                long_form_data[[i]],
-                processed_weights,
-                normalization_method,
-                extra_penalty_function
-            )
-        })
-
-        sum(errors)
-    }
-
-    initial_error <-
-        total_error_function(as.numeric(initial_independent_arg_values))
-
-    if (!is.finite(initial_error)) {
-        stop(
-            'The objective function did not return a finite value when using',
-            'the initial argument values: ',
-            initial_error
-        )
-    }
+    # Check the objective function
+    check_obj_fun(obj_fun, initial_independent_arg_values)
 
     # Return it
-    total_error_function
+    obj_fun
 }

@@ -281,3 +281,20 @@ test_that('Bad normalization methods are detected', {
         'Unsupported normalization_method: bad_normalization_method'
     )
 })
+
+test_that('Bad return values are detected', {
+    expect_error(
+        objective_function(
+            model,
+            ddps,
+            independent_arg_names,
+            initial_independent_arg_values,
+            data_definitions,
+            quantity_weights,
+            normalization_method,
+            post_process_function = post_process_function,
+            extra_penalty_function = function(x) {NA}
+        ),
+        'The objective function did not return a finite value when using the initial argument values; instead, it returned: NA'
+    )
+})
