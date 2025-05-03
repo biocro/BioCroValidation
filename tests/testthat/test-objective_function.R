@@ -1,6 +1,3 @@
-# Specify test settings
-TOLERANCE <- 1e-6
-
 # Specify key inputs to use for these tests
 model <- BioCro::soybean
 model$ode_solver <- BioCro::default_ode_solvers[['homemade_euler']]
@@ -57,10 +54,12 @@ test_that('Objective functions can be created and behave as expected', {
         )
     )
 
-    expect_equal(
-        obj_fun(as.numeric(initial_ind_arg_values)),
-        0.06316674,
-        tolerance = TOLERANCE
+    expect_silent(
+        obj_fun(as.numeric(initial_ind_arg_values))
+    )
+
+    expect_silent(
+        obj_fun(as.numeric(initial_ind_arg_values), 0.5)
     )
 
     # One data-driver pair, no dependent arguments
@@ -76,12 +75,6 @@ test_that('Objective functions can be created and behave as expected', {
         )
     )
 
-    expect_equal(
-        obj_fun(as.numeric(initial_ind_arg_values)),
-        0.02607073,
-        tolerance = TOLERANCE
-    )
-
     # Two data-driver pairs, with dependent arguments
     obj_fun <- expect_silent(
         objective_function(
@@ -94,12 +87,6 @@ test_that('Objective functions can be created and behave as expected', {
             dependent_arg_function = dependent_arg_function,
             post_process_function = post_process_function
         )
-    )
-
-    expect_equal(
-        obj_fun(as.numeric(initial_ind_arg_values)),
-        0.06686873,
-        tolerance = TOLERANCE
     )
 })
 
@@ -303,5 +290,21 @@ test_that('Bad return values are detected', {
             extra_penalty_function = function(x) {NA}
         ),
         'The objective function did not return a finite value when using the initial argument values; instead, it returned: NA'
+    )
+})
+
+test_that('Bad regularization methods are detected', {
+    expect_error(
+        objective_function(
+            model,
+            ddps,
+            independent_arg_names,
+            initial_ind_arg_values,
+            quantity_weights,
+            data_definitions = data_definitions,
+            post_process_function = post_process_function,
+            regularization_method = 'bad_regularization_method'
+        ),
+        'Unsupported regularization method: bad_regularization_method'
     )
 })

@@ -481,16 +481,35 @@ error_from_res <- function(
     penalty + sum(errors)
 }
 
+# Helping function for calculating a regularization penalty term
+regularization_penalty <- function(
+    ind_arg_vals,
+    regularization_method,
+    regularization_lambda
+)
+{
+    if (toupper(regularization_method) == 'NONE') {
+        0.0
+    } else if (toupper(regularization_method) == 'LASSO' || toupper(regularization_method) == 'L1') {
+        regularization_lambda * sum(abs(ind_arg_vals))
+    } else if (toupper(regularization_method) == 'RIDGE' || toupper(regularization_method) == 'L2') {
+        regularization_lambda * sum(ind_arg_vals^2)
+    } else {
+        stop('Unsupported regularization method: ', regularization_method)
+    }
+}
+
 # Helping function that forms the overall objective function
 get_obj_fun <- function(
     model_runners,
     long_form_data,
     processed_weights,
     normalization_method,
-    extra_penalty_function
+    extra_penalty_function,
+    regularization_method
 )
 {
-    function(x) {
+    function(x, lambda = 0) {
         errors <- sapply(seq_along(model_runners), function(i) {
             runner <- model_runners[[i]]
             res    <- runner(x)
@@ -503,6 +522,8 @@ get_obj_fun <- function(
                 extra_penalty_function
             )
         })
+
+        reg_penalty <- regularization_penalty(x, regularization_method, lambda)
 
         sum(errors)
     }
@@ -518,7 +539,8 @@ objective_function <- function(
     normalization_method = 'mean_max',
     dependent_arg_function = NULL,
     post_process_function = NULL,
-    extra_penalty_function = NULL
+    extra_penalty_function = NULL,
+    regularization_method = 'none'
 )
 {
     # Check the data-driver pairs
@@ -584,7 +606,8 @@ objective_function <- function(
         long_form_data,
         processed_weights,
         normalization_method,
-        extra_penalty_function
+        extra_penalty_function,
+        regularization_method
     )
 
     # Check the objective function
