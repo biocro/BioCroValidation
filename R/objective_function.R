@@ -279,7 +279,8 @@ check_runners <- function(
 
 # Helping function for getting a "data definition list," which specifies the
 # names of the `data` columns as they appear in the simulation output
-get_data_definition_list <- function(data_driver_pairs, user_data_definitions) {
+get_data_definition_list <- function(data_driver_pairs, user_data_definitions)
+{
     # First get all the column names found in the observed data
     all_data_colnames <-
         lapply(data_driver_pairs, function(x) {colnames(x[['data']])})
@@ -337,19 +338,116 @@ add_time_indices <- function(
 {
     for (i in seq_along(long_form_data)) {
         runner <- model_runners[[i]]
-        res <- runner(as.numeric(initial_independent_arg_values))
+        res    <- runner(as.numeric(initial_independent_arg_values))
 
         dataf <- long_form_data[[i]]
+
         indices <- sapply(dataf[, 'time'], function(x) {
             tdiff <- abs(res[, 'time'] - x)
             which(tdiff == min(tdiff))
         })
 
-        long_form_data[[i]][, 'time_index'] <- indices
+        long_form_data[[i]][, 'time_index']    <- indices
         long_form_data[[i]][, 'expected_npts'] <- nrow(res)
     }
 
     long_form_data
+}
+
+# Helping function that processes and checks the quantity weights
+process_quantity_weights <- function(quantity_weights, long_form_data) {
+    # First make sure that weights have been provided for all measured
+    # quantities
+    all_data_colnames <- lapply(long_form_data, function(x) {
+        unique(x[, 'quantity_name'])
+    })
+
+    all_data_colnames <- unlist(all_data_colnames)
+
+    all_data_colnames <- unique(all_data_colnames)
+
+    weight_was_supplied <- sapply(all_data_colnames, function(cn) {
+        cn %in% names(quantity_weights)
+    })
+
+    if (any(!weight_was_supplied)) {
+        missing_weights <- all_data_colnames[!weight_was_supplied]
+
+        msg <- paste(
+            'Weights were not supplied for the following measured quantities:',
+            paste(missing_weights, collapse = ', ')
+        )
+
+        stop(msg)
+    }
+
+    # Now make sure all the weights have length 2
+    lapply(quantity_weights, function(wt) {
+        rep_len(wt, 2)
+    })
+}
+
+# Helping function that calculates one normalization factor
+one_norm <- function(long_form_data_table, qname, normalization_method) {
+    if (tolower(normalization_method) == 'mean_max') {
+        npts <- sum(long_form_data_table[, 'quantity_name'] == qname)
+        qmax <- max(long_form_data_table[long_form_data_table[, 'quantity_name'] == qname, 'quantity_value'])
+        npts * qmax^2
+    } else {
+        stop('Unsupported normalization_method: ', normalization_method)
+    }
+}
+
+# Helping function that calculates one error
+one_error <- function(observed, predicted, weight, normalization) {
+    weight_multiplier <- if (observed <= predicted) {
+        weight[1]
+    } else {
+        weight[2]
+    }
+
+    (observed - predicted)^2 * weight_multiplier / normalization
+}
+
+# Helping function that calculates an error value from a simulation result
+error_from_res <- function(
+    simulation_result,
+    long_form_data_table,
+    quantity_weights,
+    normalization_method,
+    extra_penalty_function
+)
+{
+    # If the simulation did not finish, return a very high value
+    expected_npts <- long_form_data_table[1, 'expected_npts']
+
+    if (nrow(simulation_result) < expected_npts) {
+        return(1e6)
+    }
+
+    # Calculate any user-specified penalties
+    penalty <- if (is.null(extra_penalty_function)) {
+        0.0
+    } else {
+        extra_penalty_function(simulation_result)
+    }
+
+    # Calculate the error terms
+    n_obs <- nrow(long_form_data_table)
+
+    errors <- sapply(seq_len(n_obs), function(i) {
+        qname <- as.character(long_form_data_table[i, 'quantity_name'])
+        obs   <- long_form_data_table[i, 'quantity_value']
+        indx  <- long_form_data_table[i, 'time_index']
+        pred  <- simulation_result[indx, qname]
+        wt    <- quantity_weights[[qname]]
+        norm  <- one_norm(long_form_data_table, qname, normalization_method)
+
+        one_error(obs, pred, wt, norm)
+    })
+
+    # Return the sum of the penalty and error terms
+    penalty + sum(errors)
 }
 
 objective_function <- function(
@@ -358,8 +456,11 @@ objective_function <- function(
     independent_arg_names,
     initial_independent_arg_values,
     data_definitions,
+    quantity_weights,
+    normalization_method,
     dependent_arg_function = NULL,
-    post_process_function = NULL
+    post_process_function = NULL,
+    extra_penalty_function = NULL
 )
 {
     # Check the data-driver pairs
@@ -405,4 +506,39 @@ objective_function <- function(
         initial_independent_arg_values,
         long_form_data
     )
+
+    # Process the quantity weights
+    processed_weights <- process_quantity_weights(quantity_weights, long_form_data)
+
+    # Create and test the total error function
+    total_error_function <- function(x) {
+        errors <- sapply(seq_along(model_runners), function(i) {
+            runner <- model_runners[[i]]
+            res    <- runner(x)
+
+            error_from_res(
+                res,
+                long_form_data[[i]],
+                processed_weights,
+                normalization_method,
+                extra_penalty_function
+            )
+        })
+
+        sum(errors)
+    }
+
+    initial_error <-
+        total_error_function(as.numeric(initial_independent_arg_values))
+
+    if (!is.finite(initial_error)) {
+        stop(
+            'The objective function did not return a finite value when using',
+            'the initial argument values: ',
+            initial_error
+        )
+    }
+
+    # Return it
+    total_error_function
 }
