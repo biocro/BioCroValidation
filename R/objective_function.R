@@ -373,6 +373,32 @@ add_time_indices <- function(
     long_form_data
 }
 
+# Helping function for getting normalization factors
+add_norm <- function(long_form_data, normalization_method) {
+    for (i in seq_along(long_form_data)) {
+        data_table <- long_form_data[[i]]
+
+        data_table[['norm']] <- sapply(seq_len(nrow(data_table)), function(j) {
+            qname <- data_table[j, 'quantity_name']
+
+            qname_subset <-
+                    data_table[data_table[['quantity_name']] == qname, ]
+
+            if (tolower(normalization_method) == 'mean_max') {
+                npts <- nrow(qname_subset)
+                qmax <- max(qname_subset[['quantity_value']])
+                npts * qmax^2
+            } else {
+                stop('Unsupported normalization_method: ', normalization_method)
+            }
+        })
+
+        long_form_data[[i]] <- data_table
+    }
+
+    long_form_data
+}
+
 # Helping function that processes and checks the quantity weights
 process_quantity_weights <- function(quantity_weights, long_form_data) {
     # First make sure that weights have been provided for all measured
@@ -406,23 +432,12 @@ process_quantity_weights <- function(quantity_weights, long_form_data) {
     })
 }
 
-# Helping function that calculates one normalization factor
-one_norm <- function(long_form_data_table, qname, normalization_method) {
-    if (tolower(normalization_method) == 'mean_max') {
-        npts <- sum(long_form_data_table[, 'quantity_name'] == qname)
-        qmax <- max(long_form_data_table[long_form_data_table[, 'quantity_name'] == qname, 'quantity_value'])
-        npts * qmax^2
-    } else {
-        stop('Unsupported normalization_method: ', normalization_method)
-    }
-}
-
 # Helping function that calculates one error
 one_error <- function(observed, predicted, weight, normalization) {
-    weight_multiplier <- if (observed <= predicted) {
-        weight[1]
+    weight_multiplier <- if (predicted < observed) {
+        weight[1] # Underprediction
     } else {
-        weight[2]
+        weight[2] # Overprediction
     }
 
     (observed - predicted)^2 * weight_multiplier / normalization
@@ -460,7 +475,7 @@ error_from_res <- function(
         indx  <- long_form_data_table[i, 'time_index']
         pred  <- simulation_result[indx, qname]
         wt    <- quantity_weights[[qname]]
-        norm  <- one_norm(long_form_data_table, qname, normalization_method)
+        norm  <- long_form_data_table[i, 'norm']
 
         one_error(obs, pred, wt, norm)
     })
@@ -552,6 +567,9 @@ objective_function <- function(
         initial_ind_arg_values,
         long_form_data
     )
+
+    # Add normalization factors
+    long_form_data <- add_norm(long_form_data, normalization_method)
 
     # Process the quantity weights
     processed_weights <-
