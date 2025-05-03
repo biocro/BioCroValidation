@@ -155,6 +155,7 @@ get_model_runner <- function(
 # Helping function for checking the model runners; will throw an error if a
 # problem is detected, and will otherwise be silent with no return value.
 check_runners <- function(
+    data_driver_pairs,
     model_runners,
     initial_independent_arg_values,
     full_data_definitions
@@ -201,12 +202,16 @@ check_runners <- function(
         stop(msg)
     }
 
+    # Run each runner
+    runner_results <- lapply(model_runners, function(runner) {
+        runner(as.numeric(initial_independent_arg_values))
+    })
+
     # Now make sure each runner produces the necessary columns in its output
     expected_columns <- as.character(full_data_definitions)
 
-    missing_columns <- lapply(model_runners, function(runner) {
-        runner_result <- runner(as.numeric(initial_independent_arg_values))
-        expected_columns[!expected_columns %in% colnames(runner_result)]
+    missing_columns <- lapply(runner_results, function(res) {
+        expected_columns[!expected_columns %in% colnames(res)]
     })
 
     bad_outputs <- sapply(missing_columns, function(x) {
@@ -223,6 +228,44 @@ check_runners <- function(
                     paste0(
                         names(model_runners)[i], ': ',
                         paste(missing_columns[[i]], collapse = ', ')
+                    )
+                )
+            }
+        }
+
+        stop(paste(msg, collapse = '\n'))
+    }
+
+    # Make sure the output from each runner includes the observed times
+    times_out_of_range <- lapply(seq_along(runner_results), function(i) {
+        res <- runner_results[[i]]
+
+        min_time <- min(res[['time']])
+        max_time <- max(res[['time']])
+
+        data_times <- data_driver_pairs[[i]][['data']][['time']]
+
+        oor <- sapply(data_times, function(datat) {
+            datat < min_time || datat > max_time
+        })
+
+        data_times[oor]
+    })
+
+    bad_times <- sapply(times_out_of_range, function(x) {
+        length(x) > 0
+    })
+
+    if (any(bad_times)) {
+        msg <- 'Some observed times were missing from the following runner outputs:'
+
+        for (i in seq_along(bad_times)) {
+            if (bad_times[i]) {
+                msg <- append(
+                    msg,
+                    paste0(
+                        names(model_runners)[i], ': ',
+                        paste(times_out_of_range[[i]], collapse = ', ')
                     )
                 )
             }
@@ -262,6 +305,53 @@ get_data_definition_list <- function(data_driver_pairs, user_data_definitions) {
     data_definitions
 }
 
+# Helping function for converting each data table to a "long form."
+get_long_form_data <- function(data_driver_pairs, full_data_definitions) {
+    lapply(data_driver_pairs, function(ddp) {
+        short_form_data <- ddp[['data']]
+
+        data_column_names <- colnames(short_form_data)
+        data_column_names <- data_column_names[data_column_names != 'time']
+
+        long_form_data_list <- lapply(data_column_names, function(cn) {
+            data.frame(
+                time = short_form_data[, 'time'],
+                quantity_name = full_data_definitions[[cn]],
+                quantity_value = short_form_data[, cn],
+                stringsAsFactors = FALSE
+            )
+        })
+
+        long_form_data <- do.call(rbind, long_form_data_list)
+
+        long_form_data[!is.na(long_form_data[['quantity_value']]), ]
+    })
+}
+
+# Helping function for getting time indices
+add_time_indices <- function(
+    model_runners,
+    initial_independent_arg_values,
+    long_form_data
+)
+{
+    for (i in seq_along(long_form_data)) {
+        runner <- model_runners[[i]]
+        res <- runner(as.numeric(initial_independent_arg_values))
+
+        dataf <- long_form_data[[i]]
+        indices <- sapply(dataf[, 'time'], function(x) {
+            tdiff <- abs(res[, 'time'] - x)
+            which(tdiff == min(tdiff))
+        })
+
+        long_form_data[[i]][, 'time_index'] <- indices
+        long_form_data[[i]][, 'expected_npts'] <- nrow(res)
+    }
+
+    long_form_data
+}
+
 objective_function <- function(
     model_definition,
     data_driver_pairs,
@@ -299,8 +389,20 @@ objective_function <- function(
 
     # Check the model runners
     check_runners(
+        data_driver_pairs,
         model_runners,
         initial_independent_arg_values,
         full_data_definitions
+    )
+
+    # Get the long-form data
+    long_form_data <-
+        get_long_form_data(data_driver_pairs, full_data_definitions)
+
+    # Find indices corresponding to the measured time points
+    long_form_data <- add_time_indices(
+        model_runners,
+        initial_independent_arg_values,
+        long_form_data
     )
 }

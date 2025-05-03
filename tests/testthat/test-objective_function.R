@@ -45,6 +45,17 @@ test_that('An objective function can be created', {
             post_process_function = post_process_function
         )
     )
+    
+    obj_fun <- expect_silent(
+        objective_function(
+            model,
+            ddps[1],
+            independent_arg_names,
+            initial_independent_arg_values,
+            data_definitions,
+            post_process_function = post_process_function
+        )
+    )
 
     obj_fun <- expect_silent(
         objective_function(
@@ -185,6 +196,22 @@ test_that('Missing simulation outputs are detected', {
         'Some data columns were missing from the following runner outputs:
 ambient_2002: Pod
 ambient_2005: Pod',
+        fixed = TRUE
+    )
+})
+
+test_that('Out-of-range times are detected', {
+    expect_error(
+        objective_function(
+            model,
+            within(ddps, {ambient_2002$data$time <- ambient_2002$data$time + 1e5}),
+            independent_arg_names,
+            initial_independent_arg_values,
+            data_definitions,
+            post_process_function = post_process_function
+        ),
+        'Some observed times were missing from the following runner outputs:
+ambient_2002: 104272, 104512, 104848, 105184, 105520, 105880, 106192, 106888',
         fixed = TRUE
     )
 })
