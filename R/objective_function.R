@@ -1,6 +1,6 @@
 # Helping function for checking the data-driver pairs; will throw an error if
 # a problem is detected, and will otherwise be silent with no return value.
-check_data_driver_pairs <- function(model_definition, data_driver_pairs) {
+check_data_driver_pairs <- function(base_model_definition, data_driver_pairs) {
     if (is.null(names(data_driver_pairs))) {
         stop('`data_driver_pairs` must have names')
     }
@@ -39,11 +39,11 @@ check_data_driver_pairs <- function(model_definition, data_driver_pairs) {
 
     valid_definitions <- sapply(data_driver_pairs, function(ddp) {
         BioCro::validate_dynamical_system_inputs(
-            model_definition[['initial_values']],
-            model_definition[['parameters']],
+            base_model_definition[['initial_values']],
+            base_model_definition[['parameters']],
             ddp[['drivers']],
-            model_definition[['direct_modules']],
-            model_definition[['differential_modules']],
+            base_model_definition[['direct_modules']],
+            base_model_definition[['differential_modules']],
             verbose = FALSE
         )
     })
@@ -66,24 +66,27 @@ check_data_driver_pairs <- function(model_definition, data_driver_pairs) {
 # values
 check_independent_arguments <- function(
     independent_arg_names,
-    initial_independent_arg_values
+    initial_ind_arg_values
 )
 {
-    if (length(independent_arg_names) != length(initial_independent_arg_values)) {
-        stop('`independent_arg_names` and `initial_independent_arg_values` must have the same length')
+    if (length(independent_arg_names) != length(initial_ind_arg_values)) {
+        stop(
+            '`independent_arg_names` and `initial_ind_arg_values` ',
+            'must have the same length'
+        )
     }
 
-    if (is.null(names(initial_independent_arg_values))) {
-        stop('`initial_independent_arg_values` must have names')
+    if (is.null(names(initial_ind_arg_values))) {
+        stop('`initial_ind_arg_values` must have names')
     }
 
-    if (any(!names(initial_independent_arg_values) %in% independent_arg_names)) {
-        bad_arg <- !names(initial_independent_arg_values) %in% independent_arg_names
+    if (any(!names(initial_ind_arg_values) %in% independent_arg_names)) {
+        bad_arg <- !names(initial_ind_arg_values) %in% independent_arg_names
 
         msg <- paste(
-            'The following arguments are included in `initial_independent_arg_values`',
+            'The following arguments are included in `initial_ind_arg_values`',
             'but not `independent_arg_names`:',
-            paste(names(initial_independent_arg_values)[bad_arg], collapse = ', ')
+            paste(names(initial_ind_arg_values)[bad_arg], collapse = ', ')
         )
 
         stop(msg)
@@ -95,9 +98,9 @@ check_independent_arguments <- function(
 # Helping function for getting a model runner; if the runner cannot be created,
 # an error message will be returned instead
 get_model_runner <- function(
-    model_definition,
+    base_model_definition,
     independent_arg_names,
-    initial_independent_arg_values,
+    initial_ind_arg_values,
     dependent_arg_function,
     post_process_function,
     ddp
@@ -108,7 +111,7 @@ get_model_runner <- function(
         independent_arg_names
     } else {
         dependent_arg_values <-
-            dependent_arg_function(initial_independent_arg_values)
+            dependent_arg_function(initial_ind_arg_values)
 
         c(independent_arg_names, names(dependent_arg_values))
     }
@@ -116,12 +119,12 @@ get_model_runner <- function(
     # Build the runner
     tryCatch({
             partial_func <- BioCro::partial_run_biocro(
-                model_definition[['initial_values']],
-                model_definition[['parameters']],
+                base_model_definition[['initial_values']],
+                base_model_definition[['parameters']],
                 ddp[['drivers']],
-                model_definition[['direct_modules']],
-                model_definition[['differential_modules']],
-                model_definition[['ode_solver']],
+                base_model_definition[['direct_modules']],
+                base_model_definition[['differential_modules']],
+                base_model_definition[['ode_solver']],
                 arg_names
             )
 
@@ -133,10 +136,10 @@ get_model_runner <- function(
                 x_for_partial <- if (is.null(dependent_arg_function)) {
                     x
                 } else {
-                    x_for_dependent_arg_func <-
+                    x_for_dep_arg_func <-
                         stats::setNames(x, independent_arg_names)
 
-                    c(x, as.numeric(dependent_arg_function(x_for_dependent_arg_func)))
+                    c(x, as.numeric(dependent_arg_function(x_for_dep_arg_func)))
                 }
 
                 initial_res <- partial_func(x_for_partial)
@@ -157,7 +160,7 @@ get_model_runner <- function(
 check_runners <- function(
     data_driver_pairs,
     model_runners,
-    initial_independent_arg_values,
+    initial_ind_arg_values,
     full_data_definitions
 )
 {
@@ -179,7 +182,7 @@ check_runners <- function(
     # Now check for runners that cannot be evaluated
     runner_eval_msg <- sapply(model_runners, function(runner) {
         runner_result <- tryCatch(
-            runner(as.numeric(initial_independent_arg_values)),
+            runner(as.numeric(initial_ind_arg_values)),
             error = function(e) {as.character(e)}
         )
 
@@ -204,7 +207,7 @@ check_runners <- function(
 
     # Run each runner
     runner_results <- lapply(model_runners, function(runner) {
-        runner(as.numeric(initial_independent_arg_values))
+        runner(as.numeric(initial_ind_arg_values))
     })
 
     # Now make sure each runner produces the necessary columns in its output
@@ -219,7 +222,7 @@ check_runners <- function(
     })
 
     if (any(bad_outputs)) {
-        msg <- 'Some data columns were missing from the following runner outputs:'
+        msg <- 'Some data columns were missing from runner outputs:'
 
         for (i in seq_along(bad_outputs)) {
             if (bad_outputs[i]) {
@@ -257,7 +260,7 @@ check_runners <- function(
     })
 
     if (any(bad_times)) {
-        msg <- 'Some observed times were missing from the following runner outputs:'
+        msg <- 'Some observed times were missing from runner outputs:'
 
         for (i in seq_along(bad_times)) {
             if (bad_times[i]) {
@@ -279,8 +282,8 @@ check_runners <- function(
 
 # Helping function for checking the objective function; will throw an error if a
 # problem is detected, and will otherwise be silent with no return value.
-check_obj_fun <- function(obj_fun, initial_independent_arg_values) {
-    initial_error <- obj_fun(as.numeric(initial_independent_arg_values))
+check_obj_fun <- function(obj_fun, initial_ind_arg_values) {
+    initial_error <- obj_fun(as.numeric(initial_ind_arg_values))
 
     if (!is.finite(initial_error)) {
         stop(
@@ -348,13 +351,13 @@ get_long_form_data <- function(data_driver_pairs, full_data_definitions) {
 # Helping function for getting time indices
 add_time_indices <- function(
     model_runners,
-    initial_independent_arg_values,
+    initial_ind_arg_values,
     long_form_data
 )
 {
     for (i in seq_along(long_form_data)) {
         runner <- model_runners[[i]]
-        res    <- runner(as.numeric(initial_independent_arg_values))
+        res    <- runner(as.numeric(initial_ind_arg_values))
 
         dataf <- long_form_data[[i]]
 
@@ -494,10 +497,10 @@ get_obj_fun <- function(
 }
 
 objective_function <- function(
-    model_definition,
+    base_model_definition,
     data_driver_pairs,
     independent_arg_names,
-    initial_independent_arg_values,
+    initial_ind_arg_values,
     quantity_weights,
     data_definitions = list(),
     normalization_method = 'mean_max',
@@ -507,20 +510,20 @@ objective_function <- function(
 )
 {
     # Check the data-driver pairs
-    check_data_driver_pairs(model_definition, data_driver_pairs)
+    check_data_driver_pairs(base_model_definition, data_driver_pairs)
 
     # Check the independent arguments
     check_independent_arguments(
         independent_arg_names,
-        initial_independent_arg_values
+        initial_ind_arg_values
     )
 
     # Get the model runners
     model_runners <- lapply(data_driver_pairs, function(ddp) {
         get_model_runner(
-            model_definition,
+            base_model_definition,
             independent_arg_names,
-            initial_independent_arg_values,
+            initial_ind_arg_values,
             dependent_arg_function,
             post_process_function,
             ddp
@@ -535,7 +538,7 @@ objective_function <- function(
     check_runners(
         data_driver_pairs,
         model_runners,
-        initial_independent_arg_values,
+        initial_ind_arg_values,
         full_data_definitions
     )
 
@@ -546,7 +549,7 @@ objective_function <- function(
     # Find indices corresponding to the measured time points
     long_form_data <- add_time_indices(
         model_runners,
-        initial_independent_arg_values,
+        initial_ind_arg_values,
         long_form_data
     )
 
@@ -564,7 +567,7 @@ objective_function <- function(
     )
 
     # Check the objective function
-    check_obj_fun(obj_fun, initial_independent_arg_values)
+    check_obj_fun(obj_fun, initial_ind_arg_values)
 
     # Return it
     obj_fun
