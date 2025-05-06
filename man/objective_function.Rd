@@ -7,8 +7,9 @@
 \description{
   Given a base model definition, drivers to run the model, observed values of
   model outputs, and the names of model arguments to vary,
-  \code{objective_function} creates an objective function that can be used to
-  parameterize the model.
+  \code{objective_function} creates an objective function that can be passed to
+  a minimization algorithm in order to find optimal parameter values that
+  produce the best agreement between the model and the observed data.
 
   The objective function itself is based on a weighted least-squares error
   metric, with optional user-defined penalty terms, and an optional
@@ -69,27 +70,44 @@
   }
 
   \item{data_definitions}{
-
+    A list of named string values, where the name of each element is one of the
+    data columns in the \code{data_driver_pairs} and the value is that column's
+    corresponding name in the model output. For all other data columns in the
+    \code{data_driver_pairs}, it is assumed that the data column name matches a
+    column in the model output.
   }
 
   \item{normalization_method}{
-
+    A string indicating the normalization method to be used when calculating the
+    error metric; see below for more details.
   }
 
   \item{dependent_arg_function}{
-
+    A function whose input argument is a named list of independent argument
+    values, and which returns a named list of dependent argument values. If the
+    \code{dependent_arg_function} is \code{NULL}, no dependent argument values
+    will be calculated.
   }
 
   \item{post_process_function}{
-
+    A function whose input argument is a data frame representing the output from
+    \code{\link[BioCro]{run_biocro}}, and which returns a data frame, typically
+    based on the input but with one or more new columns. If the
+    \code{post_process_function} is \code{NULL}, no post-processing will be
+    applied to the raw simulation output.
   }
 
   \item{extra_penalty_function}{
-
+    A function whose input argument is a data frame representing the output from
+    \code{\link[BioCro]{run_biocro}}, and which returns a numeric penalty to be
+    added to the least-squares term when calculating the error metric. If the
+    \code{extra_penalty_function} is \code{NULL}, no extra penalties will be
+    added.
   }
 
   \item{regularization_method}{
-
+    A string indicating the regularization method to be used when calculating
+    the regularization penalty term; see below for more details.
   }
 }
 
