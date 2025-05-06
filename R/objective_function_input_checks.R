@@ -229,8 +229,16 @@ check_runner_results <- function(
 
 # Helping function for checking the objective function; will throw an error if a
 # problem is detected, and will otherwise be silent with no return value.
-check_obj_fun <- function(obj_fun, initial_ind_arg_values) {
-    initial_error <- obj_fun(as.numeric(initial_ind_arg_values))
+check_obj_fun <- function(obj_fun, initial_ind_arg_values, verbose) {
+    initial_error_terms <-
+        obj_fun(as.numeric(initial_ind_arg_values), return_terms = TRUE)
+
+    if (verbose) {
+        cat('\nThe initial error metric terms are:\n')
+        utils::str(initial_error_terms)
+    }
+
+    initial_error <- sum(unlist(initial_error_terms))
 
     if (!is.finite(initial_error)) {
         stop(

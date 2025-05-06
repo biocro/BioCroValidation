@@ -35,7 +35,8 @@
     dependent_arg_function = NULL,
     post_process_function = NULL,
     extra_penalty_function = NULL,
-    regularization_method = 'none'
+    regularization_method = 'none',
+    verbose_startup = FALSE
   )
 }
 
@@ -111,6 +112,12 @@
   \item{regularization_method}{
     A string indicating the regularization method to be used when calculating
     the regularization penalty term; see below for more details.
+  }
+
+  \item{verbose_startup}{
+    A logical (\code{TRUE} or \code{FALSE}) value indicating whether to print
+    additional information to the R terminal when creating the objective
+    function.
   }
 }
 
@@ -480,7 +487,8 @@ if (require(BioCro)) {
     }
   }
 
-  # Now we can finally create the objective function.
+  # Now we can finally create the objective function; here we choose to print
+  # extra startup information, but this is not strictly required.
   obj_fun <- objective_function(
     base_model_definition,
     data_driver_pairs,
@@ -488,13 +496,15 @@ if (require(BioCro)) {
     quantity_weights,
     data_definitions = data_definitions,
     post_process_function = post_process_function,
-    extra_penalty_function = extra_penalty_function
+    extra_penalty_function = extra_penalty_function,
+    verbose_startup = TRUE
   )
 
   # This function could now be passed to an optimizer; here we will simply
   # evaluate it for two sets of parameter values.
 
   # First try the initial values.
+  cat('\nError metric calculated from initial argument values:\n')
   print(
     obj_fun(as.numeric(independent_args))
   )
@@ -502,11 +512,13 @@ if (require(BioCro)) {
   # Now try doubling each parameter value; in this case, the value of the
   # objective function increases, indicating a lower degree of agreement between
   # the model and the observed data.
+  cat('\nError metric calculated by doubling the initial argument values:\n')
   print(
     obj_fun(2 * as.numeric(independent_args))
   )
 
   # We can also see the values of each term that makes up the error metric
+  cat('\nError metric terms calculated by doubling the initial argument values:\n')
   str(
     obj_fun(2 * as.numeric(independent_args), return_terms = TRUE)
   )

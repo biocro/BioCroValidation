@@ -11,7 +11,8 @@ objective_function <- function(
     dependent_arg_function = NULL,
     post_process_function = NULL,
     extra_penalty_function = NULL,
-    regularization_method = 'none'
+    regularization_method = 'none',
+    verbose_startup = FALSE
 )
 {
     # Check the data-driver pairs
@@ -78,7 +79,7 @@ objective_function <- function(
     )
 
     # Check the objective function
-    check_obj_fun(obj_fun, independent_args)
+    check_obj_fun(obj_fun, independent_args, verbose_startup)
 
     # Return it
     obj_fun
