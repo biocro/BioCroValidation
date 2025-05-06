@@ -33,7 +33,7 @@ post_process_function <- function(x) {
 
 quantity_weights <- list(
     Leaf = 0.5,
-    Stem = 0.5,
+    Stem = c(0.5, 0.25),
     Pod = 1
 )
 
@@ -55,10 +55,6 @@ test_that('Objective functions can be created and behave as expected', {
         obj_fun(as.numeric(independent_args))
     )
 
-    expect_silent(
-        obj_fun(as.numeric(independent_args), 0.5)
-    )
-
     # One data-driver pair, no dependent arguments
     obj_fun <- expect_silent(
         objective_function(
@@ -71,7 +67,7 @@ test_that('Objective functions can be created and behave as expected', {
         )
     )
 
-    # Two data-driver pairs, with dependent arguments
+    # Two data-driver pairs, with dependent arguments and L2 regularization
     obj_fun <- expect_silent(
         objective_function(
             model,
@@ -80,8 +76,13 @@ test_that('Objective functions can be created and behave as expected', {
             quantity_weights,
             data_definitions = data_definitions,
             dependent_arg_function = dependent_arg_function,
-            post_process_function = post_process_function
+            post_process_function = post_process_function,
+            regularization_method = 'L2'
         )
+    )
+
+    expect_silent(
+        obj_fun(as.numeric(independent_args), 0.5)
     )
 })
 

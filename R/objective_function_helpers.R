@@ -154,7 +154,13 @@ add_norm <- function(long_form_data, normalization_method) {
             qname_subset <-
                     data_table[data_table[['quantity_name']] == qname, ]
 
-            if (tolower(normalization_method) == 'mean_max') {
+            if (tolower(normalization_method) == 'none') {
+                1.0
+            } else if (tolower(normalization_method) == 'mean') {
+                nrow(qname_subset)
+            } else if (tolower(normalization_method) == 'max') {
+                max(qname_subset[['quantity_value']])^2
+            } else if (tolower(normalization_method) == 'mean_max') {
                 npts <- nrow(qname_subset)
                 qmax <- max(qname_subset[['quantity_value']])
                 npts * qmax^2

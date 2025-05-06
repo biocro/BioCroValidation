@@ -66,7 +66,10 @@
   \item{quantity_weights}{
     A list of named numeric values, where the name of each element is one of the
     model outputs to be compared against the observed data, and the value is the
-    weight for that output.
+    weight for that output. Each weight can be a single number, or a pair of
+    numbers. When the weight is a pair, the first number is the weight that will
+    be used for underestimates (when the modeled value is smaller than the
+    observed value), and the second is the weight for overestimates.
   }
 
   \item{data_definitions}{
@@ -112,7 +115,191 @@
 }
 
 \details{
+  \strong{Overview}
 
+  When parameterizing a BioCro model, the general idea is to vary a subset of
+  the model's parameters to achieve the best agreement with a set of observed
+  data. The degree of agreement is expressed as an "error metric," which
+  includes terms derived from the agreement between the modeled and observed
+  values, as well as (optional) penalty terms. A function that calculates an
+  error metric when given a set of parameter values is called an "objective
+  function." Defining an objective function suitable for BioCro parameterization
+  can be complicated, but the \code{objective_function} function helps to
+  simplify the process of creating such a function. It is designed to
+  accommodate the following scenarios, which often occur in the context of
+  BioCro model parameterization:
+
+  \itemize{
+    \item \strong{Multi-year or multi-location data:} Often the model needs to
+          be run several times with different drivers corresponding to multiple
+          years or locations, and then the results from each individual
+          simulation must be compared to associated sets of observed data. Here,
+          this is handled through the \code{data_driver_pairs}, which allows the
+          user to specify which drivers and data sets should be compared to each
+          other.
+
+    \item \strong{Complicated normalization:} Care must be taken to ensure that
+          certain years or output variables are not over-valued in the error
+          metric; for example, one year may have more observations of leaf mass
+          than another year, or the stem mass may be much larger than the leaf
+          mass. Here, this is handled through pre-set normalization approaches,
+          which can be specified through the \code{normalization_method} input.
+          See below for more information.
+
+    \item \strong{Extra penalties:} Sometimes an optimizer chooses parameters
+          that produce close agreement with the observed data, but are
+          nevertheless not biologically resonable. For example, it may produce
+          a sharp peak at a high leaf mass in between two measured points, when
+          in reality, leaf mass should vary monotonically between them. In this
+          case, it may be necessarily to add an extra penalty to the objective
+          function that prevents the optimizer from choosing such values. Here,
+          this is handled through the \code{extra_penalty_function} input.
+
+    \item \strong{Flexible weights:} Typically a user would like to specify a
+          weight for each variable being considered in the error metric, either
+          to represent an uncertainty or to emphasize agreement with one output
+          at the expense of another. For example, the seed mass may need a high
+          weight to prioritize accurate yield predictions. Further, these
+          weights may need to differ for underestimates as compared to
+          overestimates; for example, measured root mass is often lower than the
+          true root mass, so a user may wish to penalize underestimates of root
+          mass more severely than overestimates. Here, this is handled through
+          the \code{quantity_weights} input.
+
+    \item \strong{Dependent parameters:} Sometimes one model parameter must be
+          determined from one or more other parameters; for example, a user may
+          wish to require that the leaf and stem maintenance respiration
+          coefficients are identical. Here, this is handled through the
+          \code{dependent_arg_function}, which allows the user to specify how
+          the values of such "dependent" parameters should be determined from
+          the values of the "independent" parameters.
+
+    \item \strong{Name mismatches:} Often a particular variable has different
+          names in the data set and simulation output. Here, this is handled
+          through the \code{data_definitions}, which allows the user to specify
+          which columns in the model output should be compared to particular
+          columns in the observed data.
+
+    \item \strong{Incomplete outputs:} Sometimes a model may not produce outputs
+          that are directly comparable to the observed values; for example, a
+          model may calculate seed and shell mass, while a data set includes pod
+          mass, which is the sum of seed and shell. Here, this is handled by an
+          optional \code{post_process_function}, which allows users to specify
+          additional operations to perform on the model output; in this example,
+          it would be used to calculate the pod mass so it can be compared to
+          the observations.
+  }
+
+  \strong{Error metric calculations}
+
+  As mentioned above, the overall error metric \eqn{E} is calculated as
+
+  \deqn{E = E_{agreement} + P_{user} + P_{regularization},}
+  where \eqn{E_{agreement}} is determined by the agreement between the model and
+  observations, \eqn{P_{user}} is an optional user-defined penalty, and
+  \eqn{P_{regularization}} is an optional regularization penalty. These terms
+  are explained in more detail below:
+
+  \itemize{
+    \item \strong{Agreement term:} The agreement term \eqn{E_{agreement}} is
+          calculated using a least-squares approach. In other words,
+
+          \deqn{E_{agreement} =%
+          \sum_i \frac{\left(Y_{obs}^i - Y_{mod}^i \right)^2}{N_i} \cdot w_i,}
+          where the sum runs over all \eqn{n} observations, \eqn{Y_{obs}^i} and
+          \eqn{Y_{mod}^i} are observed and modeled values of variable \eqn{Y_i},
+          \eqn{N_i} is a normalization factor that generally depends on the name
+          of \eqn{Y_i} and the set of drivers associated with the \eqn{i^{th}}
+          observation, and \eqn{w_i} is a weight factor that generally depends
+          on the name of \eqn{Y}.
+
+          The normalization factors \eqn{N_i} are determined by the choice of
+          \code{normalization_method}; the available methods are discussed
+          below.
+
+          The weight factors \eqn{w_i} are directly specified by the user via
+          the \code{quantity_weights} input. For example, if
+          \code{quantity_weights} has an element named \code{Leaf} that is equal
+          to 0.5, then \eqn{w_i} will be equal to 0.5 whenever \eqn{Y_i}
+          represents a leaf mass value, regardless of which set of drivers or
+          time point corresponds to \eqn{Y_i}. The weights can also be supplied
+          as \eqn{(w_{under}, w_{over})} pairs instead of single values; in this
+          case, the value of \eqn{w_i} depends on whether the model makes an
+          underprediction or an overprediction: \eqn{w_i = w_{under}} when
+          \eqn{Y_{mod}^i < Y_{obs}^i} and \eqn{w_i = w_{over}} otherwise.
+
+    \item \strong{User-defined penalty term:} The user-defined penalty term
+          \eqn{P_{user}} is calculated by applying a function \eqn{f_{user}} to
+          the full simulation output from each set of drivers. In other words,
+
+          \deqn{P_{user} = \sum_k f \left( M_k \right),}
+          where the sum runs over all \eqn{k} sets of drivers and \eqn{M_k} is
+          the model output when it is run with the \eqn{k^{th}} set of drivers.
+
+          The function \eqn{f_{user}} must accept a single data frame as an
+          input and return a single numeric value as its output, but has no
+          other requirements. It is specified via the
+          \code{extra_penalty_function} argument. When
+          \code{extra_penalty_function} is \code{NULL}, \eqn{P_{user}} is zero.
+
+    \item \strong{Regularization penalty term:} The regularization penalty term
+          \eqn{P_{regularization}} is calculated from the values of the
+          arguments being varied during the optimization by applying a function
+          \eqn{R}. In other words,
+
+          \deqn{E_{regularization} = R \left( X \right),}
+          where \eqn{X} represents the model argument values.
+
+          The function \eqn{R} is determined by the choice of
+          \code{regularization_method}; the available methods are discussed
+          below.
+  }
+
+  \strong{Normalization methods}
+
+  The following normalization methods are available:
+
+  \itemize{
+    \item \strong{none:} For this method, \eqn{N_i} is always set to 1. In other
+          words, no normalization is performed.
+
+    \item \strong{mean:} For this method, when \eqn{Y_i} is named \code{vtype}
+          and the observation is associated with a set of drivers called
+          \code{vdrivers}, then
+
+          \deqn{N_i = n_{vtype}^{vdrivers},}
+          where \eqn{n_{vtype}^{vdrivers}} is the number of observations of type
+          \code{vtype} that are associated with drivers \code{vdrivers}. In this
+          case, the error term \eqn{E_{agreement}} becomes a mean error for each
+          set of drivers, hence the name for this method. This approach avoids
+          over-representing drivers with larger numbers of associated
+          observations when determining \eqn{E_{agreement}}.
+
+    \item \strong{max:} For this method, when \eqn{Y_i} is named \code{vtype}
+          and the observation is from a set called \code{vdata}, then
+
+          \deqn{N_i = \left( max_{vtype}^{vdata} \right)^2,}
+          where \eqn{max_{vtype}^{vdata}} is the maximum observed value of
+          \code{vtype} across \code{vdata}. In this case, the observed and
+          modeled values that appear in the equation for \eqn{E_{agreement}} are
+          essentially normalized by their maximum value, hence the name for this
+          method. This approach avoids over-representing variable types with
+          larger magnitude when determining \eqn{E_{agreement}}.
+
+    \item \strong{mean_max:} For this method, the "mean" and "max" methods are
+          combined so that
+
+          \deqn{N_i =%
+          n_{vtype}^{vdrivers} \cdot \left( max_{vtype}^{vdata} \right)^2.}
+          This approach avoids over-representing drivers with larger numbers of
+          associated observations, and variable types with larger magnitudes.
+          This method is used for parameterizing Soybean-BioCro, and is
+          recommended for most situations.
+  }
+
+  When
+  \code{regularization_method} is \code{'none'}, \eqn{P_{regularization}} is
+  zero.
 }
 
 \value{
@@ -126,8 +313,9 @@
 \examples{
 # Example: Create an objective function that enables optimization of the
 # `alphaLeaf`, `betaLeaf`, and `alphaStem` parameters of the Soybean-BioCro
-# model. Additional details are provided below.
-
+# model. Additional details are provided below. Important note: This example is
+# designed to highlight key features of `objective_function`, and is not
+# necessarily realistic.
 
 if (require(BioCro)) {
   # We will use Soybean-BioCro as the base model definition, but we will change
@@ -177,8 +365,8 @@ if (require(BioCro)) {
   # mass; instead, it returns separate values of `Grain` (seed) and `Shell`
   # mass, two components which form the pod together. To address this, we can
   # provide a post-processing function to calculate the pod mass.
-  post_process_function <- function(x) {
-    within(x, {Pod = Grain + Shell})
+  post_process_function <- function(sim_res) {
+    within(sim_res, {Pod = Grain + Shell})
   }
 
   # Here we wish to independently vary the `alphaLeaf` and `betaLeaf`
@@ -189,17 +377,31 @@ if (require(BioCro)) {
   # original Soybean-BioCro model.
   independent_args <- BioCro::soybean[['parameters']][c('alphaLeaf', 'betaLeaf')]
 
-  dependent_arg_function <- function(x) {
-    list(alphaStem = x[['alphaLeaf']])
+  dependent_arg_function <- function(ind_args) {
+    list(alphaStem = ind_args[['alphaLeaf']])
   }
 
-  # When determining the error metric value, we wish to weight the pod twice as
-  # large as the leaf and stem to ensure a close fit to the observed pod masses.
+  # When determining the error metric value, we wish to weight the pod highest
+  # to ensure a close fit to the observed pod masses. We also wish to decrease
+  # the penalty for overestimates of the stem mass, since we believe our
+  # observations to be underestimates.
   quantity_weights <- list(
     Leaf = 0.5,
-    Stem = 0.5,
+    Stem = c(0.5, 0.25),
     Pod = 1
   )
+
+  # We want to prevent the optimizer from choosing parameters that produce
+  # unreasonably high leaf mass
+  extra_penalty_function <- function(sim_res) {
+    max_leaf <- max(sim_res[['Leaf']], na.rm = TRUE)
+
+    if (is.na(max_leaf) || max_leaf > 4) {
+      1e5 # Add a steep penalty
+    } else {
+      0
+    }
+  }
 
   # Now we can finally create the objective function.
   obj_fun <- objective_function(
@@ -208,7 +410,8 @@ if (require(BioCro)) {
     independent_args,
     quantity_weights,
     data_definitions = data_definitions,
-    post_process_function = post_process_function
+    post_process_function = post_process_function,
+    extra_penalty_function = extra_penalty_function
   )
 
   # This function could now be passed to an optimizer; here we will simply
