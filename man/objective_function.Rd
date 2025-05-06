@@ -208,10 +208,17 @@
           \sum_i \frac{\left(Y_{obs}^i - Y_{mod}^i \right)^2}{N_i} \cdot w_i,}
           where the sum runs over all \eqn{n} observations, \eqn{Y_{obs}^i} and
           \eqn{Y_{mod}^i} are observed and modeled values of variable \eqn{Y_i},
-          \eqn{N_i} is a normalization factor that generally depends on the name
-          of \eqn{Y_i} and the set of drivers associated with the \eqn{i^{th}}
-          observation, and \eqn{w_i} is a weight factor that generally depends
-          on the name of \eqn{Y}.
+          \eqn{N_i} is a normalization factor that depends on the name of
+          \eqn{Y_i} and the data set that includes the \eqn{i^{th}} observation,
+          and \eqn{w_i} is a weight factor that depends on the name of \eqn{Y}.
+
+          Each value of \eqn{Y_{obs}^i} is specified at a particular time
+          \eqn{t_i}. The corresponding modeled value, \eqn{Y_{mod}^i}, is found
+          by retrieving the value of the \eqn{Y_i} variable at the closest time
+          to \eqn{t_i} that is included in the model output. It is assumed that
+          the model always outputs the same sequence of time values each time it
+          is run with a particular set of drivers, regardless of the input
+          argument values.
 
           The normalization factors \eqn{N_i} are determined by the choice of
           \code{normalization_method}; the available methods are discussed
@@ -232,7 +239,7 @@
           \eqn{P_{user}} is calculated by applying a function \eqn{f_{user}} to
           the full simulation output from each set of drivers. In other words,
 
-          \deqn{P_{user} = \sum_k f \left( M_k \right),}
+          \deqn{P_{user} = \sum_k f_{user} \left( M_k \right),}
           where the sum runs over all \eqn{k} sets of drivers and \eqn{M_k} is
           the model output when it is run with the \eqn{k^{th}} set of drivers.
 
@@ -260,22 +267,21 @@
   The following normalization methods are available:
 
   \itemize{
-    \item \strong{none:} For this method, \eqn{N_i} is always set to 1. In other
+    \item \code{'none'}: For this method, \eqn{N_i} is always set to 1. In other
           words, no normalization is performed.
 
-    \item \strong{mean:} For this method, when \eqn{Y_i} is named \code{vtype}
-          and the observation is associated with a set of drivers called
-          \code{vdrivers}, then
+    \item \code{'mean'}: For this method, when \eqn{Y_i} is named \code{vtype}
+          and the observation is from a set called \code{vdata}, then
 
-          \deqn{N_i = n_{vtype}^{vdrivers},}
-          where \eqn{n_{vtype}^{vdrivers}} is the number of observations of type
-          \code{vtype} that are associated with drivers \code{vdrivers}. In this
-          case, the error term \eqn{E_{agreement}} becomes a mean error for each
-          set of drivers, hence the name for this method. This approach avoids
+          \deqn{N_i = n_{vtype}^{vdata},}
+          where \eqn{n_{vtype}^{vdata}} is the number of observations of type
+          \code{vtype} that are included in \code{vdata}. In this case, the
+          error term \eqn{E_{agreement}} becomes a mean error for each set of
+          drivers, hence the name for this method. This approach avoids
           over-representing drivers with larger numbers of associated
           observations when determining \eqn{E_{agreement}}.
 
-    \item \strong{max:} For this method, when \eqn{Y_i} is named \code{vtype}
+    \item \code{'max'}: For this method, when \eqn{Y_i} is named \code{vtype}
           and the observation is from a set called \code{vdata}, then
 
           \deqn{N_i = \left( max_{vtype}^{vdata} \right)^2,}
@@ -286,7 +292,7 @@
           method. This approach avoids over-representing variable types with
           larger magnitude when determining \eqn{E_{agreement}}.
 
-    \item \strong{mean_max:} For this method, the "mean" and "max" methods are
+    \item \code{'mean_max'}: For this method, the "mean" and "max" methods are
           combined so that
 
           \deqn{N_i =%
@@ -297,9 +303,67 @@
           recommended for most situations.
   }
 
-  When
-  \code{regularization_method} is \code{'none'}, \eqn{P_{regularization}} is
-  zero.
+  \strong{Regularization methods}
+
+  The following regularization methods are available:
+
+  \itemize{
+    \item \code{'none'}: For this method, \eqn{P_{regularization}} is always set
+          to 0. In other words, no regularization is performed.
+
+    \item \code{'L1'} or \code{'lasso'}: For this method,
+          \eqn{P_{regularization}} is given by the sum of the absolute values of
+          each independent argument:
+
+          \deqn{P_{regularization} = \sum_j | X_j |,}
+          where the sum runs over all \eqn{j} independent arguments, and
+          \eqn{X_j} is the value of the \eqn{j^{th}} argument.
+
+    \item \code{'L2'} or \code{'ridge'}: For this method,
+          \eqn{P_{regularization}} is given by the sum of the squared values of
+          each independent argument:
+
+          \deqn{P_{regularization} = \sum_j X_j^2,}
+          where the sum runs over all \eqn{j} independent arguments, and
+          \eqn{X_j} is the value of the \eqn{j^{th}} argument.
+  }
+
+  \strong{Input checks}
+
+  Several checks are made to ensure that the objective function is properly
+  defined. These checks include, but are not limited to, the following:
+
+  \itemize{
+    \item Ensuring that each set of drivers in \code{data_driver_pairs} defines
+          a valid dynamical system along with the \code{base_model_definition}.
+          This is accomplished using
+          \code{\link[BioCro]{validate_dynamical_system_inputs}}.
+
+    \item Ensuring that the model output corresponding to each set of drivers
+          spans the times at which the observations were made.
+
+    \item Ensuring that each variable type in the data elements of
+          \code{data_driver_pairs} matches a corresponding column in the model
+          output, when accounting for the \code{data_definitions} and
+          \code{post_process_function}.
+
+    \item Ensuring that each independent and dependent argument name is either
+          a parameter or initial value of the model. This is accomplished using
+          \code{\link[BioCro]{partial_run_biocro}}. Note that argument names
+          passed to \code{partial_run_biocro} can technically include drivers,
+          but it is unlikely that the value of a driver would be varied during
+          an optimization.
+
+    \item Ensuring that the optional \code{dependent_arg_function},
+          \code{post_process_function}, and \code{extra_penalty_function}
+          functions can be run without causing errors.
+  }
+
+  If any issues are detected, an informative error message will be sent. Note
+  that several of these checks require running the model with each set of
+  drivers. For these checks, the argument values specified by
+  \code{independent_args} will be used, so they should be valid or otherwise
+  reasonable values.
 }
 
 \value{
@@ -418,11 +482,15 @@ if (require(BioCro)) {
   # evaluate it for two sets of parameter values.
 
   # First try the initial values.
-  obj_fun(as.numeric(independent_args))
+  print(
+    obj_fun(as.numeric(independent_args))
+  )
 
   # Now try doubling each parameter value; in this case, the value of the
   # objective function increases, indicating a lower degree of agreement between
   # the model and the observed data.
-  obj_fun(2 * as.numeric(independent_args))
+  print(
+    obj_fun(2 * as.numeric(independent_args))
+  )
 }
 }
