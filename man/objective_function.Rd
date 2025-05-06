@@ -368,11 +368,23 @@
 }
 
 \value{
-  A function \code{obj_fun} with signature \code{obj_fun(x, lambda = 0)}. Here,
-  \code{x} is a numeric vector of values of the independent arguments (in the
-  same order as in \code{independent_arg_names}), and \code{lambda} is the value
-  of the regularization parameter. The \code{obj_fun} function returns values of
-  the error metric, as described above.
+  A function \code{obj_fun} with signature
+  \code{obj_fun(x, lambda = 0, return_terms = FALSE)}.
+
+  Here, \code{x} is a numeric vector of values of the independent arguments (in
+  the same order as in \code{independent_arg_names}), and \code{lambda} is the
+  value of the regularization parameter.
+
+  The \code{return_terms} argument determines the return value of
+  \code{obj_fun}. When \code{return_terms} is \code{FALSE}, \code{obj_fun}
+  returns values of the error metric \eqn{E}. When \code{return_terms} is
+  \code{TRUE}, \code{obj_fun} returns a list including each individual term of
+  the total error metric.
+
+  During optimization, \code{return_terms} should always be \code{FALSE}.
+  Setting it to \code{TRUE} can be useful for troubleshooting, or for
+  diagnostics such as checking the quality of fit for each of the data-driver
+  pairs.
 }
 
 \examples{
@@ -492,6 +504,11 @@ if (require(BioCro)) {
   # the model and the observed data.
   print(
     obj_fun(2 * as.numeric(independent_args))
+  )
+
+  # We can also see the values of each term that makes up the error metric
+  str(
+    obj_fun(2 * as.numeric(independent_args), return_terms = TRUE)
   )
 }
 }

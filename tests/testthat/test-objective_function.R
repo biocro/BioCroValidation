@@ -82,7 +82,13 @@ test_that('Objective functions can be created and behave as expected', {
     )
 
     expect_silent(
-        obj_fun(as.numeric(independent_args), 0.5)
+        obj_fun(as.numeric(independent_args), lambda = 0.5)
+    )
+
+    expect_true(
+        is.list(
+            obj_fun(as.numeric(independent_args), lambda = 0.5, return_terms = TRUE)
+        )
     )
 })
 

@@ -234,7 +234,8 @@ error_from_res <- function(
     long_form_data_table,
     quantity_weights,
     normalization_method,
-    extra_penalty_function
+    extra_penalty_function,
+    return_terms
 )
 {
     # If the simulation did not finish, return a very high value
@@ -265,8 +266,15 @@ error_from_res <- function(
         one_error(obs, pred, wt, norm)
     })
 
-    # Return the sum of the penalty and error terms
-    penalty + sum(errors)
+    # Return the sum of the penalty and error terms, or the individual errors
+    if (return_terms) {
+        list(
+            least_squares_term = sum(errors),
+            extra_penalty = penalty
+        )
+    } else {
+        penalty + sum(errors)
+    }
 }
 
 # Helping function for calculating a regularization penalty term
@@ -297,8 +305,8 @@ get_obj_fun <- function(
     regularization_method
 )
 {
-    function(x, lambda = 0) {
-        errors <- sapply(seq_along(model_runners), function(i) {
+    function(x, lambda = 0, return_terms = FALSE) {
+        errors <- lapply(seq_along(model_runners), function(i) {
             runner <- model_runners[[i]]
             res    <- runner(x)
 
@@ -307,12 +315,23 @@ get_obj_fun <- function(
                 long_form_data[[i]],
                 processed_weights,
                 normalization_method,
-                extra_penalty_function
+                extra_penalty_function,
+                return_terms
             )
         })
 
         reg_penalty <- regularization_penalty(x, regularization_method, lambda)
 
-        sum(errors)
+        if (return_terms) {
+            list(
+                terms_from_data_driver_pairs = stats::setNames(
+                    errors,
+                    names(model_runners)
+                ),
+                regularization_penalty = reg_penalty
+            )
+        } else {
+            sum(as.numeric(errors)) + reg_penalty
+        }
     }
 }
