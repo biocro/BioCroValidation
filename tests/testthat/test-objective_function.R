@@ -100,7 +100,7 @@ test_that('Bad definitions are detected', {
     )
 })
 
-test_that('Independent arguments must have names', {
+test_that('Independent and dependent arguments must have names', {
     expect_error(
         objective_function(
             model,
@@ -111,6 +111,32 @@ test_that('Independent arguments must have names', {
             post_process_function = post_process_function
         ),
         '`independent_args` must have names'
+    )
+
+    expect_error(
+        objective_function(
+            model,
+            ddps,
+            independent_args,
+            quantity_weights,
+            data_definitions = data_definitions,
+            post_process_function = post_process_function,
+            dependent_arg_function = function(x) {1.0}
+        ),
+        'The return value of `dependent_arg_function` must have names'
+    )
+
+    expect_error(
+        objective_function(
+            model,
+            ddps,
+            c(independent_args, list(solar = 1000)),
+            quantity_weights,
+            data_definitions = data_definitions,
+            post_process_function = post_process_function,
+            dependent_arg_function = function(x) {list(precip = 0.1)}
+        ),
+        'Some independent or dependent argument names refer to columns in the drivers: solar, precip'
     )
 })
 

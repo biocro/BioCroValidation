@@ -17,8 +17,12 @@ objective_function <- function(
     # Check the data-driver pairs
     check_data_driver_pairs(base_model_definition, data_driver_pairs)
 
-    # Check the independent arguments
-    check_independent_arguments(independent_args)
+    # Check the arguments to be varied
+    check_args_to_vary(
+        independent_args,
+        dependent_arg_function,
+        data_driver_pairs
+    )
 
     # Get the model runners
     model_runners <- lapply(data_driver_pairs, function(ddp) {

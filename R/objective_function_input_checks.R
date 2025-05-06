@@ -67,9 +67,47 @@ check_data_driver_pairs <- function(base_model_definition, data_driver_pairs) {
 }
 
 # Helping function for checking the independent arguments
-check_independent_arguments <- function(independent_args) {
-    if (is.null(names(independent_args))) {
+check_args_to_vary <- function(
+    independent_args,
+    dependent_arg_function,
+    data_driver_pairs
+)
+{
+    # Make sure the independent arguments have names
+    ind_arg_names <- names(independent_args)
+
+    if (is.null(ind_arg_names)) {
         stop('`independent_args` must have names')
+    }
+
+    # Make sure the dependent argument function returns a named list
+    if (!is.null(dependent_arg_function)) {
+        dep_arg_names <-
+            names(dependent_arg_function(independent_args))
+
+        if (is.null(dep_arg_names)) {
+            stop('The return value of `dependent_arg_function` must have names')
+        }
+    }
+
+    # Make sure no drivers were specified
+    arg_names <- get_full_arg_names(independent_args, dependent_arg_function)
+
+    args_in_drivers <- lapply(data_driver_pairs, function(ddp) {
+        driver_names <- names(ddp[['drivers']])
+        arg_names[arg_names %in% driver_names]
+    })
+
+    args_in_drivers <- unique(unlist(args_in_drivers))
+
+    if (length(args_in_drivers) > 0) {
+        msg <- paste(
+            'Some independent or dependent argument names refer to columns',
+            'in the drivers:',
+            paste(args_in_drivers, collapse = ', ')
+        )
+
+        stop(msg)
     }
 
     return(invisible(NULL))

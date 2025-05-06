@@ -352,7 +352,8 @@
           \code{\link[BioCro]{partial_run_biocro}}. Note that argument names
           passed to \code{partial_run_biocro} can technically include drivers,
           but it is unlikely that the value of a driver would be varied during
-          an optimization.
+          an optimization, so the argument names are not allowed to include
+          columns in the drivers.
 
     \item Ensuring that the optional \code{dependent_arg_function},
           \code{post_process_function}, and \code{extra_penalty_function}

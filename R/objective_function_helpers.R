@@ -1,6 +1,22 @@
 ## All the functions defined in this file are intended to perform key operations
 ## required by `objective_function`.
 
+# Helping function for getting a full list of argument names
+get_full_arg_names <- function(independent_args, dependent_arg_function) {
+    # Get the independent argument names
+    independent_arg_names <- names(independent_args)
+
+    # Get the full list of arg_names
+    if (is.null(dependent_arg_function)) {
+        independent_arg_names
+    } else {
+        dependent_arg_values <-
+            dependent_arg_function(independent_args)
+
+        c(independent_arg_names, names(dependent_arg_values))
+    }
+}
+
 # Helping function for getting a model runner; if the runner cannot be created,
 # an error message will be returned instead
 get_model_runner <- function(
@@ -15,14 +31,7 @@ get_model_runner <- function(
     independent_arg_names <- names(independent_args)
 
     # Get the full list of arg_names
-    arg_names <- if (is.null(dependent_arg_function)) {
-        independent_arg_names
-    } else {
-        dependent_arg_values <-
-            dependent_arg_function(independent_args)
-
-        c(independent_arg_names, names(dependent_arg_values))
-    }
+    arg_names <- get_full_arg_names(independent_args, dependent_arg_function)
 
     # Build the runner
     tryCatch({
