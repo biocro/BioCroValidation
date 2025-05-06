@@ -323,7 +323,7 @@
           each independent argument, multiplied by a "regularization parameter"
           \eqn{\lambda} that sets the overall weight of the penalty:
 
-          \deqn{P_{regularization} = \sum_j | X_j |,}
+          \deqn{P_{regularization} = \lambda \sum_j | X_j |,}
           where the sum runs over all \eqn{j} independent arguments, and
           \eqn{X_j} is the value of the \eqn{j^{th}} argument. See the "Value"
           section below for details of how to specify \eqn{\lambda}.
@@ -333,7 +333,7 @@
           each independent argument, multiplied by a "regularization parameter"
           \eqn{\lambda} that sets the overall weight of the penalty:
 
-          \deqn{P_{regularization} = \sum_j X_j^2,}
+          \deqn{P_{regularization} = \lambda \sum_j X_j^2,}
           where the sum runs over all \eqn{j} independent arguments, and
           \eqn{X_j} is the value of the \eqn{j^{th}} argument. See the "Value"
           section below for details of how to specify \eqn{\lambda}.
