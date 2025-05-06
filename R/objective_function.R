@@ -1,5 +1,5 @@
-# Here we use several functions that are defined in
-# `objective_function_input_checks.R` and `objective_function_helpers.R`
+## Here we use several functions that are defined in
+## `objective_function_input_checks.R` and `objective_function_helpers.R`
 
 objective_function <- function(
     base_model_definition,

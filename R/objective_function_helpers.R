@@ -1,3 +1,6 @@
+## All the functions defined in this file are intended to perform key operations
+## required by `objective_function`.
+
 # Helping function for getting a model runner; if the runner cannot be created,
 # an error message will be returned instead
 get_model_runner <- function(

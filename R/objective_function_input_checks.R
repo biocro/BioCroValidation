@@ -1,3 +1,7 @@
+## All the functions defined in this file are intended to check inputs for
+## certain errors. Each function will throw an error if a problem is detected,
+## and will otherwise be silent with no return value.
+
 # Helping function for checking the data-driver pairs; will throw an error if
 # a problem is detected, and will otherwise be silent with no return value.
 check_data_driver_pairs <- function(base_model_definition, data_driver_pairs) {
