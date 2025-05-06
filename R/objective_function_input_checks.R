@@ -66,34 +66,10 @@ check_data_driver_pairs <- function(base_model_definition, data_driver_pairs) {
     return(invisible(NULL))
 }
 
-# Helping function for checking the independent argument names and initial
-# values
-check_independent_arguments <- function(
-    independent_arg_names,
-    initial_ind_arg_values
-)
-{
-    if (length(independent_arg_names) != length(initial_ind_arg_values)) {
-        stop(
-            '`independent_arg_names` and `initial_ind_arg_values` ',
-            'must have the same length'
-        )
-    }
-
-    if (is.null(names(initial_ind_arg_values))) {
-        stop('`initial_ind_arg_values` must have names')
-    }
-
-    if (any(!names(initial_ind_arg_values) %in% independent_arg_names)) {
-        bad_arg <- !names(initial_ind_arg_values) %in% independent_arg_names
-
-        msg <- paste(
-            'The following arguments are included in `initial_ind_arg_values`',
-            'but not `independent_arg_names`:',
-            paste(names(initial_ind_arg_values)[bad_arg], collapse = ', ')
-        )
-
-        stop(msg)
+# Helping function for checking the independent arguments
+check_independent_arguments <- function(independent_args) {
+    if (is.null(names(independent_args))) {
+        stop('`independent_args` must have names')
     }
 
     return(invisible(NULL))

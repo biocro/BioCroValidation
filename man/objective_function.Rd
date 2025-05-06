@@ -27,8 +27,7 @@
   objective_function(
     base_model_definition,
     data_driver_pairs,
-    independent_arg_names,
-    initial_ind_arg_values,
+    independent_args,
     quantity_weights,
     data_definitions = list(),
     normalization_method = 'mean_max',
@@ -40,13 +39,12 @@
 }
 
 \arguments{
-
-  \item{base_model_definition{
+  \item{base_model_definition}{
     A list meeting the requirements for BioCro
     \code{\link[BioCro]{crop_model_definitions}}.
   }
 
-  \item{data_driver_pairs{
+  \item{data_driver_pairs}{
     A list of named elements, where each element is a "data-driver pair." A
     data-driver pair is a list with two elements, \code{data} and
     \code{drivers}. The \code{data} element must be a data frame with one column
@@ -57,43 +55,40 @@
     input argument.
   }
 
-  \item{independent_arg_names{
-    A vector or list of the names of independent model quantities to be
-    varied; will be passed to \code{\link[BioCro]{partial_run_biocro}}.
+  \item{independent_args}{
+    A list of named numeric values. The names will determine the independent
+    arguments to be varied during their optimization, and the values specify
+    "test" values of each argument that will be used internally to check that
+    the objective function is properly defined and can be evaluated.
   }
 
-  \item{initial_ind_arg_values{
-    A list of named numeric values, where the name of each element should be one
-    of the quantities in \code{independent_arg_names}.
-  }
-
-  \item{quantity_weights{
+  \item{quantity_weights}{
     A list of named numeric values, where the name of each element is one of the
     model outputs to be compared against the observed data, and the value is the
     weight for that output.
   }
 
-  \item{data_definitions{
+  \item{data_definitions}{
 
   }
 
-  \item{normalization_method{
+  \item{normalization_method}{
 
   }
 
-  \item{dependent_arg_function{
+  \item{dependent_arg_function}{
 
   }
 
-  \item{post_process_function{
+  \item{post_process_function}{
 
   }
 
-  \item{extra_penalty_function{
+  \item{extra_penalty_function}{
 
   }
 
-  \item{regularization_method{
+  \item{regularization_method}{
 
   }
 }
@@ -170,23 +165,18 @@ if (require(BioCro)) {
 
   # Here we wish to independently vary the `alphaLeaf` and `betaLeaf`
   # parameters. We also wish to vary `alphaStem`, but require that its value is
-  # always equal to `alphaLeaf`. To do this, we can specify independent argument
-  # names, and a function for determining dependent argument values.
-  independent_arg_names <- c('alphaLeaf', 'betaLeaf')
+  # always equal to `alphaLeaf`. To do this, we can specify independent
+  # arguments, and a function for determining dependent argument values. We will
+  # choose "test" values of the independent arguments as their values in the
+  # original Soybean-BioCro model.
+  independent_args <- BioCro::soybean[['parameters']][c('alphaLeaf', 'betaLeaf')]
 
   dependent_arg_function <- function(x) {
     list(alphaStem = x[['alphaLeaf']])
   }
 
-  # We will choose initial values of `alphaLeaf` and `betaLeaf` based on the
-  # original Soybean-BioCro model definition.
-  initial_ind_arg_values <- list(
-    alphaLeaf = BioCro::soybean$parameters$alphaLeaf,
-    betaLeaf  = BioCro::soybean$parameters$betaLeaf
-  )
-
   # When determining the error metric value, we wish to weight the pod twice as
-  # large as the leaf and stem to ensure a close fit to the pod masses.
+  # large as the leaf and stem to ensure a close fit to the observed pod masses.
   quantity_weights <- list(
     Leaf = 0.5,
     Stem = 0.5,
@@ -197,8 +187,7 @@ if (require(BioCro)) {
   obj_fun <- objective_function(
     base_model_definition,
     data_driver_pairs,
-    independent_arg_names,
-    initial_ind_arg_values,
+    independent_args,
     quantity_weights,
     data_definitions = data_definitions,
     post_process_function = post_process_function
@@ -208,11 +197,11 @@ if (require(BioCro)) {
   # evaluate it for two sets of parameter values.
 
   # First try the initial values.
-  obj_fun(as.numeric(initial_ind_arg_values))
+  obj_fun(as.numeric(independent_args))
 
   # Now try doubling each parameter value; in this case, the value of the
   # objective function increases, indicating a lower degree of agreement between
   # the model and the observed data.
-  obj_fun(2 * as.numeric(initial_ind_arg_values))
+  obj_fun(2 * as.numeric(independent_args))
 }
 }

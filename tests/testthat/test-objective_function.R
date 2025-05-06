@@ -13,9 +13,7 @@ ddps <- list(
     )
 )
 
-independent_arg_names <- c('alphaLeaf', 'betaLeaf')
-
-initial_ind_arg_values <- with(BioCro::soybean[['parameters']], {
+independent_args <- with(BioCro::soybean[['parameters']], {
     list(alphaLeaf = alphaLeaf, betaLeaf = betaLeaf)
 })
 
@@ -46,8 +44,7 @@ test_that('Objective functions can be created and behave as expected', {
         objective_function(
             model,
             ddps,
-            independent_arg_names,
-            initial_ind_arg_values,
+            independent_args,
             quantity_weights,
             data_definitions = data_definitions,
             post_process_function = post_process_function
@@ -55,11 +52,11 @@ test_that('Objective functions can be created and behave as expected', {
     )
 
     expect_silent(
-        obj_fun(as.numeric(initial_ind_arg_values))
+        obj_fun(as.numeric(independent_args))
     )
 
     expect_silent(
-        obj_fun(as.numeric(initial_ind_arg_values), 0.5)
+        obj_fun(as.numeric(independent_args), 0.5)
     )
 
     # One data-driver pair, no dependent arguments
@@ -67,8 +64,7 @@ test_that('Objective functions can be created and behave as expected', {
         objective_function(
             model,
             ddps[1],
-            independent_arg_names,
-            initial_ind_arg_values,
+            independent_args,
             quantity_weights,
             data_definitions = data_definitions,
             post_process_function = post_process_function
@@ -80,8 +76,7 @@ test_that('Objective functions can be created and behave as expected', {
         objective_function(
             model,
             ddps,
-            independent_arg_names,
-            initial_ind_arg_values,
+            independent_args,
             quantity_weights,
             data_definitions = data_definitions,
             dependent_arg_function = dependent_arg_function,
@@ -95,8 +90,7 @@ test_that('Bad definitions are detected', {
         objective_function(
             model,
             within(ddps, {ambient_2005$drivers$temp = NULL}),
-            independent_arg_names,
-            initial_ind_arg_values,
+            independent_args,
             quantity_weights,
             data_definitions = data_definitions,
             post_process_function = post_process_function
@@ -105,44 +99,17 @@ test_that('Bad definitions are detected', {
     )
 })
 
-test_that('Independent argument names must be consistent', {
+test_that('Independent arguments must have names', {
     expect_error(
         objective_function(
             model,
             ddps,
-            independent_arg_names,
-            c(),
+            as.numeric(independent_args),
             quantity_weights,
             data_definitions = data_definitions,
             post_process_function = post_process_function
         ),
-        '`independent_arg_names` and `initial_ind_arg_values` must have the same length'
-    )
-
-    expect_error(
-        objective_function(
-            model,
-            ddps,
-            independent_arg_names,
-            list(arg1 = 1, arg2 = 2),
-            quantity_weights,
-            data_definitions = data_definitions,
-            post_process_function = post_process_function
-        ),
-        'The following arguments are included in `initial_ind_arg_values` but not `independent_arg_names`: arg1, arg2'
-    )
-
-    expect_error(
-        objective_function(
-            model,
-            ddps,
-            independent_arg_names,
-            as.numeric(initial_ind_arg_values),
-            quantity_weights,
-            data_definitions = data_definitions,
-            post_process_function = post_process_function
-        ),
-        '`initial_ind_arg_values` must have names'
+        '`independent_args` must have names'
     )
 })
 
@@ -151,8 +118,7 @@ test_that('Bad argument names are detected', {
         objective_function(
             model,
             ddps,
-            c(independent_arg_names, 'bad_arg_name'),
-            c(initial_ind_arg_values, list(bad_arg_name = 1)),
+            c(independent_args, list(bad_arg_name = 1)),
             quantity_weights,
             data_definitions = data_definitions,
             post_process_function = post_process_function
@@ -169,8 +135,7 @@ test_that('Model failures are detected', {
         objective_function(
             within(model, {parameters$lnfun = 1}),
             ddps,
-            independent_arg_names,
-            initial_ind_arg_values,
+            independent_args,
             quantity_weights,
             data_definitions = data_definitions,
             post_process_function = post_process_function
@@ -187,8 +152,7 @@ test_that('Data-driver pairs must be complete', {
         objective_function(
             model,
             within(ddps, {ambient_2002$data = NULL; ambient_2005$drivers = NULL}),
-            independent_arg_names,
-            initial_ind_arg_values,
+            independent_args,
             quantity_weights,
             data_definitions = data_definitions,
             post_process_function = post_process_function
@@ -202,8 +166,7 @@ test_that('Data must have a `time` column', {
         objective_function(
             model,
             within(ddps, {ambient_2002$data$time = NULL}),
-            independent_arg_names,
-            initial_ind_arg_values,
+            independent_args,
             quantity_weights,
             data_definitions = data_definitions,
             post_process_function = post_process_function
@@ -217,8 +180,7 @@ test_that('Missing simulation outputs are detected', {
         objective_function(
             model,
             ddps,
-            independent_arg_names,
-            initial_ind_arg_values,
+            independent_args,
             quantity_weights,
             data_definitions = data_definitions
         ),
@@ -234,8 +196,7 @@ test_that('Out-of-range times are detected', {
         objective_function(
             model,
             within(ddps, {ambient_2002$data$time <- ambient_2002$data$time + 1e5}),
-            independent_arg_names,
-            initial_ind_arg_values,
+            independent_args,
             quantity_weights,
             data_definitions = data_definitions,
             post_process_function = post_process_function
@@ -251,8 +212,7 @@ test_that('Weights must be supplied for all measured quantities', {
         objective_function(
             model,
             ddps,
-            independent_arg_names,
-            initial_ind_arg_values,
+            independent_args,
             list(),
             data_definitions = data_definitions,
             post_process_function = post_process_function
@@ -266,8 +226,7 @@ test_that('Bad normalization methods are detected', {
         objective_function(
             model,
             ddps,
-            independent_arg_names,
-            initial_ind_arg_values,
+            independent_args,
             quantity_weights,
             normalization_method = 'bad_normalization_method',
             data_definitions = data_definitions,
@@ -282,8 +241,7 @@ test_that('Bad return values are detected', {
         objective_function(
             model,
             ddps,
-            independent_arg_names,
-            initial_ind_arg_values,
+            independent_args,
             quantity_weights,
             data_definitions = data_definitions,
             post_process_function = post_process_function,
@@ -298,8 +256,7 @@ test_that('Bad regularization methods are detected', {
         objective_function(
             model,
             ddps,
-            independent_arg_names,
-            initial_ind_arg_values,
+            independent_args,
             quantity_weights,
             data_definitions = data_definitions,
             post_process_function = post_process_function,

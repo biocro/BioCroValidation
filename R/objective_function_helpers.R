@@ -5,19 +5,21 @@
 # an error message will be returned instead
 get_model_runner <- function(
     base_model_definition,
-    independent_arg_names,
-    initial_ind_arg_values,
+    independent_args,
     dependent_arg_function,
     post_process_function,
     ddp
 )
 {
+    # Get the independent argument names
+    independent_arg_names <- names(independent_args)
+
     # Get the full list of arg_names
     arg_names <- if (is.null(dependent_arg_function)) {
         independent_arg_names
     } else {
         dependent_arg_values <-
-            dependent_arg_function(initial_ind_arg_values)
+            dependent_arg_function(independent_args)
 
         c(independent_arg_names, names(dependent_arg_values))
     }
@@ -62,10 +64,10 @@ get_model_runner <- function(
 }
 
 # Helping function for running each runner with the initial argument values
-get_initial_runner_res <- function(model_runners, initial_ind_arg_values) {
+get_initial_runner_res <- function(model_runners, independent_args) {
     lapply(model_runners, function(runner) {
         tryCatch(
-            runner(as.numeric(initial_ind_arg_values)),
+            runner(as.numeric(independent_args)),
             error = function(e) {as.character(e)}
         )
     })
@@ -124,12 +126,7 @@ get_long_form_data <- function(data_driver_pairs, full_data_definitions) {
 }
 
 # Helping function for getting time indices
-add_time_indices <- function(
-    initial_runner_res,
-    initial_ind_arg_values,
-    long_form_data
-)
-{
+add_time_indices <- function(initial_runner_res, long_form_data) {
     for (i in seq_along(long_form_data)) {
         res   <- initial_runner_res[[i]]
         dataf <- long_form_data[[i]]
