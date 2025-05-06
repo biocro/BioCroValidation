@@ -261,7 +261,7 @@
           arguments being varied during the optimization by applying a function
           \eqn{R}. In other words,
 
-          \deqn{E_{regularization} = R \left( X \right),}
+          \deqn{P_{regularization} = R \left( X \right),}
           where \eqn{X} represents the model argument values.
 
           The function \eqn{R} is determined by the choice of
@@ -320,19 +320,23 @@
 
     \item \code{'L1'} or \code{'lasso'}: For this method,
           \eqn{P_{regularization}} is given by the sum of the absolute values of
-          each independent argument:
+          each independent argument, multiplied by a "regularization parameter"
+          \eqn{\lambda} that sets the overall weight of the penalty:
 
           \deqn{P_{regularization} = \sum_j | X_j |,}
           where the sum runs over all \eqn{j} independent arguments, and
-          \eqn{X_j} is the value of the \eqn{j^{th}} argument.
+          \eqn{X_j} is the value of the \eqn{j^{th}} argument. See the "Value"
+          section below for details of how to specify \eqn{\lambda}.
 
     \item \code{'L2'} or \code{'ridge'}: For this method,
           \eqn{P_{regularization}} is given by the sum of the squared values of
-          each independent argument:
+          each independent argument, multiplied by a "regularization parameter"
+          \eqn{\lambda} that sets the overall weight of the penalty:
 
           \deqn{P_{regularization} = \sum_j X_j^2,}
           where the sum runs over all \eqn{j} independent arguments, and
-          \eqn{X_j} is the value of the \eqn{j^{th}} argument.
+          \eqn{X_j} is the value of the \eqn{j^{th}} argument. See the "Value"
+          section below for details of how to specify \eqn{\lambda}.
   }
 
   \strong{Input checks}
