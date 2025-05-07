@@ -37,6 +37,8 @@ be directly added to this file to describe the related changes.
 
 - Added 2002 and 2005 SoyFACE biomass data.
 
+- Added the `objective_function` function.
+
 # Changes in BioCroValidation Version 0.1.0
 
 - This is the first version of BioCroValidation. At this point, the package is
