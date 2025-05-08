@@ -433,15 +433,18 @@ if (require(BioCro)) {
   })
 
   # The data-driver pairs can now be created by associating each data set with
-  # its corresponding weather data.
+  # its corresponding weather data. Here we will weight the 2005 data twice as
+  # heavily as the 2002 data.
   data_driver_pairs <- list(
     ambient_2002 = list(
       data    = ambient_2002_data,
-      drivers = BioCro::soybean_weather[['2002']]
+      drivers = BioCro::soybean_weather[['2002']],
+      weight  = 1
     ),
     ambient_2005 = list(
       data    = ambient_2005_data,
-      drivers = BioCro::soybean_weather[['2005']]
+      drivers = BioCro::soybean_weather[['2005']],
+      weight  = 2
     )
   )
 

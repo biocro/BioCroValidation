@@ -9,16 +9,20 @@ check_data_driver_pairs <- function(base_model_definition, data_driver_pairs) {
         stop('`data_driver_pairs` must have names')
     }
 
+    required_elements <- c('drivers', 'data', 'weight')
+
     has_elements <- sapply(data_driver_pairs, function(x) {
-        'drivers' %in% names(x) && 'data' %in% names(x)
+        all(required_elements %in% names(x))
     })
 
     if (any(!has_elements)) {
         missing_elements <- names(data_driver_pairs)[!has_elements]
 
-        msg <- paste(
-            'The following data-driver pairs are missing a `drivers` element,',
-            'a `data` element, or both:',
+        msg <- paste0(
+            'The following data-driver pairs are missing at least one ',
+            'required element (',
+            paste(required_elements, collapse = ', '),
+            '): ',
             paste(missing_elements, collapse = ', ')
         )
 
@@ -234,7 +238,7 @@ check_obj_fun <- function(obj_fun, initial_ind_arg_values, verbose) {
         obj_fun(as.numeric(initial_ind_arg_values), return_terms = TRUE)
 
     if (verbose) {
-        cat('\nThe initial error metric terms:\n')
+        cat('\nThe initial error metric terms:\n\n')
         utils::str(initial_error_terms)
     }
 

@@ -42,7 +42,7 @@ objective_function <- function(
 
     if (verbose_startup) {
         cat('\nThe full data definitions:\n\n')
-        str(full_data_definitions)
+        utils::str(full_data_definitions)
     }
 
     # Check the model runners
@@ -75,19 +75,28 @@ objective_function <- function(
     }
 
     # Process the quantity weights
-    processed_weights <-
+    full_quantity_weights <-
         process_quantity_weights(quantity_weights, long_form_data)
 
     if (verbose_startup) {
-        cat('\nThe user-supplied weights:\n\n')
-        str(processed_weights)
+        cat('The user-supplied quantity weights:\n\n')
+        utils::str(full_quantity_weights)
+    }
+
+    # Get the data-driver pair weights
+    ddp_weights <- get_ddp_weights(data_driver_pairs)
+
+    if (verbose_startup) {
+        cat('\nThe user-supplied data-driver pair weights:\n\n')
+        utils::str(ddp_weights)
     }
 
     # Create the objective function
     obj_fun <- get_obj_fun(
         model_runners,
         long_form_data,
-        processed_weights,
+        full_quantity_weights,
+        ddp_weights,
         normalization_method,
         extra_penalty_function,
         regularization_method

@@ -5,11 +5,13 @@ model$ode_solver <- BioCro::default_ode_solvers[['homemade_euler']]
 ddps <- list(
     ambient_2002 = list(
         data = within(soyface_biomass[['ambient_2002']], {time = (DOY - 1) * 24.0; DOY = NULL}),
-        drivers = BioCro::soybean_weather[['2002']]
+        drivers = BioCro::soybean_weather[['2002']],
+        weight = 1
     ),
     ambient_2005 = list(
         data = within(soyface_biomass[['ambient_2005']], {time = (DOY - 1) * 24.0; DOY = NULL}),
-        drivers = BioCro::soybean_weather[['2005']]
+        drivers = BioCro::soybean_weather[['2005']],
+        weight = 2
     )
 )
 
@@ -190,7 +192,8 @@ test_that('Data-driver pairs must be complete', {
             data_definitions = data_definitions,
             post_process_function = post_process_function
         ),
-        'The following data-driver pairs are missing a `drivers` element, a `data` element, or both: ambient_2002, ambient_2005'
+        'The following data-driver pairs are missing at least one required element (drivers, data, weight): ambient_2002, ambient_2005',
+        fixed = TRUE
     )
 })
 

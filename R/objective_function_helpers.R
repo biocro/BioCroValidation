@@ -220,15 +220,29 @@ process_quantity_weights <- function(quantity_weights, long_form_data) {
     })
 }
 
+# Helping function for getting the data-driver pair weights
+get_ddp_weights <- function(data_driver_pairs) {
+    lapply(data_driver_pairs, function(ddp) {
+        ddp[['weight']]
+    })
+}
+
 # Helping function that calculates one error
-one_error <- function(observed, predicted, weight, normalization) {
-    weight_multiplier <- if (predicted < observed) {
-        weight[1] # Underprediction
+one_error <- function(
+    observed,
+    predicted,
+    quantity_weight,
+    ddp_weight,
+    normalization
+)
+{
+    qw <- if (predicted < observed) {
+        quantity_weight[1] # Underprediction
     } else {
-        weight[2] # Overprediction
+        quantity_weight[2] # Overprediction
     }
 
-    (observed - predicted)^2 * weight_multiplier / normalization
+    (observed - predicted)^2 * qw * ddp_weight / normalization
 }
 
 # Helping function for returning a failure value
@@ -248,6 +262,7 @@ error_from_res <- function(
     simulation_result,
     long_form_data_table,
     quantity_weights,
+    ddp_weight,
     normalization_method,
     extra_penalty_function,
     return_terms
@@ -277,10 +292,10 @@ error_from_res <- function(
         obs   <- long_form_data_table[i, 'quantity_value']
         indx  <- long_form_data_table[i, 'time_index']
         pred  <- simulation_result[indx, qname]
-        wt    <- quantity_weights[[qname]]
+        qt_wt <- quantity_weights[[qname]]
         norm  <- long_form_data_table[i, 'norm']
 
-        one_error(obs, pred, wt, norm)
+        one_error(obs, pred, qt_wt, ddp_weight, norm)
     })
 
     error_sum <- sum(errors)
@@ -325,7 +340,8 @@ regularization_penalty <- function(
 get_obj_fun <- function(
     model_runners,
     long_form_data,
-    processed_weights,
+    full_quantity_weights,
+    ddp_weights,
     normalization_method,
     extra_penalty_function,
     regularization_method
@@ -339,7 +355,8 @@ get_obj_fun <- function(
             error_from_res(
                 res,
                 long_form_data[[i]],
-                processed_weights,
+                full_quantity_weights,
+                ddp_weights[[i]],
                 normalization_method,
                 extra_penalty_function,
                 return_terms
