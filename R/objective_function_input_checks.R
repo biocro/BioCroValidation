@@ -234,7 +234,7 @@ check_obj_fun <- function(obj_fun, initial_ind_arg_values, verbose) {
         obj_fun(as.numeric(initial_ind_arg_values), return_terms = TRUE)
 
     if (verbose) {
-        cat('\nThe initial error metric terms are:\n')
+        cat('\nThe initial error metric terms:\n')
         utils::str(initial_error_terms)
     }
 

@@ -40,6 +40,11 @@ objective_function <- function(
     full_data_definitions <-
         get_data_definition_list(data_driver_pairs, data_definitions)
 
+    if (verbose_startup) {
+        cat('\nThe full data definitions:\n\n')
+        str(full_data_definitions)
+    }
+
     # Check the model runners
     check_runners(model_runners)
 
@@ -64,9 +69,19 @@ objective_function <- function(
     # Add normalization factors
     long_form_data <- add_norm(long_form_data, normalization_method)
 
+    if (verbose_startup) {
+        cat('\nThe user-supplied data in long form:\n\n')
+        print(long_form_data)
+    }
+
     # Process the quantity weights
     processed_weights <-
         process_quantity_weights(quantity_weights, long_form_data)
+
+    if (verbose_startup) {
+        cat('\nThe user-supplied weights:\n\n')
+        str(processed_weights)
+    }
 
     # Create the objective function
     obj_fun <- get_obj_fun(
