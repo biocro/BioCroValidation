@@ -1,6 +1,9 @@
 ## All the functions defined in this file are intended to perform key operations
 ## required by `objective_function`.
 
+# Value to return when a simulation fails to run
+FAILURE_VALUE <- 1e10
+
 # Helping function for getting a full list of argument names
 get_full_arg_names <- function(independent_args, dependent_arg_function) {
     # Get the independent argument names
@@ -228,6 +231,18 @@ one_error <- function(observed, predicted, weight, normalization) {
     (observed - predicted)^2 * weight_multiplier / normalization
 }
 
+# Helping function for returning a failure value
+failure_value <- function(error_sum, return_terms) {
+    if (return_terms) {
+        list(
+            least_squares_term = error_sum,
+            extra_penalty = FAILURE_VALUE
+        )
+    } else {
+        FAILURE_VALUE
+    }
+}
+
 # Helping function that calculates an error value from a simulation result
 error_from_res <- function(
     simulation_result,
@@ -242,7 +257,9 @@ error_from_res <- function(
     expected_npts <- long_form_data_table[1, 'expected_npts']
 
     if (nrow(simulation_result) < expected_npts) {
-        return(1e6)
+        return(
+            failure_value(NA, return_terms)
+        )
     }
 
     # Calculate any user-specified penalties
@@ -266,14 +283,23 @@ error_from_res <- function(
         one_error(obs, pred, wt, norm)
     })
 
+    error_sum <- sum(errors)
+
+    # If the error sum is not finite, return a very high value
+    if (!is.finite(error_sum)) {
+        return(
+            failure_value(error_sum, return_terms)
+        )
+    }
+
     # Return the sum of the penalty and error terms, or the individual errors
     if (return_terms) {
         list(
-            least_squares_term = sum(errors),
+            least_squares_term = error_sum,
             extra_penalty = penalty
         )
     } else {
-        penalty + sum(errors)
+        penalty + error_sum
     }
 }
 

@@ -242,6 +242,12 @@
           underprediction or an overprediction: \eqn{w_i = w_{under}} when
           \eqn{Y_{mod}^i < Y_{obs}^i} and \eqn{w_i = w_{over}} otherwise.
 
+          There are a few special cases where \eqn{E_{agreement}} is set to a
+          very high value (\code{BioCroValidation:::FAILURE_VALUE}). This is
+          done when a simulation fails to run, when the \eqn{E_{agreement}} term
+          would otherwise evaluate to \code{NA}, or when the \eqn{E_{agreement}}
+          term would otherwise evaluate to an infinite value.
+
     \item \strong{User-defined penalty term:} The user-defined penalty term
           \eqn{P_{user}} is calculated by applying a function \eqn{f_{user}} to
           the full simulation output from each set of drivers. In other words,
