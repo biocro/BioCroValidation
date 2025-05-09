@@ -32,6 +32,7 @@
     quantity_weights,
     data_definitions = list(),
     normalization_method = 'mean_max',
+    variance_weight_method = 'equal',
     dependent_arg_function = NULL,
     post_process_function = NULL,
     extra_penalty_function = NULL,
@@ -84,6 +85,11 @@
   \item{normalization_method}{
     A string indicating the normalization method to be used when calculating the
     error metric; see below for more details.
+  }
+
+  \item{variance_weight_method}{
+    A string indicating the method to be used when calculating the
+    variance-based weights used in the error metric; see below for more details.
   }
 
   \item{dependent_arg_function}{
@@ -280,8 +286,8 @@
   The following normalization methods are available:
 
   \itemize{
-    \item \code{'none'}: For this method, \eqn{N_i} is always set to 1. In other
-          words, no normalization is performed.
+    \item \code{'equal'}: For this method, \eqn{N_i} is always set to 1. In
+          other words, no normalization is performed.
 
     \item \code{'mean'}: For this method, when \eqn{Y_i} is named \code{vtype}
           and the observation is from a set called \code{vdata}, then
@@ -509,6 +515,8 @@ if (require(BioCro)) {
     independent_args,
     quantity_weights,
     data_definitions = data_definitions,
+    variance_weight_method = 'logarithm',
+    dependent_arg_function = dependent_arg_function,
     post_process_function = post_process_function,
     extra_penalty_function = extra_penalty_function,
     verbose_startup = TRUE

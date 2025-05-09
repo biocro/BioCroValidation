@@ -182,7 +182,19 @@ ambient_2005: Error in as.data.frame(.Call(R_run_biocro, initial_values, paramet
     )
 })
 
-test_that('Data-driver pairs must be complete', {
+test_that('Data-driver pairs must have correct elements', {
+    expect_error(
+        objective_function(
+            model,
+            list(),
+            independent_args,
+            quantity_weights,
+            data_definitions = data_definitions,
+            post_process_function = post_process_function
+        ),
+        '`data_driver_pairs` must have at least one element'
+    )
+
     expect_error(
         objective_function(
             model,
@@ -194,6 +206,30 @@ test_that('Data-driver pairs must be complete', {
         ),
         'The following data-driver pairs are missing at least one required element (drivers, data, weight): ambient_2002, ambient_2005',
         fixed = TRUE
+    )
+
+    expect_error(
+        objective_function(
+            model,
+            within(ddps, {ambient_2002$extra_element = 5}),
+            independent_args,
+            quantity_weights,
+            data_definitions = data_definitions,
+            post_process_function = post_process_function
+        ),
+        'The following data-driver pairs have unexpected elements: ambient_2002. The allowed elements are: drivers, data, weight, data_stdev.'
+    )
+
+    expect_error(
+        objective_function(
+            model,
+            within(ddps, {ambient_2002$data_stdev = 5}),
+            independent_args,
+            quantity_weights,
+            data_definitions = data_definitions,
+            post_process_function = post_process_function
+        ),
+        'The following data-driver pairs have a `data_stdev` element that does not match the columns and/or times of their `data` element: ambient_2002'
     )
 })
 
@@ -269,6 +305,21 @@ test_that('Bad normalization methods are detected', {
             post_process_function = post_process_function
         ),
         'Unsupported normalization_method: bad_normalization_method'
+    )
+})
+
+test_that('Bad variance methods are detected', {
+    expect_error(
+        objective_function(
+            model,
+            ddps,
+            independent_args,
+            quantity_weights,
+            variance_weight_method = 'bad_variance_method',
+            data_definitions = data_definitions,
+            post_process_function = post_process_function
+        ),
+        'Unsupported variance_weight_method: bad_variance_method'
     )
 })
 

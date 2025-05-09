@@ -176,7 +176,7 @@ add_norm <- function(long_form_data, normalization_method, n_ddp) {
             qname_subset <-
                     data_table[data_table[['quantity_name']] == qname, ]
 
-            if (tolower(normalization_method) == 'none') {
+            if (tolower(normalization_method) == 'equal') {
                 1.0
             } else if (tolower(normalization_method) == 'mean') {
                 nrow(qname_subset) * n_ddp
@@ -190,6 +190,29 @@ add_norm <- function(long_form_data, normalization_method, n_ddp) {
                 stop('Unsupported normalization_method: ', normalization_method)
             }
         })
+
+        long_form_data[[i]] <- data_table
+    }
+
+    long_form_data
+}
+
+# Helping function for getting variance-based weights
+add_w_var <- function(long_form_data, variance_weight_method) {
+    for (i in seq_along(long_form_data)) {
+        data_table <- long_form_data[[i]]
+        data_stdev <- data_table[['quantity_stdev']]
+
+        data_table[['w_var']] <-
+            if (tolower(variance_weight_method) == 'equal') {
+                1.0
+            } else if (tolower(variance_weight_method) == 'logarithm') {
+                log(1 / (data_stdev + 1e-5))
+            } else if (tolower(variance_weight_method) == 'inverse') {
+                1 / data_stdev^2
+            } else {
+                stop('Unsupported variance_weight_method: ', variance_weight_method)
+            }
 
         long_form_data[[i]] <- data_table
     }
@@ -243,6 +266,7 @@ one_error <- function(
     predicted,
     quantity_weight,
     ddp_weight,
+    var_weight,
     normalization
 )
 {
@@ -252,7 +276,7 @@ one_error <- function(
         quantity_weight[2] # Overprediction
     }
 
-    (observed - predicted)^2 * qw * ddp_weight / normalization
+    (observed - predicted)^2 * qw * ddp_weight * var_weight / normalization
 }
 
 # Helping function for returning a failure value
@@ -299,13 +323,16 @@ error_from_res <- function(
 
     errors <- sapply(seq_len(n_obs), function(i) {
         qname <- as.character(long_form_data_table[i, 'quantity_name'])
-        obs   <- long_form_data_table[i, 'quantity_value']
         indx  <- long_form_data_table[i, 'time_index']
-        pred  <- simulation_result[indx, qname]
-        qt_wt <- quantity_weights[[qname]]
-        norm  <- long_form_data_table[i, 'norm']
 
-        one_error(obs, pred, qt_wt, ddp_weight, norm)
+        one_error(
+            long_form_data_table[i, 'quantity_value'], # obs
+            simulation_result[indx, qname],            # pred
+            quantity_weights[[qname]],                 # quantity_weight
+            ddp_weight,                                # ddp_weight
+            long_form_data_table[i, 'w_var'],          # var_weight
+            long_form_data_table[i, 'norm']            # norm
+        )
     })
 
     error_sum <- sum(errors)

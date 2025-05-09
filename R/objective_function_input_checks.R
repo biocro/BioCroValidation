@@ -5,6 +5,11 @@
 # Helping function for checking the data-driver pairs; will throw an error if
 # a problem is detected, and will otherwise be silent with no return value.
 check_data_driver_pairs <- function(base_model_definition, data_driver_pairs) {
+    # There must be at least one data-driver pair
+    if (length(data_driver_pairs) < 1) {
+        stop('`data_driver_pairs` must have at least one element')
+    }
+
     # Data-driver pairs must have names
     if (is.null(names(data_driver_pairs))) {
         stop('`data_driver_pairs` must have names')
@@ -47,7 +52,8 @@ check_data_driver_pairs <- function(base_model_definition, data_driver_pairs) {
             'The following data-driver pairs have unexpected elements: ',
             paste(bad_elements, collapse = ', '),
             '. The allowed elements are: ',
-            paste(acceptable_elements, collapse = ', ')
+            paste(acceptable_elements, collapse = ', '),
+            '.'
         )
 
         stop(msg)
@@ -74,21 +80,25 @@ check_data_driver_pairs <- function(base_model_definition, data_driver_pairs) {
     # their corresponding data tables. Time values must also be in the same
     # order.
     stdev_okay <- sapply(data_driver_pairs, function(x) {
-        if ('data_stdev' %in% colnames(x)) {
+        if ('data_stdev' %in% names(x)) {
             data_table  <- x[['data']]
             stdev_table <- x[['data_stdev']]
 
-            colnames_match <- identical(
-                sort(colnames(data_table)),
-                sort(colnames(stdev_table))
-            )
+            if (is.null(colnames(stdev_table))) {
+                FALSE
+            } else {
+                colnames_match <- identical(
+                    sort(colnames(data_table)),
+                    sort(colnames(stdev_table))
+                )
 
-            times_match <- isTRUE(all.equal(
-                data_table[['time']],
-                stdev_table[['time']]
-            ))
+                times_match <- isTRUE(all.equal(
+                    data_table[['time']],
+                    stdev_table[['time']]
+                ))
 
-            colnames_match && times_match
+                colnames_match && times_match
+            }
         } else {
             TRUE
         }

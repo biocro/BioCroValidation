@@ -8,6 +8,7 @@ objective_function <- function(
     quantity_weights,
     data_definitions = list(),
     normalization_method = 'mean_max',
+    variance_weight_method = 'equal',
     dependent_arg_function = NULL,
     post_process_function = NULL,
     extra_penalty_function = NULL,
@@ -71,6 +72,12 @@ objective_function <- function(
         long_form_data,
         normalization_method,
         length(data_driver_pairs)
+    )
+
+    # Add variance-based weights
+    long_form_data <- add_w_var(
+        long_form_data,
+        variance_weight_method
     )
 
     if (verbose_startup) {
