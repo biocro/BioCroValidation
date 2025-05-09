@@ -2,16 +2,24 @@
 model <- BioCro::soybean
 model$ode_solver <- BioCro::default_ode_solvers[['homemade_euler']]
 
+convert_time <- function(x) {
+    within(x, {
+        time = (DOY - 1) * 24.0
+        DOY  = NULL
+    })
+}
+
 ddps <- list(
-    ambient_2002 = list(
-        data = within(soyface_biomass[['ambient_2002']], {time = (DOY - 1) * 24.0; DOY = NULL}),
-        drivers = BioCro::soybean_weather[['2002']],
-        weight = 1
+        ambient_2002 = list(
+        data       = convert_time(soyface_biomass[['ambient_2002']]),
+        data_stdev = convert_time(soyface_biomass[['ambient_2002_std']]),
+        drivers    = BioCro::soybean_weather[['2002']],
+        weight     = 1
     ),
-    ambient_2005 = list(
-        data = within(soyface_biomass[['ambient_2005']], {time = (DOY - 1) * 24.0; DOY = NULL}),
-        drivers = BioCro::soybean_weather[['2005']],
-        weight = 2
+        ambient_2005 = list(
+        data       = convert_time(soyface_biomass[['ambient_2005']]),
+        drivers    = BioCro::soybean_weather[['2005']],
+        weight     = 2
     )
 )
 
@@ -264,10 +272,15 @@ ambient_2005: Pod',
 })
 
 test_that('Out-of-range times are detected', {
+    time_offset <- 1e5
+
     expect_error(
         objective_function(
             model,
-            within(ddps, {ambient_2002$data$time <- ambient_2002$data$time + 1e5}),
+            within(ddps, {
+                ambient_2002$data$time       <- ambient_2002$data$time       + time_offset
+                ambient_2002$data_stdev$time <- ambient_2002$data_stdev$time + time_offset
+            }),
             independent_args,
             quantity_weights,
             data_definitions = data_definitions,
@@ -350,5 +363,29 @@ test_that('Bad regularization methods are detected', {
             regularization_method = 'bad_regularization_method'
         ),
         'Unsupported regularization method: bad_regularization_method'
+    )
+})
+
+test_that('Bad data values and weights are detected', {
+    expect_error(
+        objective_function(
+            model,
+            within(ddps, {
+                ambient_2005$data_stdev = convert_time(soyface_biomass[['ambient_2005_std']])
+                ambient_2005$data_stdev[['Leaf_Mg_per_ha']] <- -0.1
+            }),
+            independent_args,
+            quantity_weights,
+            variance_weight_method = 'inverse',
+            data_definitions = data_definitions,
+            post_process_function = post_process_function
+        ),
+        'Issues were found with the following data sets:
+  ambient_2002:
+  The following columns contained non-finite values: w_var
+  ambient_2005:
+  The following columns contained non-finite values: w_var
+  The following columns contained negative values: quantity_stdev',
+        fixed = TRUE
     )
 })

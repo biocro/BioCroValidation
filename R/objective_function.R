@@ -41,6 +41,7 @@ objective_function <- function(
     full_data_definitions <-
         get_data_definition_list(data_driver_pairs, data_definitions)
 
+    # Print the full data definition list, if desired
     if (verbose_startup) {
         cat('\nThe full data definitions:\n\n')
         utils::str(full_data_definitions)
@@ -80,15 +81,21 @@ objective_function <- function(
         variance_weight_method
     )
 
+    # Print the long form data, if desired. Do this before checking the data,
+    # so the printout will be available for troubleshooting
     if (verbose_startup) {
         cat('\nThe user-supplied data in long form:\n\n')
         print(long_form_data)
     }
 
+    # Check the processed long-form data
+    check_long_form_data(long_form_data)
+
     # Process the quantity weights
     full_quantity_weights <-
         process_quantity_weights(quantity_weights, long_form_data)
 
+    # Print the quantity weights, if desired
     if (verbose_startup) {
         cat('The user-supplied quantity weights:\n\n')
         utils::str(full_quantity_weights)
@@ -97,6 +104,7 @@ objective_function <- function(
     # Get the data-driver pair weights
     ddp_weights <- get_ddp_weights(data_driver_pairs)
 
+    # Print the data-driver pair weights, if desired
     if (verbose_startup) {
         cat('\nThe user-supplied data-driver pair weights:\n\n')
         utils::str(ddp_weights)

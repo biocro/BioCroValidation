@@ -305,6 +305,89 @@ check_runner_results <- function(
     return(invisible(NULL))
 }
 
+# Helping function for checking the long-form data; will throw an error if a
+# problem is detected, and will otherwise be silent with no return value.
+check_long_form_data <- function(long_form_data) {
+    # Check each element for issues
+    messages <- sapply(long_form_data, function(lfd) {
+        msg <- character()
+
+        # Check that certain columns have finite values
+        check_for_not_finite <- c(
+            'time',
+            'quantity_value',
+            'quantity_stdev',
+            'time_index',
+            'expected_npts',
+            'norm',
+            'w_var'
+        )
+
+        not_finite <- sapply(check_for_not_finite, function(cn) {
+            any(!is.finite(lfd[, cn]))
+        })
+
+        if (any(not_finite)) {
+            not_finite_col <- check_for_not_finite[not_finite]
+
+            new_msg <- paste(
+                'The following columns contained non-finite values:',
+                paste(not_finite_col, collapse = ', ')
+            )
+
+            msg <- append(msg, new_msg)
+        }
+
+        # Check that certain columns do not have negative values
+        check_for_negative <- c(
+            'quantity_stdev',
+            'time_index',
+            'expected_npts',
+            'norm',
+            'w_var'
+        )
+
+        negative <- sapply(check_for_negative, function(cn) {
+            any(lfd[, cn] < 0)
+        })
+
+        if (any(negative)) {
+            negative_col <- check_for_negative[negative]
+
+            new_msg <- paste(
+                'The following columns contained negative values:',
+                paste(negative_col, collapse = ', ')
+            )
+
+            msg <- append(msg, new_msg)
+        }
+
+        # Return any messages
+        paste(msg, collapse = '\n  ')
+    })
+
+    # Send a message if problems were detected
+    error_found <- messages != ''
+
+    if (any(error_found)) {
+        data_names     <- names(long_form_data)[error_found]
+        error_messages <- messages[error_found]
+
+        msg <- paste0(
+            'Issues were found with the following data sets:\n  ',
+            paste0(
+                data_names, ':\n  ',
+                error_messages,
+                collapse = '\n  '
+            )
+        )
+
+        stop(msg)
+    }
+
+    return(invisible(NULL))
+}
+
 # Helping function for checking the objective function; will throw an error if a
 # problem is detected, and will otherwise be silent with no return value.
 check_obj_fun <- function(obj_fun, initial_ind_arg_values, verbose) {
