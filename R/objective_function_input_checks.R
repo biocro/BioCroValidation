@@ -277,11 +277,11 @@ check_runner_results <- function(
             datat < min_time || datat > max_time
         })
 
-        data_times[oor]
+        c(min_time, max_time, data_times[oor])
     })
 
     bad_times <- sapply(times_out_of_range, function(x) {
-        length(x) > 0
+        length(x) > 2
     })
 
     if (any(bad_times)) {
@@ -289,11 +289,19 @@ check_runner_results <- function(
 
         for (i in seq_along(bad_times)) {
             if (bad_times[i]) {
+                raw_times_oor <- times_out_of_range[[i]]
+
+                min_time <- raw_times_oor[1]
+                max_time <- raw_times_oor[2]
+                time_oor <- raw_times_oor[seq(3, length(raw_times_oor))]
+
                 msg <- append(
                     msg,
                     paste0(
                         names(initial_runner_res)[i], ': ',
-                        paste(times_out_of_range[[i]], collapse = ', ')
+                        paste(time_oor, collapse = ', '),
+                        ' (min_time = ', min_time,
+                        ', max_time = ', max_time, ')'
                     )
                 )
             }

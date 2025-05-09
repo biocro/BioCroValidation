@@ -305,7 +305,7 @@ test_that('Out-of-range times are detected', {
             verbose_startup = verbose_startup
         ),
         'Some observed times were missing from runner outputs:
-ambient_2002: 104272, 104512, 104848, 105184, 105520, 105880, 106192, 106888',
+ambient_2002: 104272, 104512, 104848, 105184, 105520, 105880, 106192, 106888 (min_time = 3624, max_time = 6911)',
         fixed = TRUE
     )
 })
