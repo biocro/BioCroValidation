@@ -8,11 +8,12 @@ objective_function <- function(
     quantity_weights,
     data_definitions = list(),
     normalization_method = 'mean_max',
+    stdev_weight_method = 'equal',
+    regularization_method = 'none',
     dependent_arg_function = NULL,
     post_process_function = NULL,
     extra_penalty_function = NULL,
-    regularization_method = 'none',
-    verbose_startup = FALSE
+    verbose_startup = TRUE
 )
 {
     # Check the data-driver pairs
@@ -40,6 +41,12 @@ objective_function <- function(
     full_data_definitions <-
         get_data_definition_list(data_driver_pairs, data_definitions)
 
+    # Print the full data definition list, if desired
+    if (verbose_startup) {
+        cat('\nThe full data definitions:\n\n')
+        utils::str(full_data_definitions)
+    }
+
     # Check the model runners
     check_runners(model_runners)
 
@@ -62,17 +69,53 @@ objective_function <- function(
     long_form_data <- add_time_indices(initial_runner_res, long_form_data)
 
     # Add normalization factors
-    long_form_data <- add_norm(long_form_data, normalization_method)
+    long_form_data <- add_norm(
+        long_form_data,
+        normalization_method,
+        length(data_driver_pairs)
+    )
+
+    # Add variance-based weights
+    long_form_data <- add_w_var(
+        long_form_data,
+        stdev_weight_method
+    )
+
+    # Print the long form data, if desired. Do this before checking the data,
+    # so the printout will be available for troubleshooting
+    if (verbose_startup) {
+        cat('\nThe user-supplied data in long form:\n\n')
+        print(long_form_data)
+    }
+
+    # Check the processed long-form data
+    check_long_form_data(long_form_data)
 
     # Process the quantity weights
-    processed_weights <-
+    full_quantity_weights <-
         process_quantity_weights(quantity_weights, long_form_data)
+
+    # Print the quantity weights, if desired
+    if (verbose_startup) {
+        cat('The user-supplied quantity weights:\n\n')
+        utils::str(full_quantity_weights)
+    }
+
+    # Get the data-driver pair weights
+    ddp_weights <- get_ddp_weights(data_driver_pairs)
+
+    # Print the data-driver pair weights, if desired
+    if (verbose_startup) {
+        cat('\nThe user-supplied data-driver pair weights:\n\n')
+        utils::str(ddp_weights)
+    }
 
     # Create the objective function
     obj_fun <- get_obj_fun(
         model_runners,
         long_form_data,
-        processed_weights,
+        full_quantity_weights,
+        ddp_weights,
         normalization_method,
         extra_penalty_function,
         regularization_method

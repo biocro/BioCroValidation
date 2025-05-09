@@ -1,6 +1,9 @@
 ## All the functions defined in this file are intended to perform key operations
 ## required by `objective_function`.
 
+# Value to return when a simulation fails to run
+FAILURE_VALUE <- 1e10
+
 # Helping function for getting a full list of argument names
 get_full_arg_names <- function(independent_args, dependent_arg_function) {
     # Get the independent argument names
@@ -111,19 +114,29 @@ get_data_definition_list <- function(data_driver_pairs, user_data_definitions)
     data_definitions
 }
 
-# Helping function for converting each data table to a "long form."
+# Helping function for converting each data table to a "long form," including
+# stdev values when available
 get_long_form_data <- function(data_driver_pairs, full_data_definitions) {
     lapply(data_driver_pairs, function(ddp) {
         short_form_data <- ddp[['data']]
+
+        has_std <- 'data_stdev' %in% names(ddp)
+
+        short_form_stdev <- if (has_std) {
+            ddp[['data_stdev']]
+        } else {
+            NA
+        }
 
         data_column_names <- colnames(short_form_data)
         data_column_names <- data_column_names[data_column_names != 'time']
 
         long_form_data_list <- lapply(data_column_names, function(cn) {
             data.frame(
-                time = short_form_data[, 'time'],
-                quantity_name = full_data_definitions[[cn]],
+                time           = short_form_data[, 'time'],
+                quantity_name  = full_data_definitions[[cn]],
                 quantity_value = short_form_data[, cn],
+                quantity_stdev = if (has_std) {short_form_stdev[, cn]} else {1},
                 stringsAsFactors = FALSE
             )
         })
@@ -142,7 +155,9 @@ add_time_indices <- function(initial_runner_res, long_form_data) {
 
         indices <- sapply(dataf[, 'time'], function(x) {
             tdiff <- abs(res[, 'time'] - x)
-            which(tdiff == min(tdiff))
+
+            # Take only the first match, in case there are more
+            which(tdiff == min(tdiff))[1]
         })
 
         long_form_data[[i]][, 'time_index']    <- indices
@@ -153,7 +168,7 @@ add_time_indices <- function(initial_runner_res, long_form_data) {
 }
 
 # Helping function for getting normalization factors
-add_norm <- function(long_form_data, normalization_method) {
+add_norm <- function(long_form_data, normalization_method, n_ddp) {
     for (i in seq_along(long_form_data)) {
         data_table <- long_form_data[[i]]
 
@@ -163,20 +178,43 @@ add_norm <- function(long_form_data, normalization_method) {
             qname_subset <-
                     data_table[data_table[['quantity_name']] == qname, ]
 
-            if (tolower(normalization_method) == 'none') {
+            if (tolower(normalization_method) == 'equal') {
                 1.0
             } else if (tolower(normalization_method) == 'mean') {
-                nrow(qname_subset)
+                nrow(qname_subset) * n_ddp
             } else if (tolower(normalization_method) == 'max') {
                 max(qname_subset[['quantity_value']])^2
             } else if (tolower(normalization_method) == 'mean_max') {
                 npts <- nrow(qname_subset)
                 qmax <- max(qname_subset[['quantity_value']])
-                npts * qmax^2
+                npts * n_ddp * qmax^2
             } else {
                 stop('Unsupported normalization_method: ', normalization_method)
             }
         })
+
+        long_form_data[[i]] <- data_table
+    }
+
+    long_form_data
+}
+
+# Helping function for getting variance-based weights
+add_w_var <- function(long_form_data, stdev_weight_method) {
+    for (i in seq_along(long_form_data)) {
+        data_table <- long_form_data[[i]]
+        data_stdev <- data_table[['quantity_stdev']]
+
+        data_table[['w_var']] <-
+            if (tolower(stdev_weight_method) == 'equal') {
+                1.0
+            } else if (tolower(stdev_weight_method) == 'logarithm') {
+                log(1 / (data_stdev + 1e-5))
+            } else if (tolower(stdev_weight_method) == 'inverse') {
+                1 / data_stdev^2
+            } else {
+                stop('Unsupported stdev_weight_method: ', stdev_weight_method)
+            }
 
         long_form_data[[i]] <- data_table
     }
@@ -217,15 +255,42 @@ process_quantity_weights <- function(quantity_weights, long_form_data) {
     })
 }
 
+# Helping function for getting the data-driver pair weights
+get_ddp_weights <- function(data_driver_pairs) {
+    lapply(data_driver_pairs, function(ddp) {
+        ddp[['weight']]
+    })
+}
+
 # Helping function that calculates one error
-one_error <- function(observed, predicted, weight, normalization) {
-    weight_multiplier <- if (predicted < observed) {
-        weight[1] # Underprediction
+one_error <- function(
+    observed,
+    predicted,
+    quantity_weight,
+    ddp_weight,
+    var_weight,
+    normalization
+)
+{
+    qw <- if (predicted < observed) {
+        quantity_weight[1] # Underprediction
     } else {
-        weight[2] # Overprediction
+        quantity_weight[2] # Overprediction
     }
 
-    (observed - predicted)^2 * weight_multiplier / normalization
+    (observed - predicted)^2 * qw * ddp_weight * var_weight / normalization
+}
+
+# Helping function for returning a failure value
+failure_value <- function(error_sum, return_terms) {
+    if (return_terms) {
+        list(
+            least_squares_term = error_sum,
+            extra_penalty = FAILURE_VALUE
+        )
+    } else {
+        FAILURE_VALUE
+    }
 }
 
 # Helping function that calculates an error value from a simulation result
@@ -233,6 +298,7 @@ error_from_res <- function(
     simulation_result,
     long_form_data_table,
     quantity_weights,
+    ddp_weight,
     normalization_method,
     extra_penalty_function,
     return_terms
@@ -242,7 +308,9 @@ error_from_res <- function(
     expected_npts <- long_form_data_table[1, 'expected_npts']
 
     if (nrow(simulation_result) < expected_npts) {
-        return(1e6)
+        return(
+            failure_value(NA, return_terms)
+        )
     }
 
     # Calculate any user-specified penalties
@@ -257,23 +325,35 @@ error_from_res <- function(
 
     errors <- sapply(seq_len(n_obs), function(i) {
         qname <- as.character(long_form_data_table[i, 'quantity_name'])
-        obs   <- long_form_data_table[i, 'quantity_value']
         indx  <- long_form_data_table[i, 'time_index']
-        pred  <- simulation_result[indx, qname]
-        wt    <- quantity_weights[[qname]]
-        norm  <- long_form_data_table[i, 'norm']
 
-        one_error(obs, pred, wt, norm)
+        one_error(
+            long_form_data_table[i, 'quantity_value'], # obs
+            simulation_result[indx, qname],            # pred
+            quantity_weights[[qname]],                 # quantity_weight
+            ddp_weight,                                # ddp_weight
+            long_form_data_table[i, 'w_var'],          # var_weight
+            long_form_data_table[i, 'norm']            # norm
+        )
     })
+
+    error_sum <- sum(errors)
+
+    # If the error sum is not finite, return a very high value
+    if (!is.finite(error_sum)) {
+        return(
+            failure_value(error_sum, return_terms)
+        )
+    }
 
     # Return the sum of the penalty and error terms, or the individual errors
     if (return_terms) {
         list(
-            least_squares_term = sum(errors),
+            least_squares_term = error_sum,
             extra_penalty = penalty
         )
     } else {
-        penalty + sum(errors)
+        penalty + error_sum
     }
 }
 
@@ -299,7 +379,8 @@ regularization_penalty <- function(
 get_obj_fun <- function(
     model_runners,
     long_form_data,
-    processed_weights,
+    full_quantity_weights,
+    ddp_weights,
     normalization_method,
     extra_penalty_function,
     regularization_method
@@ -313,7 +394,8 @@ get_obj_fun <- function(
             error_from_res(
                 res,
                 long_form_data[[i]],
-                processed_weights,
+                full_quantity_weights,
+                ddp_weights[[i]],
                 normalization_method,
                 extra_penalty_function,
                 return_terms
