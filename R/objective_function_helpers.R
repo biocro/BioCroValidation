@@ -156,7 +156,7 @@ add_time_indices <- function(initial_runner_res, long_form_data) {
 }
 
 # Helping function for getting normalization factors
-add_norm <- function(long_form_data, normalization_method) {
+add_norm <- function(long_form_data, normalization_method, n_ddp) {
     for (i in seq_along(long_form_data)) {
         data_table <- long_form_data[[i]]
 
@@ -169,13 +169,13 @@ add_norm <- function(long_form_data, normalization_method) {
             if (tolower(normalization_method) == 'none') {
                 1.0
             } else if (tolower(normalization_method) == 'mean') {
-                nrow(qname_subset)
+                nrow(qname_subset) * n_ddp
             } else if (tolower(normalization_method) == 'max') {
                 max(qname_subset[['quantity_value']])^2
             } else if (tolower(normalization_method) == 'mean_max') {
                 npts <- nrow(qname_subset)
                 qmax <- max(qname_subset[['quantity_value']])
-                npts * qmax^2
+                npts * n_ddp * qmax^2
             } else {
                 stop('Unsupported normalization_method: ', normalization_method)
             }

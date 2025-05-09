@@ -67,7 +67,11 @@ objective_function <- function(
     long_form_data <- add_time_indices(initial_runner_res, long_form_data)
 
     # Add normalization factors
-    long_form_data <- add_norm(long_form_data, normalization_method)
+    long_form_data <- add_norm(
+        long_form_data,
+        normalization_method,
+        length(data_driver_pairs)
+    )
 
     if (verbose_startup) {
         cat('\nThe user-supplied data in long form:\n\n')
