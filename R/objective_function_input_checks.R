@@ -5,10 +5,12 @@
 # Helping function for checking the data-driver pairs; will throw an error if
 # a problem is detected, and will otherwise be silent with no return value.
 check_data_driver_pairs <- function(base_model_definition, data_driver_pairs) {
+    # Data-driver pairs must have names
     if (is.null(names(data_driver_pairs))) {
         stop('`data_driver_pairs` must have names')
     }
 
+    # Each data-driver pair must have the required elements
     required_elements <- c('drivers', 'data', 'weight')
 
     has_elements <- sapply(data_driver_pairs, function(x) {
@@ -29,6 +31,29 @@ check_data_driver_pairs <- function(base_model_definition, data_driver_pairs) {
         stop(msg)
     }
 
+    # Only required or optional elements should be provided
+    optional_elements <- 'data_stdev'
+
+    acceptable_elements <- c(required_elements, optional_elements)
+
+    has_extra_elements <- sapply(data_driver_pairs, function(x) {
+        any(!names(x) %in% acceptable_elements)
+    })
+
+    if (any(has_extra_elements)) {
+        bad_elements <- names(data_driver_pairs)[has_extra_elements]
+
+        msg <- paste0(
+            'The following data-driver pairs have unexpected elements: ',
+            paste(bad_elements, collapse = ', '),
+            '. The allowed elements are: ',
+            paste(acceptable_elements, collapse = ', ')
+        )
+
+        stop(msg)
+    }
+
+    # Each data table must have a time column
     has_time <- sapply(data_driver_pairs, function(x) {
         'time' %in% colnames(x[['data']])
     })
@@ -45,6 +70,45 @@ check_data_driver_pairs <- function(base_model_definition, data_driver_pairs) {
         stop(msg)
     }
 
+    # If provided, stdev tables must have the same columns and time values as
+    # their corresponding data tables. Time values must also be in the same
+    # order.
+    stdev_okay <- sapply(data_driver_pairs, function(x) {
+        if ('data_stdev' %in% colnames(x)) {
+            data_table  <- x[['data']]
+            stdev_table <- x[['data_stdev']]
+
+            colnames_match <- identical(
+                sort(colnames(data_table)),
+                sort(colnames(stdev_table))
+            )
+
+            times_match <- isTRUE(all.equal(
+                data_table[['time']],
+                stdev_table[['time']]
+            ))
+
+            colnames_match && times_match
+        } else {
+            TRUE
+        }
+    })
+
+    if (any(!stdev_okay)) {
+        bad_stdev <- names(data_driver_pairs)[!stdev_okay]
+
+        msg <- paste(
+            'The following data-driver pairs have a `data_stdev` element',
+            'that does not match the columns and/or times of their',
+            '`data` element:',
+            paste(bad_stdev, collapse = ', ')
+        )
+
+        stop(msg)
+    }
+
+    # Each set of drivers must form a valid dynamical system along with the
+    # base model definition
     valid_definitions <- sapply(data_driver_pairs, function(ddp) {
         BioCro::validate_dynamical_system_inputs(
             base_model_definition[['initial_values']],

@@ -420,31 +420,32 @@ if (require(BioCro)) {
   # We will use the `soyface_biomass` data set (included with the
   # `BioCroValidation` package) for the observed values; this set includes
   # observations of leaf, stem, and pod biomass from two years, which are stored
-  # in two data tables. However, these data tables each have a `DOY` column
-  # rather than a `time` column, so we need to alter them.
-  ambient_2002_data <- within(soyface_biomass[['ambient_2002']], {
-    time = (DOY - 1) * 24.0 # Define new `time` column
-    DOY  = NULL             # Remove unneeded `DOY` column
-  })
-
-  ambient_2005_data <- within(soyface_biomass[['ambient_2005']], {
-    time = (DOY - 1) * 24.0 # Define new `time` column
-    DOY  = NULL             # Remove unneeded `DOY` column
-  })
+  # in two data tables; it also includes the standard deviations of the measured
+  # biomasses, which are included in two separate tables. However, these data
+  # tables each have a `DOY` column rather than a `time` column, so we need to
+  # alter them. Here we will do this by defining a short helper function.
+  convert_time <- function(x) {
+    within(x, {
+      time = (DOY - 1) * 24.0 # Define new `time` column
+      DOY  = NULL             # Remove unneeded `DOY` column
+    })
+  }
 
   # The data-driver pairs can now be created by associating each data set with
   # its corresponding weather data. Here we will weight the 2005 data twice as
   # heavily as the 2002 data.
   data_driver_pairs <- list(
     ambient_2002 = list(
-      data    = ambient_2002_data,
-      drivers = BioCro::soybean_weather[['2002']],
-      weight  = 1
+      data       = convert_time(soyface_biomass[['ambient_2002']]),
+      data_stdev = convert_time(soyface_biomass[['ambient_2002_std']]),
+      drivers    = BioCro::soybean_weather[['2002']],
+      weight     = 1
     ),
     ambient_2005 = list(
-      data    = ambient_2005_data,
-      drivers = BioCro::soybean_weather[['2005']],
-      weight  = 2
+      data       = convert_time(soyface_biomass[['ambient_2005']]),
+      data_stdev = convert_time(soyface_biomass[['ambient_2005_std']]),
+      drivers    = BioCro::soybean_weather[['2005']],
+      weight     = 2
     )
   )
 

@@ -114,19 +114,29 @@ get_data_definition_list <- function(data_driver_pairs, user_data_definitions)
     data_definitions
 }
 
-# Helping function for converting each data table to a "long form."
+# Helping function for converting each data table to a "long form," including
+# stdev values when available
 get_long_form_data <- function(data_driver_pairs, full_data_definitions) {
     lapply(data_driver_pairs, function(ddp) {
         short_form_data <- ddp[['data']]
+
+        has_std <- 'data_stdev' %in% names(ddp)
+
+        short_form_stdev <- if (has_std) {
+            ddp[['data_stdev']]
+        } else {
+            NA
+        }
 
         data_column_names <- colnames(short_form_data)
         data_column_names <- data_column_names[data_column_names != 'time']
 
         long_form_data_list <- lapply(data_column_names, function(cn) {
             data.frame(
-                time = short_form_data[, 'time'],
-                quantity_name = full_data_definitions[[cn]],
+                time           = short_form_data[, 'time'],
+                quantity_name  = full_data_definitions[[cn]],
                 quantity_value = short_form_data[, cn],
+                quantity_stdev = if (has_std) {short_form_stdev[, cn]} else {1},
                 stringsAsFactors = FALSE
             )
         })
