@@ -37,7 +37,7 @@
     post_process_function = NULL,
     extra_penalty_function = NULL,
     regularization_method = 'none',
-    verbose_startup = FALSE
+    verbose_startup = TRUE
   )
 }
 
@@ -507,8 +507,7 @@ if (require(BioCro)) {
     }
   }
 
-  # Now we can finally create the objective function; here we choose to print
-  # extra startup information, but this is not strictly required.
+  # Now we can finally create the objective function
   obj_fun <- objective_function(
     base_model_definition,
     data_driver_pairs,
@@ -518,8 +517,7 @@ if (require(BioCro)) {
     variance_weight_method = 'logarithm',
     dependent_arg_function = dependent_arg_function,
     post_process_function = post_process_function,
-    extra_penalty_function = extra_penalty_function,
-    verbose_startup = TRUE
+    extra_penalty_function = extra_penalty_function
   )
 
   # This function could now be passed to an optimizer; here we will simply

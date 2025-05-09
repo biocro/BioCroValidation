@@ -13,7 +13,7 @@ objective_function <- function(
     post_process_function = NULL,
     extra_penalty_function = NULL,
     regularization_method = 'none',
-    verbose_startup = FALSE
+    verbose_startup = TRUE
 )
 {
     # Check the data-driver pairs

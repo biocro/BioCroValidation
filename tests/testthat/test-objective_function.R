@@ -47,6 +47,8 @@ quantity_weights <- list(
     Pod = 1
 )
 
+verbose_startup <- FALSE
+
 # Run tests
 test_that('Objective functions can be created and behave as expected', {
     # Two data-driver pairs, no dependent arguments
@@ -57,7 +59,8 @@ test_that('Objective functions can be created and behave as expected', {
             independent_args,
             quantity_weights,
             data_definitions = data_definitions,
-            post_process_function = post_process_function
+            post_process_function = post_process_function,
+            verbose_startup = verbose_startup
         )
     )
 
@@ -73,7 +76,8 @@ test_that('Objective functions can be created and behave as expected', {
             independent_args,
             quantity_weights,
             data_definitions = data_definitions,
-            post_process_function = post_process_function
+            post_process_function = post_process_function,
+            verbose_startup = verbose_startup
         )
     )
 
@@ -87,7 +91,8 @@ test_that('Objective functions can be created and behave as expected', {
             data_definitions = data_definitions,
             dependent_arg_function = dependent_arg_function,
             post_process_function = post_process_function,
-            regularization_method = 'L2'
+            regularization_method = 'L2',
+            verbose_startup = verbose_startup
         )
     )
 
@@ -110,7 +115,8 @@ test_that('Bad definitions are detected', {
             independent_args,
             quantity_weights,
             data_definitions = data_definitions,
-            post_process_function = post_process_function
+            post_process_function = post_process_function,
+            verbose_startup = verbose_startup
         ),
         'The following drivers did not form a valid dynamical system: ambient_2005'
     )
@@ -124,7 +130,8 @@ test_that('Independent and dependent arguments must have names', {
             as.numeric(independent_args),
             quantity_weights,
             data_definitions = data_definitions,
-            post_process_function = post_process_function
+            post_process_function = post_process_function,
+            verbose_startup = verbose_startup
         ),
         '`independent_args` must have names'
     )
@@ -137,7 +144,8 @@ test_that('Independent and dependent arguments must have names', {
             quantity_weights,
             data_definitions = data_definitions,
             post_process_function = post_process_function,
-            dependent_arg_function = function(x) {1.0}
+            dependent_arg_function = function(x) {1.0},
+            verbose_startup = verbose_startup
         ),
         'The return value of `dependent_arg_function` must have names'
     )
@@ -150,7 +158,8 @@ test_that('Independent and dependent arguments must have names', {
             quantity_weights,
             data_definitions = data_definitions,
             post_process_function = post_process_function,
-            dependent_arg_function = function(x) {list(precip = 0.1)}
+            dependent_arg_function = function(x) {list(precip = 0.1)},
+            verbose_startup = verbose_startup
         ),
         'Some independent or dependent argument names refer to columns in the drivers: solar, precip'
     )
@@ -164,7 +173,8 @@ test_that('Bad argument names are detected', {
             c(independent_args, list(bad_arg_name = 1)),
             quantity_weights,
             data_definitions = data_definitions,
-            post_process_function = post_process_function
+            post_process_function = post_process_function,
+            verbose_startup = verbose_startup
         ),
         'Model runners could not be created for the following drivers:
 ambient_2002: Error: `bad_arg_name` from `arg_names` is not in the `initial_values`, `parameters`, or `drivers`
@@ -181,7 +191,8 @@ test_that('Model failures are detected', {
             independent_args,
             quantity_weights,
             data_definitions = data_definitions,
-            post_process_function = post_process_function
+            post_process_function = post_process_function,
+            verbose_startup = verbose_startup
         ),
         'The model could not be run with the following drivers:
 ambient_2002: Error in as.data.frame(.Call(R_run_biocro, initial_values, parameters, : Caught exception in R_run_biocro: Thrown by the multilayer_canopy_properties module: lnfun != 0 is not yet supported.
@@ -198,7 +209,8 @@ test_that('Data-driver pairs must have correct elements', {
             independent_args,
             quantity_weights,
             data_definitions = data_definitions,
-            post_process_function = post_process_function
+            post_process_function = post_process_function,
+            verbose_startup = verbose_startup
         ),
         '`data_driver_pairs` must have at least one element'
     )
@@ -210,7 +222,8 @@ test_that('Data-driver pairs must have correct elements', {
             independent_args,
             quantity_weights,
             data_definitions = data_definitions,
-            post_process_function = post_process_function
+            post_process_function = post_process_function,
+            verbose_startup = verbose_startup
         ),
         'The following data-driver pairs are missing at least one required element (drivers, data, weight): ambient_2002, ambient_2005',
         fixed = TRUE
@@ -223,7 +236,8 @@ test_that('Data-driver pairs must have correct elements', {
             independent_args,
             quantity_weights,
             data_definitions = data_definitions,
-            post_process_function = post_process_function
+            post_process_function = post_process_function,
+            verbose_startup = verbose_startup
         ),
         'The following data-driver pairs have unexpected elements: ambient_2002. The allowed elements are: drivers, data, weight, data_stdev.'
     )
@@ -235,7 +249,8 @@ test_that('Data-driver pairs must have correct elements', {
             independent_args,
             quantity_weights,
             data_definitions = data_definitions,
-            post_process_function = post_process_function
+            post_process_function = post_process_function,
+            verbose_startup = verbose_startup
         ),
         'The following data-driver pairs have a `data_stdev` element that does not match the columns and/or times of their `data` element: ambient_2002'
     )
@@ -249,7 +264,8 @@ test_that('Data must have a `time` column', {
             independent_args,
             quantity_weights,
             data_definitions = data_definitions,
-            post_process_function = post_process_function
+            post_process_function = post_process_function,
+            verbose_startup = verbose_startup
         ),
         'The following data-driver pairs are missing a `time` column in their `data` element: ambient_2002'
     )
@@ -262,7 +278,8 @@ test_that('Missing simulation outputs are detected', {
             ddps,
             independent_args,
             quantity_weights,
-            data_definitions = data_definitions
+            data_definitions = data_definitions,
+            verbose_startup = verbose_startup
         ),
         'Some data columns were missing from runner outputs:
 ambient_2002: Pod
@@ -284,7 +301,8 @@ test_that('Out-of-range times are detected', {
             independent_args,
             quantity_weights,
             data_definitions = data_definitions,
-            post_process_function = post_process_function
+            post_process_function = post_process_function,
+            verbose_startup = verbose_startup
         ),
         'Some observed times were missing from runner outputs:
 ambient_2002: 104272, 104512, 104848, 105184, 105520, 105880, 106192, 106888',
@@ -300,7 +318,8 @@ test_that('Weights must be supplied for all measured quantities', {
             independent_args,
             list(),
             data_definitions = data_definitions,
-            post_process_function = post_process_function
+            post_process_function = post_process_function,
+            verbose_startup = verbose_startup
         ),
         'Weights were not supplied for the following measured quantities: Leaf, Stem, Pod'
     )
@@ -315,7 +334,8 @@ test_that('Bad normalization methods are detected', {
             quantity_weights,
             normalization_method = 'bad_normalization_method',
             data_definitions = data_definitions,
-            post_process_function = post_process_function
+            post_process_function = post_process_function,
+            verbose_startup = verbose_startup
         ),
         'Unsupported normalization_method: bad_normalization_method'
     )
@@ -330,7 +350,8 @@ test_that('Bad variance methods are detected', {
             quantity_weights,
             variance_weight_method = 'bad_variance_method',
             data_definitions = data_definitions,
-            post_process_function = post_process_function
+            post_process_function = post_process_function,
+            verbose_startup = verbose_startup
         ),
         'Unsupported variance_weight_method: bad_variance_method'
     )
@@ -345,7 +366,8 @@ test_that('Bad return values are detected', {
             quantity_weights,
             data_definitions = data_definitions,
             post_process_function = post_process_function,
-            extra_penalty_function = function(x) {NA}
+            extra_penalty_function = function(x) {NA},
+            verbose_startup = verbose_startup
         ),
         'The objective function did not return a finite value when using the initial argument values; instead, it returned: NA'
     )
@@ -360,7 +382,8 @@ test_that('Bad regularization methods are detected', {
             quantity_weights,
             data_definitions = data_definitions,
             post_process_function = post_process_function,
-            regularization_method = 'bad_regularization_method'
+            regularization_method = 'bad_regularization_method',
+            verbose_startup = verbose_startup
         ),
         'Unsupported regularization method: bad_regularization_method'
     )
@@ -378,7 +401,8 @@ test_that('Bad data values and weights are detected', {
             quantity_weights,
             variance_weight_method = 'inverse',
             data_definitions = data_definitions,
-            post_process_function = post_process_function
+            post_process_function = post_process_function,
+            verbose_startup = verbose_startup
         ),
         'Issues were found with the following data sets:
   ambient_2002:
