@@ -310,6 +310,27 @@ ambient_2002: 104272, 104512, 104848, 105184, 105520, 105880, 106192, 106888',
     )
 })
 
+test_that('Multiple time matches are handled', {
+    # The drivers have a time step of 1, so if we specify half-integer times,
+    # there will actually be two "closest" points to each observed time.
+    time_offset <- 0.5
+
+    expect_silent(
+        objective_function(
+            model,
+            within(ddps, {
+                ambient_2002$data$time       <- ambient_2002$data$time       + time_offset
+                ambient_2002$data_stdev$time <- ambient_2002$data_stdev$time + time_offset
+            }),
+            independent_args,
+            quantity_weights,
+            data_definitions = data_definitions,
+            post_process_function = post_process_function,
+            verbose_startup = verbose_startup
+        )
+    )
+})
+
 test_that('Weights must be supplied for all measured quantities', {
     expect_error(
         objective_function(

@@ -155,7 +155,9 @@ add_time_indices <- function(initial_runner_res, long_form_data) {
 
         indices <- sapply(dataf[, 'time'], function(x) {
             tdiff <- abs(res[, 'time'] - x)
-            which(tdiff == min(tdiff))
+
+            # Take only the first match, in case there are more
+            which(tdiff == min(tdiff))[1]
         })
 
         long_form_data[[i]][, 'time_index']    <- indices
