@@ -32,11 +32,11 @@
     quantity_weights,
     data_definitions = list(),
     normalization_method = 'mean_max',
-    variance_weight_method = 'equal',
+    stdev_weight_method = 'equal',
+    regularization_method = 'none',
     dependent_arg_function = NULL,
     post_process_function = NULL,
     extra_penalty_function = NULL,
-    regularization_method = 'none',
     verbose_startup = TRUE
   )
 }
@@ -49,13 +49,27 @@
 
   \item{data_driver_pairs}{
     A list of named elements, where each element is a "data-driver pair." A
-    data-driver pair is a list with two elements, \code{data} and
-    \code{drivers}. The \code{data} element must be a data frame with one column
-    named \code{time}, whose values follow BioCro's definition of
+    data-driver pair is a list with three required elements: \code{data},
+    \code{drivers}, and \code{weight}. Optionally, it may also have a
+    \code{data_stdev} element.
+
+    The \code{data} element must be a data frame with one column named
+    \code{time}, whose values follow BioCro's definition of
     \code{\link[BioCro]{time}}; the other columns should represent observed
-    values of model outputs. The \code{drivers} element must be a data frame
-    that can be passed to \code{\link[BioCro]{run_biocro}} as its \code{drivers}
-    input argument.
+    values of model outputs. Any \code{NA} values in \code{data} will
+    be ignored when calculating the error metric.
+
+    The \code{drivers} element must be a data frame that can be passed to
+    \code{\link[BioCro]{run_biocro}} as its \code{drivers} input argument.
+
+    The \code{weight} element must be a single numeric value indicating a weight
+    to be used when calculating the error metric.
+
+    The optional \code{data_stdev} element must be a data frame with the same
+    column names as \code{data}, and the same time values; its other entries
+    should represent the standard deviation associated with each entry in
+    \code{data}. If \code{data_stdev} is not supplied, all standard deviations
+    will be set to 1.
   }
 
   \item{independent_args}{
@@ -87,9 +101,14 @@
     error metric; see below for more details.
   }
 
-  \item{variance_weight_method}{
+  \item{stdev_weight_method}{
     A string indicating the method to be used when calculating the
     variance-based weights used in the error metric; see below for more details.
+  }
+
+  \item{regularization_method}{
+    A string indicating the regularization method to be used when calculating
+    the regularization penalty term; see below for more details.
   }
 
   \item{dependent_arg_function}{
@@ -113,11 +132,6 @@
     added to the least-squares term when calculating the error metric. If the
     \code{extra_penalty_function} is \code{NULL}, no extra penalties will be
     added.
-  }
-
-  \item{regularization_method}{
-    A string indicating the regularization method to be used when calculating
-    the regularization penalty term; see below for more details.
   }
 
   \item{verbose_startup}{
@@ -163,21 +177,22 @@
           that produce close agreement with the observed data, but are
           nevertheless not biologically resonable. For example, it may produce
           a sharp peak at a high leaf mass in between two measured points, when
-          in reality, leaf mass should vary monotonically between them. In this
+          in reality, leaf mass should be nearly constant between them. In this
           case, it may be necessarily to add an extra penalty to the objective
           function that prevents the optimizer from choosing such values. Here,
           this is handled through the \code{extra_penalty_function} input.
 
-    \item \strong{Flexible weights:} Typically a user would like to specify a
-          weight for each variable being considered in the error metric, either
-          to represent an uncertainty or to emphasize agreement with one output
+    \item \strong{Flexible weights:} Often a user would like to specify a weight
+          for each variable being considered in the error metric, either to
+          represent an uncertainty or to emphasize agreement with one output
           at the expense of another. For example, the seed mass may need a high
           weight to prioritize accurate yield predictions. Further, these
           weights may need to differ for underestimates as compared to
           overestimates; for example, measured root mass is often lower than the
           true root mass, so a user may wish to penalize underestimates of root
-          mass more severely than overestimates. Here, this is handled through
-          the \code{quantity_weights} input.
+          mass more severely than overestimates. Here, these situations are
+          handled through the \code{quantity_weights} and
+          \code{stdev_weight_method} inputs.
 
     \item \strong{Dependent parameters:} Sometimes one model parameter must be
           determined from one or more other parameters; for example, a user may
@@ -217,13 +232,15 @@
     \item \strong{Agreement term:} The agreement term \eqn{E_{agreement}} is
           calculated using a least-squares approach. In other words,
 
-          \deqn{E_{agreement} =%
-          \sum_i \frac{\left(Y_{obs}^i - Y_{mod}^i \right)^2}{N_i} \cdot w_i,}
-          where the sum runs over all \eqn{n} observations, \eqn{Y_{obs}^i} and
-          \eqn{Y_{mod}^i} are observed and modeled values of variable \eqn{Y_i},
-          \eqn{N_i} is a normalization factor that depends on the name of
-          \eqn{Y_i} and the data set that includes the \eqn{i^{th}} observation,
-          and \eqn{w_i} is a weight factor that depends on the name of \eqn{Y}.
+          \deqn{E_{agreement} = \sum_i \left(Y_{obs}^i - Y_{mod}^i \right)^2%
+          \cdot \frac{w_i^{quantity} w_i^{data} w_i^{stdev}}{N_i},}
+          where the sum runs over all \eqn{n} observations; \eqn{Y_{obs}^i} and
+          \eqn{Y_{mod}^i} are observed and modeled values of variable \eqn{Y_i};
+          \eqn{w_i^{quantity}}, \eqn{w_i^{data}}, and \eqn{w_i^{stdev}} are
+          weight factors that depend on the name of \eqn{Y_i}, the data set that
+          includes the \eqn{i^{th}} observation, and the standard deviation
+          associated with \eqn{Y_{obs}^i}, respectively; and \eqn{N_i} is a
+          normalization factor.
 
           Each value of \eqn{Y_{obs}^i} is specified at a particular time
           \eqn{t_i}. The corresponding modeled value, \eqn{Y_{mod}^i}, is found
@@ -233,20 +250,32 @@
           is run with a particular set of drivers, regardless of the input
           argument values.
 
+          The quantity-based weight factors \eqn{w_i^{quantity}} are directly
+          specified by the user via the \code{quantity_weights} input. For
+          example, if \code{quantity_weights} has an element named \code{Leaf}
+          that is equal to 0.5, then \eqn{w_i} will be equal to 0.5 whenever
+          \eqn{Y_i} represents a leaf mass value, regardless of which set of
+          drivers or time point corresponds to \eqn{Y_i}. The weights can also
+          be supplied as \eqn{(w_{under}, w_{over})} pairs instead of single
+          values; in this case, the value of \eqn{w_i} depends on whether the
+          model makes an underprediction or an overprediction:
+          \eqn{w_i = w_{under}} when \eqn{Y_{mod}^i < Y_{obs}^i} and
+          \eqn{w_i = w_{over}} otherwise.
+
+          The data-set-based weight factors \eqn{w_i^{data}} are directly
+          specified by the user via the \code{weight} element of each
+          data-driver pair. For example, if the second element of
+          \code{data_driver_pairs} has a \code{weight} of 2.0, then
+          \eqn{w_i^{data}} will be equal to 2.0 for all observations from the
+          corresponding data set.
+
+          The standard-deviation-based weight factors \eqn{w_i^{stdev}} are
+          determined by the choice of \code{stdev_weight_method}; the available
+          methods are discussed below.
+
           The normalization factors \eqn{N_i} are determined by the choice of
           \code{normalization_method}; the available methods are discussed
           below.
-
-          The weight factors \eqn{w_i} are directly specified by the user via
-          the \code{quantity_weights} input. For example, if
-          \code{quantity_weights} has an element named \code{Leaf} that is equal
-          to 0.5, then \eqn{w_i} will be equal to 0.5 whenever \eqn{Y_i}
-          represents a leaf mass value, regardless of which set of drivers or
-          time point corresponds to \eqn{Y_i}. The weights can also be supplied
-          as \eqn{(w_{under}, w_{over})} pairs instead of single values; in this
-          case, the value of \eqn{w_i} depends on whether the model makes an
-          underprediction or an overprediction: \eqn{w_i = w_{under}} when
-          \eqn{Y_{mod}^i < Y_{obs}^i} and \eqn{w_i = w_{over}} otherwise.
 
           There are a few special cases where \eqn{E_{agreement}} is set to a
           very high value (\code{BioCroValidation:::FAILURE_VALUE}). This is
@@ -281,6 +310,40 @@
           below.
   }
 
+  \strong{Standard-deviation-based weight methods}
+
+  The following methods are available for determining weight factors from values
+  of the standard deviation (\eqn{\sigma}), which can be (optionally) supplied
+  via the \code{data_stdev} elements of the \code{data_driver_pairs}:
+
+  \itemize{
+    \item \code{'equal'}: For this method, \eqn{w_i^{stdev}} is always set to
+          1. In other words, all variances are treated as being equal,
+          regardless of any user-supplied values. This is usually the best
+          choice when values of \eqn{\sigma} are unavailable or cannot be
+          estimated.
+
+    \item \code{'logarithm'}: For this method, \eqn{w_i^{stdev}} is calculated
+          as
+
+          \deqn{w_i^{stdev} =%
+          ln \left( \frac{1}{\sigma + 10^{-5}} \right),}
+          where \eqn{ln} denotes a logarithm with base \eqn{e}. This method
+          was used in the original Soybean-BioCro paper. Note: this method
+          should be used with caution, because \eqn{w_i^{stdev}} is zero
+          for \eqn{\sigma = 1 - 10^{-5} = 0.99999}, and it becomes negative for
+          larger values of \eqn{\sigma}.
+
+    \item \code{'inverse'}: For this method, \eqn{w_i^{stdev}} is calculated as
+
+          \deqn{w_i^{stdev} = \frac{1}{\sigma^2}.}
+          Note: this method should be used with caution, because
+          \eqn{w_i^{stdev}} is infinite when \eqn{\sigma} is zero.
+  }
+
+  If any values of \eqn{w_i^{stdev}} are undefined, negative, or infinite, an
+  error message will occur (see the "Input checks" section below).
+
   \strong{Normalization methods}
 
   The following normalization methods are available:
@@ -292,13 +355,16 @@
     \item \code{'mean'}: For this method, when \eqn{Y_i} is named \code{vtype}
           and the observation is from a set called \code{vdata}, then
 
-          \deqn{N_i = n_{vtype}^{vdata},}
+          \deqn{N_i = n_{vtype}^{vdata} \cdot n_{data},}
           where \eqn{n_{vtype}^{vdata}} is the number of observations of type
-          \code{vtype} that are included in \code{vdata}. In this case, the
-          error term \eqn{E_{agreement}} becomes a mean error for each set of
+          \code{vtype} that are included in \code{vdata} and \eqn{n_{data}} is
+          the total number of data-driver pairs. In this case, the error term
+          \eqn{E_{agreement}} becomes a mean error across the full set of
           drivers, hence the name for this method. This approach avoids
           over-representing drivers with larger numbers of associated
-          observations when determining \eqn{E_{agreement}}.
+          observations when determining \eqn{E_{agreement}}. It also preserves
+          the overall magnitude of \eqn{E_{agreement}} when data-driver pairs
+          are added.
 
     \item \code{'max'}: For this method, when \eqn{Y_i} is named \code{vtype}
           and the observation is from a set called \code{vdata}, then
@@ -314,8 +380,8 @@
     \item \code{'mean_max'}: For this method, the "mean" and "max" methods are
           combined so that
 
-          \deqn{N_i =%
-          n_{vtype}^{vdrivers} \cdot \left( max_{vtype}^{vdata} \right)^2.}
+          \deqn{N_i = n_{vtype}^{vdrivers}%
+          \cdot n_{data} \cdot \left( max_{vtype}^{vdata} \right)^2.}
           This approach avoids over-representing drivers with larger numbers of
           associated observations, and variable types with larger magnitudes.
           This method is used for parameterizing Soybean-BioCro, and is
@@ -381,6 +447,11 @@
     \item Ensuring that the optional \code{dependent_arg_function},
           \code{post_process_function}, and \code{extra_penalty_function}
           functions can be run without causing errors.
+
+    \item Ensuring that certain values are finite (such as \eqn{Y_{obs}},
+          \eqn{\sigma}, \eqn{w_i^{stdev}}, and \eqn{N}), and that certain values
+          are not negative (such as \eqn{\sigma}, \eqn{w_i^{stdev}}, and
+          \eqn{N}).
   }
 
   If any issues are detected, an informative error message will be sent. Note
@@ -388,6 +459,11 @@
   drivers. For these checks, the argument values specified by
   \code{independent_args} will be used, so they should be valid or otherwise
   reasonable values.
+
+  If an error message occurs when \code{verbose_startup} was set to
+  \code{FALSE}, it is recommended to call this function again with
+  \code{verbose_startup} set to \code{TRUE}, since the additional output can be
+  helpful for troubleshooting.
 }
 
 \value{
@@ -514,7 +590,7 @@ if (require(BioCro)) {
     independent_args,
     quantity_weights,
     data_definitions = data_definitions,
-    variance_weight_method = 'logarithm',
+    stdev_weight_method = 'logarithm',
     dependent_arg_function = dependent_arg_function,
     post_process_function = post_process_function,
     extra_penalty_function = extra_penalty_function

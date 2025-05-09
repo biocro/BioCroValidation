@@ -348,12 +348,12 @@ test_that('Bad variance methods are detected', {
             ddps,
             independent_args,
             quantity_weights,
-            variance_weight_method = 'bad_variance_method',
+            stdev_weight_method = 'bad_stdev_method',
             data_definitions = data_definitions,
             post_process_function = post_process_function,
             verbose_startup = verbose_startup
         ),
-        'Unsupported variance_weight_method: bad_variance_method'
+        'Unsupported stdev_weight_method: bad_stdev_method'
     )
 })
 
@@ -399,7 +399,7 @@ test_that('Bad data values and weights are detected', {
             }),
             independent_args,
             quantity_weights,
-            variance_weight_method = 'inverse',
+            stdev_weight_method = 'inverse',
             data_definitions = data_definitions,
             post_process_function = post_process_function,
             verbose_startup = verbose_startup

@@ -198,20 +198,20 @@ add_norm <- function(long_form_data, normalization_method, n_ddp) {
 }
 
 # Helping function for getting variance-based weights
-add_w_var <- function(long_form_data, variance_weight_method) {
+add_w_var <- function(long_form_data, stdev_weight_method) {
     for (i in seq_along(long_form_data)) {
         data_table <- long_form_data[[i]]
         data_stdev <- data_table[['quantity_stdev']]
 
         data_table[['w_var']] <-
-            if (tolower(variance_weight_method) == 'equal') {
+            if (tolower(stdev_weight_method) == 'equal') {
                 1.0
-            } else if (tolower(variance_weight_method) == 'logarithm') {
+            } else if (tolower(stdev_weight_method) == 'logarithm') {
                 log(1 / (data_stdev + 1e-5))
-            } else if (tolower(variance_weight_method) == 'inverse') {
+            } else if (tolower(stdev_weight_method) == 'inverse') {
                 1 / data_stdev^2
             } else {
-                stop('Unsupported variance_weight_method: ', variance_weight_method)
+                stop('Unsupported stdev_weight_method: ', stdev_weight_method)
             }
 
         long_form_data[[i]] <- data_table

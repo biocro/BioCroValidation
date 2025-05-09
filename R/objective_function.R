@@ -8,11 +8,11 @@ objective_function <- function(
     quantity_weights,
     data_definitions = list(),
     normalization_method = 'mean_max',
-    variance_weight_method = 'equal',
+    stdev_weight_method = 'equal',
+    regularization_method = 'none',
     dependent_arg_function = NULL,
     post_process_function = NULL,
     extra_penalty_function = NULL,
-    regularization_method = 'none',
     verbose_startup = TRUE
 )
 {
@@ -78,7 +78,7 @@ objective_function <- function(
     # Add variance-based weights
     long_form_data <- add_w_var(
         long_form_data,
-        variance_weight_method
+        stdev_weight_method
     )
 
     # Print the long form data, if desired. Do this before checking the data,
