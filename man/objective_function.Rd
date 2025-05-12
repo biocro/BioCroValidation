@@ -505,11 +505,19 @@ if (require(BioCro)) {
   # in two data tables; it also includes the standard deviations of the measured
   # biomasses, which are included in two separate tables. However, these data
   # tables each have a `DOY` column rather than a `time` column, so we need to
-  # alter them. Here we will do this by defining a short helper function.
-  convert_time <- function(x) {
+  # alter them. The tables also include other columns we do not wish to use in
+  # this example. So, we will define a short helper function that can be used to
+  # pre-process each table.
+  process_table <- function(x) {
     within(x, {
-      time = (DOY - 1) * 24.0 # Define new `time` column
-      DOY  = NULL             # Remove unneeded `DOY` column
+      # Define new `time` column
+      time = (DOY - 1) * 24.0
+
+      # Remove unneeded columns
+      DOY                 = NULL
+      Seed_Mg_per_ha      = NULL
+      Litter_Mg_per_ha    = NULL
+      CumLitter_Mg_per_ha = NULL
     })
   }
 
@@ -518,14 +526,14 @@ if (require(BioCro)) {
   # heavily as the 2002 data.
   data_driver_pairs <- list(
     ambient_2002 = list(
-      data       = convert_time(soyface_biomass[['ambient_2002']]),
-      data_stdev = convert_time(soyface_biomass[['ambient_2002_std']]),
+      data       = process_table(soyface_biomass[['ambient_2002']]),
+      data_stdev = process_table(soyface_biomass[['ambient_2002_std']]),
       drivers    = BioCro::soybean_weather[['2002']],
       weight     = 1
     ),
     ambient_2005 = list(
-      data       = convert_time(soyface_biomass[['ambient_2005']]),
-      data_stdev = convert_time(soyface_biomass[['ambient_2005_std']]),
+      data       = process_table(soyface_biomass[['ambient_2005']]),
+      data_stdev = process_table(soyface_biomass[['ambient_2005_std']]),
       drivers    = BioCro::soybean_weather[['2005']],
       weight     = 2
     )
@@ -538,7 +546,7 @@ if (require(BioCro)) {
   data_definitions <- list(
     Leaf_Mg_per_ha = 'Leaf',
     Stem_Mg_per_ha = 'Stem',
-    Pod_Mg_per_ha = 'Pod'
+    Rep_Mg_per_ha = 'Pod'
   )
 
   # The data contains values of pod mass, but the model does not calculate pod

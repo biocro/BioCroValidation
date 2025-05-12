@@ -2,22 +2,25 @@
 model <- BioCro::soybean
 model$ode_solver <- BioCro::default_ode_solvers[['homemade_euler']]
 
-convert_time <- function(x) {
+process_table <- function(x) {
     within(x, {
-        time = (DOY - 1) * 24.0
-        DOY  = NULL
+        time                = (DOY - 1) * 24.0
+        DOY                 = NULL
+        Seed_Mg_per_ha      = NULL
+        Litter_Mg_per_ha    = NULL
+        CumLitter_Mg_per_ha = NULL
     })
 }
 
 ddps <- list(
         ambient_2002 = list(
-        data       = convert_time(soyface_biomass[['ambient_2002']]),
-        data_stdev = convert_time(soyface_biomass[['ambient_2002_std']]),
+        data       = process_table(soyface_biomass[['ambient_2002']]),
+        data_stdev = process_table(soyface_biomass[['ambient_2002_std']]),
         drivers    = BioCro::soybean_weather[['2002']],
         weight     = 1
     ),
         ambient_2005 = list(
-        data       = convert_time(soyface_biomass[['ambient_2005']]),
+        data       = process_table(soyface_biomass[['ambient_2005']]),
         drivers    = BioCro::soybean_weather[['2005']],
         weight     = 2
     )
@@ -30,7 +33,7 @@ independent_args <- with(BioCro::soybean[['parameters']], {
 data_definitions <- list(
     Leaf_Mg_per_ha = 'Leaf',
     Stem_Mg_per_ha = 'Stem',
-    Pod_Mg_per_ha = 'Pod'
+    Rep_Mg_per_ha = 'Pod'
 )
 
 dependent_arg_function <- function(x) {
@@ -415,7 +418,7 @@ test_that('Bad data values and weights are detected', {
         objective_function(
             model,
             within(ddps, {
-                ambient_2005$data_stdev = convert_time(soyface_biomass[['ambient_2005_std']])
+                ambient_2005$data_stdev = process_table(soyface_biomass[['ambient_2005_std']])
                 ambient_2005$data_stdev[['Leaf_Mg_per_ha']] <- -0.1
             }),
             independent_args,
