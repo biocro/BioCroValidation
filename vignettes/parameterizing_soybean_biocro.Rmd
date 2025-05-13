@@ -1,0 +1,204 @@
+---
+title: "Parameterizing Soybean-BioCro"
+output:
+  rmarkdown::html_vignette:
+    toc: true
+    number_sections: true
+vignette: >
+  %\VignetteIndexEntry{Parameterizing Soybean-BioCro}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+bibliography: references.bib
+link-citations: yes
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.width = 7.5,
+  fig.height = 5,
+  fig.align = "center"
+)
+```
+
+# Overview
+
+This article shows how to create an objective function that can be used to
+parameterize BioCro's soybean model
+[@matthews_soybean_biocro_2021; @lochocki_biocro_2022].
+
+Since the original publication of Soybean-BioCro, the BioCro module library has
+undergone several changes, and the model has been re-parameterized several
+times. These parameterizations have not used `BioCroValidation`, since they were
+performed before `BioCroValidation` was created.
+
+Here, we re-create the objective function that was used for the parameterization
+included in version `3.2.0` of the BioCro R package.
+
+In the commands below, we will use functions from several libraries, so we will
+load them now:
+
+```{r libraries}
+# Load required libraries
+library(BioCroValidation)
+library(BioCro)
+```
+
+# Building the Objective Function
+
+In this section, we will use the `objective_function` function from
+`BioCroValidation` package to create an objective function that can be used to
+parameterize Soybean-BioCro.
+
+## The Observed Data
+
+The observed data needed to parameterize Soybean-BioCro is included in the
+`BioCroValidation` package as the `soyface_biomass` data set, which consists of
+two years (2002 and 2005) of biomass data and associated standard deviations,
+included in four separate tables. However, each table requires some
+pre-processing to get it ready.
+
+One issue is that the data set specifies the doy of year (DOY) for each harvest,
+but we need to specify the time using BioCro's convention (the number of hours
+since the start of the year). This can be addressed by defining a helper
+function that adds a new `time` column following BioCro's convention:
+
+```{r convert_time}
+# Define a helping function for adding a `time` column
+convert_time <- function(data_table) {
+  within(data_table, {
+    # Define new `time` column
+    time = (DOY - 1) * 24.0
+  })
+}
+```
+
+Another issue is that the data set includes pod and seed values, but
+Soybean-BioCro calculates shell and seed masses, where the shell and seed
+together comprise the pod. This can also be addressed with helper functions,
+which will be different for biomass values and standard deviations:
+
+```{r get_shell}
+# Define a helping function for calculating shell biomass
+add_shell_biomass <- function(data_table) {
+  within(data_table, {
+    Shell_Mg_per_ha = Rep_Mg_per_ha - Seed_Mg_per_ha
+  })
+}
+
+# Define a helping function for calculating shell biomass standard deviation
+add_shell_stdev <- function(data_table) {
+  within(data_table, {
+    Shell_Mg_per_ha = sqrt(Rep_Mg_per_ha^2 + Seed_Mg_per_ha^2)
+  })
+}
+```
+
+Finally, the data set includes some values that are not needed for the
+parameterization. This includes the leaf litter accumulated between each
+harvest, as well as the `DOY` and `Rep_Mg_per_ha` columns that have been
+superseded by other columns defined above. These can be removed with a final
+helper function:
+
+```{r remove_columns}
+# Define a helping function for removing unneeded columns
+remove_extra_columns <- function(data_table) {
+  within(data_table, {
+    DOY              = NULL
+    Rep_Mg_per_ha    = NULL
+    Litter_Mg_per_ha = NULL
+  })
+}
+```
+
+Now we can apply these to each table in the set:
+
+```{r process_tables}
+# Process the data sets
+ambient_2002_biomass <- remove_extra_columns(
+  add_shell_biomass(
+    convert_time(
+      soyface_biomass[['ambient_2002']]
+    )
+  )
+)
+
+
+ambient_2005_biomass <- remove_extra_columns(
+  add_shell_biomass(
+    convert_time(
+      soyface_biomass[['ambient_2005']]
+    )
+  )
+)
+
+ambient_2002_stdev <- remove_extra_columns(
+  add_shell_stdev(
+    convert_time(
+      soyface_biomass[['ambient_2002_std']]
+    )
+  )
+)
+
+
+ambient_2005_stdev <- remove_extra_columns(
+  add_shell_stdev(
+    convert_time(
+      soyface_biomass[['ambient_2005_std']]
+    )
+  )
+)
+```
+
+## The Data-Driver Pairs
+
+The `BioCro` R package includes weather data for the years in the
+`soyface_biomass` data set. So now we are ready to define the data-driver pairs,
+which includes the weather, the observed biomass, the standard deviation of the
+observed biomass, and the weight to assign to each year:
+
+```{r data_driver_pairs}
+# Define the data-driver pairs
+data_driver_pairs <- list(
+  ambient_2002 = list(
+    data       = ambient_2002_biomass,
+    data_stdev = ambient_2002_stdev,
+    drivers    = BioCro::soybean_weather[['2002']],
+    weight     = 1
+  ),
+  ambient_2005 = list(
+    data       = ambient_2005_biomass,
+    data_stdev = ambient_2005_stdev,
+    drivers    = BioCro::soybean_weather[['2005']],
+    weight     = 1
+  )
+)
+```
+
+Here we have chosen equal weights for the two years.
+
+# Commands From This Document
+
+```{r, eval = FALSE}
+<<libraries>>
+
+###
+### Define helping functions
+###
+
+<<<convert_time>>>
+
+<<get_shell>>
+
+<<remove_extra_columns>>
+
+###
+### Prepare inputs for `objective_function`
+###
+
+<<data_driver_pairs>>
+
+```
+
+# References
