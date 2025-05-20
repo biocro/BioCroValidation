@@ -607,13 +607,7 @@ if (require(BioCro)) {
   # This function could now be passed to an optimizer; here we will simply
   # evaluate it for two sets of parameter values.
 
-  # First try the initial values.
-  cat('\nError metric calculated from initial argument values:\n')
-  print(
-    obj_fun(as.numeric(independent_args))
-  )
-
-  # Now try doubling each parameter value; in this case, the value of the
+  # Try doubling each parameter value; in this case, the value of the
   # objective function increases, indicating a lower degree of agreement between
   # the model and the observed data.
   cat('\nError metric calculated by doubling the initial argument values:\n')

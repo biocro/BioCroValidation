@@ -23,7 +23,8 @@ objective_function <- function(
     check_args_to_vary(
         independent_args,
         dependent_arg_function,
-        data_driver_pairs
+        data_driver_pairs,
+        verbose_startup
     )
 
     # Get the model runners
