@@ -348,8 +348,14 @@ error_from_res <- function(
 
     # Return the sum of the penalty and error terms, or the individual errors
     if (return_terms) {
+        error_terms_by_quantity <- as.list(tapply(
+            errors,
+            long_form_data_table[['quantity_name']],
+            sum
+        ))
+
         list(
-            least_squares_term = error_sum,
+            least_squares_terms = error_terms_by_quantity,
             extra_penalty = penalty
         )
     } else {

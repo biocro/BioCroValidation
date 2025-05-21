@@ -610,13 +610,13 @@ if (require(BioCro)) {
   # Try doubling each parameter value; in this case, the value of the
   # objective function increases, indicating a lower degree of agreement between
   # the model and the observed data.
-  cat('\nError metric calculated by doubling the initial argument values:\n')
+  cat('\nError metric calculated by doubling the initial argument values:\n\n')
   print(
     obj_fun(2 * as.numeric(independent_args))
   )
 
   # We can also see the values of each term that makes up the error metric
-  cat('\nError metric terms calculated by doubling the initial argument values:\n')
+  cat('\nError metric terms calculated by doubling the initial argument values:\n\n')
   str(
     obj_fun(2 * as.numeric(independent_args), return_terms = TRUE)
   )
