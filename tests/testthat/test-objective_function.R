@@ -382,6 +382,7 @@ test_that('Bad variance methods are detected', {
 })
 
 test_that('Bad return values are detected', {
+    # A penalty evaluates to NA
     expect_error(
         objective_function(
             model,
@@ -391,6 +392,20 @@ test_that('Bad return values are detected', {
             data_definitions = data_definitions,
             post_process_function = post_process_function,
             extra_penalty_function = function(x) {NA},
+            verbose_startup = verbose_startup
+        ),
+        'The objective function did not return a finite value when using the initial argument values; instead, it returned: NA'
+    )
+
+    # A predicted value is NA
+    expect_error(
+        objective_function(
+            model,
+            ddps,
+            independent_args,
+            quantity_weights,
+            data_definitions = data_definitions,
+            post_process_function = function(x) {within(x, {Pod = NA})},
             verbose_startup = verbose_startup
         ),
         'The objective function did not return a finite value when using the initial argument values; instead, it returned: NA'
@@ -434,6 +449,43 @@ test_that('Bad data values and weights are detected', {
   ambient_2005:
   The following columns contained non-finite values: w_var
   The following columns contained negative values: quantity_stdev',
+        fixed = TRUE
+    )
+})
+
+test_that('NA argument values and predicted values are handled', {
+    # An independent argument value is NA
+    expect_error(
+        objective_function(
+            model,
+            ddps,
+            within(independent_args, {alphaLeaf = NA}),
+            quantity_weights,
+            data_definitions = data_definitions,
+            post_process_function = post_process_function,
+            verbose_startup = verbose_startup
+        ),
+        'The model could not be run with the following drivers:
+ambient_2002: Error in runner(as.numeric(independent_args)): At least one independent or dependent argument value is not finite
+ambient_2005: Error in runner(as.numeric(independent_args)): At least one independent or dependent argument value is not finite',
+        fixed = TRUE
+    )
+
+    # A dependent argument value is NA
+    expect_error(
+        objective_function(
+            model,
+            ddps,
+            independent_args,
+            quantity_weights,
+            data_definitions = data_definitions,
+            dependent_arg_function = function(x) {list(alphaStem = NA)},
+            post_process_function = post_process_function,
+            verbose_startup = verbose_startup
+        ),
+        'The model could not be run with the following drivers:
+ambient_2002: Error in runner(as.numeric(independent_args)): At least one independent or dependent argument value is not finite
+ambient_2005: Error in runner(as.numeric(independent_args)): At least one independent or dependent argument value is not finite',
         fixed = TRUE
     )
 })

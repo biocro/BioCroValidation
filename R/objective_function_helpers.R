@@ -62,6 +62,13 @@ get_model_runner <- function(
                     c(x, as.numeric(dependent_arg_function(x_for_dep_arg_func)))
                 }
 
+                if (any(!is.finite(x_for_partial))) {
+                    stop(
+                        'At least one independent or dependent argument ',
+                        'value is not finite'
+                    )
+                }
+
                 initial_res <- partial_func(x_for_partial)
 
                 if (is.null(post_process_function)) {
@@ -272,13 +279,17 @@ one_error <- function(
     normalization
 )
 {
-    qw <- if (predicted < observed) {
-        quantity_weight[1] # Underprediction
+    if (!is.finite(predicted)) {
+        NA
     } else {
-        quantity_weight[2] # Overprediction
-    }
+        qw <- if (predicted < observed) {
+            quantity_weight[1] # Underprediction
+        } else {
+            quantity_weight[2] # Overprediction
+        }
 
-    (observed - predicted)^2 * qw * ddp_weight * var_weight / normalization
+        (observed - predicted)^2 * qw * ddp_weight * var_weight / normalization
+    }
 }
 
 # Helping function for returning a failure value
