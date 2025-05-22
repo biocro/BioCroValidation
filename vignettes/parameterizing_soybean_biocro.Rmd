@@ -45,7 +45,7 @@ load them now:
 # Load required libraries
 library(BioCroValidation)
 library(BioCro)
-library(lattice)
+library(dfoptim)
 ```
 
 # Building the Objective Function
@@ -474,6 +474,217 @@ obj_fun <- objective_function(
 )
 ```
 
+# Optimizing the Parameter Values
+
+The objective function is designed to be passed to a minimization algorithm,
+which will determine the argument values that produce the best agreement between
+the model predictions and the observations.
+
+Soybean-BioCro has already been parameterized, so there is already good
+agreement between the model and the data. This can be seen by examining the
+value of the error metric when using the default Soybean-BioCro values:
+
+```{r}
+# Evaluate the error function with default Soybean-BioCro parameters
+default_error <- obj_fun(as.numeric(independent_args))
+```
+
+This evaluates to `r default_error`. This is a low value for a Soybean-BioCro
+parameterization, indicating that good agreement has already been found.
+
+Here, as an example, we will intentionally change each parameter value by a
+small random amount, and then use an optimizer to improve the parameter values;
+in an ideal world, the optimizer will eventually pick parameter values close to
+the original Soybean-BioCro values.
+
+There are many optimizers available in R. Base R includes the `optim` function,
+and others are available from the `dfoptim` and `DEoptim` packages. Here we will
+use the `nmkb` optimizer from the `dfoptim` library, which requires upper and
+lower bounds for each parameter and an initial guess.
+
+## Choosing an Initial Guess
+
+As mentioned above, we will intentionally choose a "bad" initial guess by
+tweaking each parameter value by a small random amount. Note that we set a seed
+to ensure the same result is obtained every time this is performed. Also note
+that the initial guess must be a numeric vector, where the elements are ordered
+as they are in `independent_args`.
+
+```{r initial_guess}
+# Set a seed
+set.seed(1234)
+
+# Make an initial guess by perturbing the default values by a small amount
+rel_size <- 0.02
+
+initial_guess <- as.numeric(independent_args) *
+  (1.0 + runif(length(independent_args), -rel_size, rel_size))
+```
+
+Even though the changes to parameter values are small, there is still a
+substantial change in the value of the error metric:
+
+```{r}
+# Evaluate the error function with default Soybean-BioCro parameters
+initial_error <- obj_fun(initial_guess)
+```
+
+This evaluates to `r initial_error`, which is about
+`r round(100 * (initial_error - default_error) / initial_error)` percent larger
+than with the default parameter values.
+
+## Choosing Lower and Upper Bounds
+
+There is not always a systematic approach to choosing lower and upper bounds for
+parameter values, but the following bounds have worked well for Soybean-BioCro
+in the past:
+
+- The \(\alpha\) parameters used in partitioning and senescence calculations are
+  confined to the interval [0, 50].
+
+- The \(\beta\) parameters used in partitioning and senescence calculations are
+  confined to the interval [-50, 0].
+
+- The senescence rates have a lower bound of zero, but have different upper
+  bounds for each tissue.
+
+- The maintenance respiration coefficients are confined to the interval
+  [1e-6, 1e-2].
+
+- The growth respiration coefficients must be positive and non-zero, but have
+  different bounds for each tissue.
+
+There are many possible ways to specify the bounds in R, but ultimately they
+must be expressed as numeric vectors, where the elements are ordered as they are
+in `independent_args`. Here we supply lower and upper bounds for each parameter
+in a data frame and then ensure they are properly ordered. Later, the data frame
+columns can be passed to the optimizer as the bounds:
+
+```{r setting_bounds}
+# Define a table with the bounds
+bounds <- read.table(
+  textConnection('
+    arg_name       lower    upper
+    alphaLeaf      +0       +50
+    alphaStem      +0       +50
+    alphaShell     +0       +50
+    alphaSeneLeaf  +0       +50
+    alphaSeneStem  +0       +50
+    betaLeaf       -50      +0
+    betaStem       -50      +0
+    betaShell      -50      +0
+    betaSeneLeaf   -50      +0
+    betaSeneStem   -50      +0
+    rateSeneLeaf   +0       +0.0125
+    rateSeneStem   +0       +0.005
+    mrc_leaf       +1e-6    +1e-2
+    mrc_root       +1e-6    +1e-2
+    grc_stem       +8e-4    +0.08
+    grc_root       +0.0025  +0.075
+  '),
+  header = TRUE,
+  stringsAsFactors = FALSE
+)
+
+# Make sure it is ordered properly
+bounds <- bounds[match(independent_arg_names, bounds[['arg_name']]), ]
+```
+
+## Running the Optimizer
+
+Now we will use an optimizer to improve on the initial guess. As mentioned
+above, we will use the `nmkb` optimizer from the `dfoptim` package. This is a
+good choice when a decent starting guess is known. If a broader search is
+necessary, `DEoptim` from the `DEoptim` package may be more appropriate,
+although it generally needs more time to run.
+
+To make sure this example does not take too much time, we will use a loose
+tolerance; a more realistic example would probably use `1e-4` or `1e-5`.
+
+```{r run_optimizer, eval = FALSE}
+# Run the optimizer
+optim_res <- nmkb(
+  initial_guess,
+  obj_fun,
+  bounds[['lower']],
+  bounds[['upper']],
+  control = list(
+    tol = 1e-2,
+    restarts.max = 10
+  ),
+  debug_mode = FALSE # Passed to obj_fun; set to TRUE to enable debug mode
+)
+```
+
+```{r, echo = FALSE}
+timing <- system.time({
+<<run_optimizer>>
+})
+```
+
+When this document was generated, running the optimizer required the following
+amount of time:
+
+```{r, echo = FALSE}
+print(timing)
+```
+
+The total time was about `r round(timing[3] / 60, 2)` minutes. For a real
+parameterization problem, it can be many times longer, and may even need days to
+run on a personal laptop computer.
+
+The optimizer also reports how many times the objective function was called,
+among other details:
+
+```{r}
+str(optim_res)
+```
+
+The value of `feval` is `r optim_res[['feval']]`, so on average, each call of
+the objective function required approximately
+`r round(timing[3] / optim_res[['feval']], 3)` seconds.
+
+## Comparing Parameter Values
+
+Let's see whether the optimized parameters are closer to the default parameters
+than the initial guess was.
+
+```{r compare_param}
+# Create a table of the various independent argument values
+ind_arg_table <- data.frame(
+  arg_name      = independent_arg_names,
+  defaults      = as.numeric(independent_args),
+  initial_guess = initial_guess,
+  optimized     = optim_res[['par']],
+  stringsAsFactors = FALSE
+)
+
+# Add differences
+ind_arg_table <- within(ind_arg_table, {
+  initial_diff   = abs(initial_guess - defaults)
+  optimized_diff = abs(optimized - defaults)
+  improved       = optimized_diff < initial_diff
+})
+
+# View results
+print(ind_arg_table)
+```
+
+In this table, when the `improved` column is `TRUE`, this means that the
+optimized parameter value is closer to the default value than the initial guess
+was; in other words, it means that the optimizer truly improved on the initial
+guess. In this example, `r sum(ind_arg_table[['improved']])` out of
+`r nrow(ind_arg_table)` parameter estimates were improved
+(`r round(100 * sum(ind_arg_table[['improved']]) / nrow(ind_arg_table))` percent).
+
+We can also compare the error metric to its original value. As shown above, it
+is now `r optim_res[['value']]`, which is only
+`r round(100 * (optim_res[['value']] - default_error) / optim_res[['value']], 1)`
+percent larger than with the default parameter values.
+
+The optimized parameter values could likely be improved by using a more
+stringent tolerance for the optimizer, but this would require more time to run.
+
 # Commands From This Document
 
 ```{r, eval = FALSE}
@@ -496,7 +707,7 @@ obj_fun <- objective_function(
 <<remove_columns>>
 
 ###
-### Prepare inputs for `objective_function` and call it
+### Prepare inputs for `objective_function` and create an objective function
 ###
 
 <<base_model_definition>>
@@ -518,6 +729,22 @@ obj_fun <- objective_function(
 <<extra_penalty_function>>
 
 <<objective_function>>
+
+###
+### Use an optimizer to choose parameter values
+###
+
+<<initial_guess>>
+
+<<setting_bounds>>
+
+<<run_optimizer>>
+
+###
+### Check and record the new values
+###
+
+<<compare_param>>
 
 ```
 
