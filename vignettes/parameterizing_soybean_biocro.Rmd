@@ -83,41 +83,11 @@ pre-processing to get it ready.
 
 One issue is that the data set specifies the doy of year (DOY) for each harvest,
 but we need to specify the time using BioCro's convention (the number of hours
-since the start of the year). This can be addressed by defining a helper
-function that adds a new `time` column following BioCro's convention:
-
-```{r convert_time}
-# Define a helping function for adding a `time` column
-convert_time <- function(data_table) {
-  within(data_table, {
-    # Define new `time` column
-    time = (DOY - 1) * 24.0
-  })
-}
-```
+since the start of the year).
 
 Another issue is that the data set includes pod and seed values, but
 Soybean-BioCro calculates shell and seed masses, where the shell and seed
-together comprise the pod. This can also be addressed with helper functions,
-which will be different for biomass values and standard deviations:
-
-```{r get_shell}
-# Define a helping function for calculating shell biomass
-add_shell_biomass <- function(data_table) {
-  within(data_table, {
-    # The shell is all parts of the pod other than the seed
-    Shell_Mg_per_ha = Rep_Mg_per_ha - Seed_Mg_per_ha
-  })
-}
-
-# Define a helping function for calculating shell biomass standard deviation
-add_shell_stdev <- function(data_table) {
-  within(data_table, {
-    # Add uncertainties in quadrature, a simple approach to error propagation
-    Shell_Mg_per_ha = sqrt(Rep_Mg_per_ha^2 + Seed_Mg_per_ha^2)
-  })
-}
-```
+together comprise the pod.
 
 Although the observations do not include root biomass, it is nevertheless
 important to constrain the predicted root mass to reasonable values. To do this,
@@ -135,82 +105,60 @@ of 1 implies a standard deviation of \(1 / e - 10^{-5} \approx 0.3678694\). See
 the documentation page (`?objective_function`) for more information about this
 weighting method.
 
-The root mass and its standard deviation can be added with another set of helper
-functions. Note that any observations set to `NA` will be ignored when
-calculating the error metric.
-
-```{r get_root}
-# Define a helping function for adding the root mass
-add_root_biomass <- function(data_table) {
-  # Initialize all values to NA
-  data_table$Root_Mg_per_ha <- NA
-
-  # Estimate a mass at one time point
-  row_to_use <- 5
-
-  col_to_add <- c(
-    'Leaf_Mg_per_ha',
-    'Stem_Mg_per_ha',
-    'Rep_Mg_per_ha'
-  )
-
-  data_table[row_to_use, 'Root_Mg_per_ha'] <-
-    0.17 * sum(data_table[row_to_use, col_to_add])
-
-  data_table
-}
-
-# Define a helping function for adding the root standard deviation
-add_root_stdev <- function(data_table) {
-  # We can set a value for each time point; any time points where the root mass
-  # is NA will be ignored
-  data_table$Root_Mg_per_ha <- 1 / exp(1) - 1e-5
-
-  data_table
-}
-```
-
 Finally, the data set includes some values that are not needed for the
 parameterization. This includes the leaf litter accumulated between each
 harvest, as well as the `DOY` and `Rep_Mg_per_ha` columns that have been
-superseded by other columns defined above. These can be removed with a final
-helper function:
+superseded by other columns defined above.
 
-```{r remove_columns}
-# Define a helping function for removing unneeded columns
-remove_extra_columns <- function(data_table) {
-  within(data_table, {
-    # Remove columns by setting them to NULL
-    DOY              = NULL
-    Rep_Mg_per_ha    = NULL
-    Litter_Mg_per_ha = NULL
-  })
-}
-```
-
-Now we can apply these to each table in the set:
+Here we will define a helping function that can accomplish the required
+modifications described above; note that some operations are different depending
+on whether the table represents biomass values or standard deviations:
 
 ```{r process_tables}
-# Process the data sets (biomass and stdev from 2002 and 2005)
-ambient_2002_biomass <-
-  remove_extra_columns(add_root_biomass(add_shell_biomass(convert_time(
-    soyface_biomass[['ambient_2002']]
-  ))))
+# Define a helping function for processing data tables
+process_table <- function(data_table, type) {
+  # Define new `time` column
+  data_table$time <- (data_table$DOY - 1) * 24.0
 
-ambient_2005_biomass <-
-  remove_extra_columns(add_root_biomass(add_shell_biomass(convert_time(
-    soyface_biomass[['ambient_2005']]
-  ))))
+  # Define new `Shell_Mg_per_ha` column
+  data_table$Shell_Mg_per_ha <- if (type == 'biomass') {
+    # The shell is all parts of the pod other than the seed
+    data_table$Rep_Mg_per_ha - data_table$Seed_Mg_per_ha
+  } else {
+    # Add uncertainties in quadrature, a simple approach to error propagation
+    sqrt(data_table$Rep_Mg_per_ha^2 + data_table$Seed_Mg_per_ha^2)
+  }
 
-ambient_2002_stdev <-
-  remove_extra_columns(add_root_stdev(add_shell_stdev(convert_time(
-    soyface_biomass[['ambient_2002_std']]
-  ))))
+  # Define new `Root_Mg_per_ha` column
+  if (type == 'biomass') {
+    # Initialize all values to NA
+    data_table$Root_Mg_per_ha <- NA
 
-ambient_2005_stdev <-
-  remove_extra_columns(add_root_stdev(add_shell_stdev(convert_time(
-    soyface_biomass[['ambient_2005_std']]
-  ))))
+    # Estimate a mass at one time point
+    row_to_use <- 5
+
+    col_to_add <- c(
+      'Leaf_Mg_per_ha',
+      'Stem_Mg_per_ha',
+      'Rep_Mg_per_ha'
+    )
+
+    data_table[row_to_use, 'Root_Mg_per_ha'] <-
+      0.17 * sum(data_table[row_to_use, col_to_add])
+  } else {
+    # We can set a value for each time point; any time points where the root
+    # mass is NA will be ignored
+    data_table$Root_Mg_per_ha <- 1 / exp(1) - 1e-5
+  }
+
+  # Remove columns by setting them to NULL
+  data_table$DOY              = NULL
+  data_table$Rep_Mg_per_ha    = NULL
+  data_table$Litter_Mg_per_ha = NULL
+
+  # Return the processed table
+  data_table
+}
 ```
 
 ## The Data-Driver Pairs
@@ -224,14 +172,14 @@ observed biomass, and the weight to assign to each year:
 # Define the data-driver pairs
 data_driver_pairs <- list(
   ambient_2002 = list(
-    data       = ambient_2002_biomass,
-    data_stdev = ambient_2002_stdev,
+    data       = process_table(soyface_biomass[['ambient_2002']],     'biomass'),
+    data_stdev = process_table(soyface_biomass[['ambient_2002_std']], 'stdev'),
     drivers    = BioCro::soybean_weather[['2002']],
     weight     = 1
   ),
   ambient_2005 = list(
-    data       = ambient_2005_biomass,
-    data_stdev = ambient_2005_stdev,
+    data       = process_table(soyface_biomass[['ambient_2005']],     'biomass'),
+    data_stdev = process_table(soyface_biomass[['ambient_2005_std']], 'stdev'),
     drivers    = BioCro::soybean_weather[['2005']],
     weight     = 1
   )
@@ -691,7 +639,7 @@ percent larger than with the default parameter values.
 The optimized parameter values could likely be improved by using a more
 stringent tolerance for the optimizer, but this would require more time to run.
 
-# Comparing Model Outputs
+## Comparing Model Outputs
 
 Another way to evaluate the results of the optimization is to compare
 simulations using the default, perturbed, and re-optimized versions of the
@@ -767,10 +715,10 @@ xyplot(
 )
 ```
 
-Here we can see that while the simulated stem, root, and grain (seed) biomass
-values do not differ much between the models, there are large differences in the
-leaf mass, where the default and re-optimized versions are similar and the
-perturbed version predicts much smaller values.
+Here we can see that while the simulated values for some tissues do not differ
+much between the models, there are large differences in other tissues; for these
+cases, the default and re-optimized versions are similar and the perturbed
+version is much different.
 
 ## Saving the New Model Definition
 
@@ -820,19 +768,7 @@ writeLines(r_cmd_string, './soybean_reparam.R')
 <<libraries>>
 
 ###
-### Define helping functions
-###
-
-<<convert_time>>
-
-<<get_shell>>
-
-<<get_root>>
-
-<<remove_columns>>
-
-###
-### Prepare inputs for `objective_function` and create an objective function
+### Prepare inputs for `objective_function`
 ###
 
 <<base_model_definition>>
@@ -852,6 +788,10 @@ writeLines(r_cmd_string, './soybean_reparam.R')
 <<quantity_weights>>
 
 <<extra_penalty_function>>
+
+###
+### Create the objective function
+###
 
 <<objective_function>>
 
