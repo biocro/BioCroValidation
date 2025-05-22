@@ -468,7 +468,7 @@
 
 \value{
   A function \code{obj_fun} with signature
-  \code{obj_fun(x, lambda = 0, return_terms = FALSE)}.
+  \code{obj_fun(x, lambda = 0, return_terms = FALSE, debug_mode = FALSE)}.
 
   Here, \code{x} is a numeric vector of values of the independent arguments (in
   the same order as in \code{independent_arg_names}), and \code{lambda} is the
@@ -484,6 +484,15 @@
   Setting it to \code{TRUE} can be useful for troubleshooting, or for
   diagnostics such as checking the quality of fit for each of the data-driver
   pairs.
+
+  The \code{debug_mode} argument determines whether \code{obj_fun} is running in
+  debug mode. In debug mode, each time \code{obj_fun} is called, it will print
+  the values of \code{x} and the error metric to the R terminal. This can be
+  useful when troubleshooting a problem with an optimization, since it provides
+  a record of any problematic parameter combinations. When setting
+  \code{debug_mode} to \code{TRUE}, also consider using \code{\link[base]{sink}}
+  to write the outputs to a file instead of the R terminal. In that case, there
+  will still be a record even if R crashes.
 }
 
 \examples{
@@ -609,16 +618,15 @@ if (require(BioCro)) {
 
   # Try doubling each parameter value; in this case, the value of the
   # objective function increases, indicating a lower degree of agreement between
-  # the model and the observed data.
-  cat('\nError metric calculated by doubling the initial argument values:\n\n')
-  print(
-    obj_fun(2 * as.numeric(independent_args))
-  )
+  # the model and the observed data. Here we will call `obj_fun` in debug mode,
+  # which will automatically print the value of the error metric.
+  cat('\nError metric calculated by doubling the initial argument values:\n')
+  error_metric <- obj_fun(2 * as.numeric(independent_args), debug_mode = TRUE)
 
-  # We can also see the values of each term that makes up the error metric
-  cat('\nError metric terms calculated by doubling the initial argument values:\n\n')
-  str(
-    obj_fun(2 * as.numeric(independent_args), return_terms = TRUE)
-  )
+  # We can also see the values of each term that makes up the error metric;
+  # again, we will call `obj_fun` in debug mode for automatic printing.
+  cat('\nError metric terms calculated by doubling the initial argument values:\n')
+  error_terms <-
+    obj_fun(2 * as.numeric(independent_args), return_terms = TRUE, debug_mode = TRUE)
 }
 }

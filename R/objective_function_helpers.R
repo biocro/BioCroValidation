@@ -403,7 +403,18 @@ get_obj_fun <- function(
     regularization_method
 )
 {
-    function(x, lambda = 0, return_terms = FALSE) {
+    function(x, lambda = 0, return_terms = FALSE, debug_mode = FALSE) {
+        if (debug_mode) {
+            msg <- paste0(
+                '\nTime: ',
+                Sys.time(),
+                '    Independent argument values: ',
+                paste(x, collapse = ', '),
+                '\n'
+            )
+            cat(msg)
+        }
+
         errors <- lapply(seq_along(model_runners), function(i) {
             runner <- model_runners[[i]]
             res    <- runner(x)
@@ -422,15 +433,36 @@ get_obj_fun <- function(
         reg_penalty <- regularization_penalty(x, regularization_method, lambda)
 
         if (return_terms) {
-            list(
+            error_metric_terms <- list(
                 terms_from_data_driver_pairs = stats::setNames(
                     errors,
                     names(model_runners)
                 ),
                 regularization_penalty = reg_penalty
             )
+
+            if (debug_mode) {
+                cat(paste0('Time: ', Sys.time()), '    Error metric terms: ')
+                utils::str(error_metric_terms)
+                cat('\n')
+            }
+
+            error_metric_terms
         } else {
-            sum(as.numeric(errors)) + reg_penalty
+            error_metric <- sum(as.numeric(errors)) + reg_penalty
+
+            if (debug_mode) {
+                msg <- paste0(
+                    'Time: ',
+                    Sys.time(),
+                    '    Error metric: ',
+                    error_metric,
+                    '\n'
+                )
+                cat(msg)
+            }
+
+            error_metric
         }
     }
 }
