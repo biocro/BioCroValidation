@@ -557,38 +557,43 @@ in the past:
 
 There are many possible ways to specify the bounds in R, but ultimately they
 must be expressed as numeric vectors, where the elements are ordered as they are
-in `independent_args`. Here we supply lower and upper bounds for each parameter
-in a data frame and then ensure they are properly ordered. Later, the data frame
-columns can be passed to the optimizer as the bounds:
+in `independent_args`. Here we use the `bounds_table` function from
+`BioCroValidation` to create a data frame where the lower and upper bounds are
+stored as columns. Later, the columns can be passed to the optimizer. The
+`bounds_table` function will also check the initial guess to ensure it lies
+within the bounds; for more information about this function, see its help page
+by typing `?bounds_table` from an R terminal.
 
 ```{r setting_bounds}
-# Define a table with the bounds
-bounds <- read.table(
-  textConnection('
-    arg_name       lower    upper
-    alphaLeaf      +0       +50
-    alphaStem      +0       +50
-    alphaShell     +0       +50
-    alphaSeneLeaf  +0       +50
-    alphaSeneStem  +0       +50
-    betaLeaf       -50      +0
-    betaStem       -50      +0
-    betaShell      -50      +0
-    betaSeneLeaf   -50      +0
-    betaSeneStem   -50      +0
-    rateSeneLeaf   +0       +0.0125
-    rateSeneStem   +0       +0.005
-    mrc_leaf       +1e-6    +1e-2
-    mrc_root       +1e-6    +1e-2
-    grc_stem       +8e-4    +0.08
-    grc_root       +0.0025  +0.075
-  '),
-  header = TRUE,
-  stringsAsFactors = FALSE
-)
+# Specify some bounds
+aul <- 50   # Upper limit for alpha parameters
+bll <- -50  # Lower limit for beta parameters
+mll <- 1e-6 # Lower limit for mrc parameters
+mul <- 1e-2 # Upper limit for mrc parameters
 
-# Make sure it is ordered properly
-bounds <- bounds[match(independent_arg_names, bounds[['arg_name']]), ]
+# Define a table with the bounds in the same order as `independent_args`
+bounds <- bounds_table(
+  independent_args,
+  list(
+    alphaLeaf     = c(0,      aul),
+    alphaStem     = c(0,      aul),
+    alphaShell    = c(0,      aul),
+    alphaSeneLeaf = c(0,      aul),
+    alphaSeneStem = c(0,      aul),
+    betaLeaf      = c(bll,    0),
+    betaStem      = c(bll,    0),
+    betaShell     = c(bll,    0),
+    betaSeneLeaf  = c(bll,    0),
+    betaSeneStem  = c(bll,    0),
+    rateSeneLeaf  = c(0,      0.0125),
+    rateSeneStem  = c(0,      0.005),
+    mrc_leaf      = c(mll,    mul),
+    mrc_root      = c(mll,    mul),
+    grc_stem      = c(8e-4,   0.08),
+    grc_root      = c(0.0025, 0.075)
+  ),
+  initial_guess
+)
 ```
 
 ## Running the Optimizer
