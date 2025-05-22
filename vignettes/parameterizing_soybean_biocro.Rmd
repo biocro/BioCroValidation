@@ -46,6 +46,7 @@ load them now:
 library(BioCroValidation)
 library(BioCro)
 library(dfoptim)
+library(lattice)
 ```
 
 # Building the Objective Function
@@ -685,6 +686,125 @@ percent larger than with the default parameter values.
 The optimized parameter values could likely be improved by using a more
 stringent tolerance for the optimizer, but this would require more time to run.
 
+# Comparing Model Outputs
+
+Another way to evaluate the results of the optimization is to compare
+simulations using the default, perturbed, and re-optimized versions of the
+model.
+
+Following the re-parameterization, we now have new values of the independent
+arguments, but this is not enough to actually run the new version of the model.
+Thus, the next step is to form a new model definition by updating the values of
+the default soybean model. This can be accomplished using the `update_model`
+function from `BioCroValidation`:
+
+```{r form_new_models}
+# Get model definition lists for the perturbed and re-parameterized versions of
+# the soybean model
+soybean_perturbed <- update_model(
+  BioCro::soybean,
+  independent_args,
+  initial_guess,
+  dependent_arg_function = dependent_arg_function
+)
+
+soybean_reparam <- update_model(
+  BioCro::soybean,
+  independent_args,
+  optim_res[['par']],
+  dependent_arg_function = dependent_arg_function
+)
+```
+
+We can check that the three models have different values of key parameters, such
+as the "dependent" argument `mrc_stem`:
+
+```{r}
+print(BioCro::soybean$parameters$mrc_stem)
+
+print(soybean_perturbed$parameters$mrc_stem)
+
+print(soybean_reparam$parameters$mrc_stem)
+```
+
+Now we can run each version of the model for a single year and visually compare
+their outputs:
+
+```{r comparison_plots}
+# Define a helper function that runs a single model for the year 2005
+run_2005 <- function(model_definition) {
+  with(model_definition, {run_biocro(
+    initial_values,
+    parameters,
+    soybean_weather[['2005']],
+    direct_modules,
+    differential_modules,
+    ode_solver
+  )})
+}
+
+# Run each model and combine the results
+full_res <- rbind(
+  within(run_2005(BioCro::soybean),   {model = 'Default Soybean-BioCro'}),
+  within(run_2005(soybean_perturbed), {model = 'Perturbed Soybean-BioCro'}),
+  within(run_2005(soybean_reparam),   {model = 'Re-parameterized Soybean-BioCro'})
+)
+
+# Plot the results
+xyplot(
+  Leaf + Stem + Root + Grain ~ fractional_doy,
+  group = model,
+  data = full_res,
+  type = 'l',
+  auto.key = list(space = 'top'),
+  xlab = 'Day of year (2005)',
+  ylab = 'Biomass (Mg / ha)'
+)
+```
+
+Here we can see that while the simulated stem, root, and grain (seed) biomass
+values do not differ much between the models, there are large differences in the
+leaf mass, where the default and re-optimized versions are similar and the
+perturbed version predicts much smaller values.
+
+## Saving the New Model Definition
+
+A realistic parameterization takes a long time to complete, so it is important
+to save the results for later use. One approach is to save the model definition
+list using the `save` or `saveRDS` functions from base R. However, these options
+create binary files that are not human-readable, and they cannot be easily
+tracked using `git`. As an alternative, the `BioCroValidation` includes a
+function called `write_model` that forms a string representing an R command that
+can be called to re-create a model definition. This command string can be
+written to a text file, making it easy to read and to track with `git`.
+
+Here we apply `write_model` to the re-optimized soybean model:
+
+```{r write_model_command}
+# Convert the re-parameterized soybean model to an R command string
+r_cmd_string <- with(soybean_reparam, write_model(
+  'soybean_reparam',
+  direct_modules,
+  differential_modules,
+  initial_values,
+  parameters,
+  ode_solver
+))
+```
+
+We can view the resulting R command string:
+
+```{r}
+writeLines(r_cmd_string)
+```
+
+It can also be written to a text file:
+
+```{r write_model_to_file, eval = FALSE}
+# Save the model definition as an R file in the current working directory
+writeLines(r_cmd_string, './soybean_reparam.R')
+```
+
 # Commands From This Document
 
 ```{r, eval = FALSE}
@@ -745,6 +865,14 @@ stringent tolerance for the optimizer, but this would require more time to run.
 ###
 
 <<compare_param>>
+
+<<form_new_models>>
+
+<<comparison_plots>>
+
+<<write_model_command>>
+
+<<write_model_to_file>>
 
 ```
 
