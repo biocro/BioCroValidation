@@ -473,6 +473,7 @@ test_that('Bad data values and weights are detected', {
             independent_args,
             quantity_weights,
             stdev_weight_method = 'inverse',
+            stdev_weight_param = 0,
             data_definitions = data_definitions,
             post_process_function = post_process_function,
             verbose_startup = verbose_startup

@@ -56,6 +56,10 @@
   bounds; an error will be thrown if any do lie outside the bounds. A warning
   will also be thrown if any initial guesses lie on the bounds, since this can
   be problematic for some optimizers, such as \code{\link[dfoptim]{nmkb}}.
+
+  Some optimizers, such as \code{\link[DEoptim]{DEoptim}}, do not require an
+  initial guess; in this case, there is no strong need to pass an initial guess
+  to \code{bounds_table}.
 }
 
 \value{

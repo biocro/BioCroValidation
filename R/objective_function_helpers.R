@@ -174,8 +174,23 @@ add_time_indices <- function(initial_runner_res, long_form_data) {
     long_form_data
 }
 
+# Helping function for getting a parameter value that has a default
+get_param_default <- function(param, default) {
+    if (is.null(param)) {
+        default
+    } else {
+        param
+    }
+}
+
 # Helping function for getting normalization factors
-add_norm <- function(long_form_data, normalization_method, n_ddp) {
+add_norm <- function(
+    long_form_data,
+    normalization_method,
+    normalization_param,
+    n_ddp
+)
+{
     for (i in seq_along(long_form_data)) {
         data_table <- long_form_data[[i]]
 
@@ -191,10 +206,17 @@ add_norm <- function(long_form_data, normalization_method, n_ddp) {
                 nrow(qname_subset) * n_ddp
             } else if (tolower(normalization_method) == 'max') {
                 max(qname_subset[['quantity_value']])^2
+            } else if (tolower(normalization_method) == 'obs') {
+                eps <- get_param_default(normalization_param, 1e-1)
+                data_table[i, 'quantity_value']^2 + eps
             } else if (tolower(normalization_method) == 'mean_max') {
                 npts <- nrow(qname_subset)
                 qmax <- max(qname_subset[['quantity_value']])
                 npts * n_ddp * qmax^2
+            } else if (tolower(normalization_method) == 'mean_obs') {
+                npts <- nrow(qname_subset)
+                eps <- get_param_default(normalization_param, 1e-1)
+                npts * n_ddp * (data_table[i, 'quantity_value']^2 + eps)
             } else {
                 stop('Unsupported normalization_method: ', normalization_method)
             }
@@ -207,7 +229,7 @@ add_norm <- function(long_form_data, normalization_method, n_ddp) {
 }
 
 # Helping function for getting variance-based weights
-add_w_var <- function(long_form_data, stdev_weight_method) {
+add_w_var <- function(long_form_data, stdev_weight_method, stdev_weight_param) {
     for (i in seq_along(long_form_data)) {
         data_table <- long_form_data[[i]]
         data_stdev <- data_table[['quantity_stdev']]
@@ -216,9 +238,11 @@ add_w_var <- function(long_form_data, stdev_weight_method) {
             if (tolower(stdev_weight_method) == 'equal') {
                 1.0
             } else if (tolower(stdev_weight_method) == 'logarithm') {
-                log(1 / (data_stdev + 1e-5))
+                eps <- get_param_default(stdev_weight_param, 1e-5)
+                log(1 / (data_stdev + eps))
             } else if (tolower(stdev_weight_method) == 'inverse') {
-                1 / data_stdev^2
+                eps <- get_param_default(stdev_weight_param, 1e-1)
+                1 / (data_stdev^2 + eps)
             } else {
                 stop('Unsupported stdev_weight_method: ', stdev_weight_method)
             }
