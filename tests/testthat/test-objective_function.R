@@ -410,6 +410,40 @@ test_that('Bad return values are detected', {
         ),
         'The objective function did not return a finite value when using the initial argument values; instead, it returned: NA'
     )
+
+    # A post-processing function removes the `time` column
+    expect_error(
+        objective_function(
+            model,
+            ddps,
+            independent_args,
+            quantity_weights,
+            data_definitions = data_definitions,
+            post_process_function = function(x) {within(x, {
+                Pod = Grain + Shell
+                time = NULL
+            })},
+            verbose_startup = verbose_startup
+        ),
+        'Some data columns were missing from runner outputs:
+ambient_2002: time
+ambient_2005: time',
+        fixed = TRUE
+    )
+
+    # A post-processing function doesn't return a data frame
+    expect_error(
+        objective_function(
+            model,
+            ddps,
+            independent_args,
+            quantity_weights,
+            data_definitions = data_definitions,
+            post_process_function = function(x) {1.0},
+            verbose_startup = verbose_startup
+        ),
+        'Some runners did not produce data frames: ambient_2002, ambient_2005'
+    )
 })
 
 test_that('Bad regularization methods are detected', {

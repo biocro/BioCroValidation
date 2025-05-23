@@ -245,8 +245,19 @@ check_runner_results <- function(
         stop(msg)
     }
 
+    # Make sure each runner produces a data frame
+    is_df <- sapply(initial_runner_res, is.data.frame)
+
+    if (any(!is_df)) {
+        msg <- paste(
+            'Some runners did not produce data frames:',
+            paste(names(initial_runner_res)[!is_df], collapse = ', ')
+        )
+        stop(msg)
+    }
+
     # Make sure each runner produces the necessary columns in its output
-    expected_columns <- as.character(full_data_definitions)
+    expected_columns <- c('time', as.character(full_data_definitions))
 
     missing_columns <- lapply(initial_runner_res, function(res) {
         expected_columns[!expected_columns %in% colnames(res)]
