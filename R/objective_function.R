@@ -8,7 +8,9 @@ objective_function <- function(
     quantity_weights,
     data_definitions = list(),
     normalization_method = 'mean_max',
+    normalization_param = NULL,
     stdev_weight_method = 'equal',
+    stdev_weight_param = NULL,
     regularization_method = 'none',
     dependent_arg_function = NULL,
     post_process_function = NULL,
@@ -73,13 +75,15 @@ objective_function <- function(
     long_form_data <- add_norm(
         long_form_data,
         normalization_method,
+        normalization_param,
         length(data_driver_pairs)
     )
 
     # Add variance-based weights
     long_form_data <- add_w_var(
         long_form_data,
-        stdev_weight_method
+        stdev_weight_method,
+        stdev_weight_param
     )
 
     # Print the long form data, if desired. Do this before checking the data,

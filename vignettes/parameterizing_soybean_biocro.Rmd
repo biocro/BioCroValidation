@@ -100,10 +100,10 @@ added to the observed values.
 
 In previous parameterizations, a standard deviation for the root mass was not
 explicitly estimated; instead, the standard-deviation-based weight factor was
-implicitly set to 1. Because the `'logarithm'` method was used, a weight factor
-of 1 implies a standard deviation of \(1 / e - 10^{-5} \approx 0.3678694\). See
-the documentation page (`?objective_function`) for more information about this
-weighting method.
+implicitly set to 1. Because the `'logarithm'` method with
+\(\epsilon = 10^{-5}\) was used, a weight factor of 1 implies a standard
+deviation of \(1 / e - 10^{-5} \approx 0.3678694\). See the documentation page
+(`?objective_function`) for more information about this weighting method.
 
 Finally, the data set includes some values that are not needed for the
 parameterization. This includes the leaf litter accumulated between each
@@ -129,14 +129,12 @@ process_table <- function(data_table, type) {
     sqrt(data_table$Rep_Mg_per_ha^2 + data_table$Seed_Mg_per_ha^2)
   }
 
-  # Define new `Root_Mg_per_ha` column
+  # Define new `Root_Mg_per_ha` column, which has just one non-NA value
+  row_to_use <- 5                 # Choose row to use
+  data_table$Root_Mg_per_ha <- NA # Initialize all values to NA
+
   if (type == 'biomass') {
-    # Initialize all values to NA
-    data_table$Root_Mg_per_ha <- NA
-
     # Estimate a mass at one time point
-    row_to_use <- 5
-
     col_to_add <- c(
       'Leaf_Mg_per_ha',
       'Stem_Mg_per_ha',
@@ -146,9 +144,8 @@ process_table <- function(data_table, type) {
     data_table[row_to_use, 'Root_Mg_per_ha'] <-
       0.17 * sum(data_table[row_to_use, col_to_add])
   } else {
-    # We can set a value for each time point; any time points where the root
-    # mass is NA will be ignored
-    data_table$Root_Mg_per_ha <- 1 / exp(1) - 1e-5
+    # Estimate standard deviation at one time point
+    data_table[row_to_use, 'Root_Mg_per_ha'] <- 1 / exp(1) - 1e-5
   }
 
   # Remove columns by setting them to NULL
@@ -397,8 +394,8 @@ more details to discuss:
   for more details.
 
 - Soybean-BioCro has always used the `'logarithm'` method for determining
-  weights from standard deviations; see Equation 17 of
-  @matthews_soybean_biocro_2021 for more details.
+  weights from standard deviations with \(\epsilon = 10^{-5}\); see Equation 17
+  of @matthews_soybean_biocro_2021 for more details.
 
 - Soybean-BioCro has not used any regularization.
 
@@ -416,6 +413,7 @@ obj_fun <- objective_function(
   data_definitions       = data_definitions,
   normalization_method   = 'mean_max',
   stdev_weight_method    = 'logarithm',
+  stdev_weight_param     = 1e-5,
   regularization_method  = 'none',
   dependent_arg_function = dependent_arg_function,
   post_process_function  = post_process_function,

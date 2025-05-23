@@ -22,6 +22,9 @@
   It is also possible to include "dependent" model arguments, whose values are
   determined from the "independent" model arguments that are varied during the
   parameterization procedure.
+
+  For a detailed example of using \code{objective_function}, see the
+  "Parameterizing Soybean-BioCro" vignette/article.
 }
 
 \usage{
@@ -32,7 +35,9 @@
     quantity_weights,
     data_definitions = list(),
     normalization_method = 'mean_max',
+    normalization_param = NULL,
     stdev_weight_method = 'equal',
+    stdev_weight_param = NULL,
     regularization_method = 'none',
     dependent_arg_function = NULL,
     post_process_function = NULL,
@@ -57,7 +62,8 @@
     \code{time}, whose values follow BioCro's definition of
     \code{\link[BioCro]{time}}; the other columns should represent observed
     values of model outputs. Any \code{NA} values in \code{data} will
-    be ignored when calculating the error metric.
+    be ignored when calculating the error metric, but all non-\code{NA} values
+    of all columns (except \code{time}) will be compared to the model output.
 
     The \code{drivers} element must be a data frame that can be passed to
     \code{\link[BioCro]{run_biocro}} as its \code{drivers} input argument.
@@ -75,8 +81,8 @@
   \item{independent_args}{
     A list of named numeric values. The names will determine the independent
     arguments to be varied during their optimization, and the values specify
-    "test" values of each argument that will be used internally to check that
-    the objective function is properly defined and can be evaluated.
+    "initial" or "test" values of each argument that will be used internally to
+    check that the objective function is properly defined and can be evaluated.
   }
 
   \item{quantity_weights}{
@@ -101,9 +107,23 @@
     error metric; see below for more details.
   }
 
+  \item{normalization_param}{
+    An (optional) parameter value used by some normalization methods. When
+    \code{normalization_param} is \code{NULL}, a default value will be used,
+    which depends on the particular normalization method. Otherwise, the
+    user-specified value will be used. See details below.
+  }
+
   \item{stdev_weight_method}{
     A string indicating the method to be used when calculating the
     variance-based weights used in the error metric; see below for more details.
+  }
+
+  \item{stdev_weight_param}{
+    An (optional) parameter value used by some normalization methods. When
+    \code{stdev_weight_param} is \code{NULL}, a default value will be used,
+    which depends on the particular normalization method. Otherwise, the
+    user-specified value will be used. See details below.
   }
 
   \item{regularization_method}{
@@ -327,18 +347,33 @@
           as
 
           \deqn{w_i^{stdev} =%
-          ln \left( \frac{1}{\sigma + 10^{-5}} \right),}
-          where \eqn{ln} denotes a logarithm with base \eqn{e}. This method
-          was used in the original Soybean-BioCro paper. Note: this method
-          should be used with caution, because \eqn{w_i^{stdev}} is zero
-          for \eqn{\sigma = 1 - 10^{-5} = 0.99999}, and it becomes negative for
-          larger values of \eqn{\sigma}.
+          ln \left( \frac{1}{\sigma_i + \epsilon} \right),}
+          where \eqn{ln} denotes a logarithm with base \eqn{e} and
+          \eqn{\epsilon} is a small number included to prevent numerical errors
+          that would otherwise occur when \eqn{\sigma = 0}. This method was
+          used in the original Soybean-BioCro paper.
+
+          The value of \eqn{\epsilon} is specified by the
+          \code{stdev_weight_param} input argument, which defaults to
+          \code{1e-5} when \code{stdev_weight_param} is \code{NULL} when using
+          this method. With the default value of \eqn{\epsilon},
+          \eqn{w_i^{stdev} \approx 11.512} when \eqn{\sigma = 0}.
+
+          Note: this method should be used with caution, because
+          \eqn{w_i^{stdev}} is zero for \eqn{\sigma_i = 1 - \epsilon}, and it
+          becomes negative for larger values of \eqn{\sigma_i}.
 
     \item \code{'inverse'}: For this method, \eqn{w_i^{stdev}} is calculated as
 
-          \deqn{w_i^{stdev} = \frac{1}{\sigma^2}.}
-          Note: this method should be used with caution, because
-          \eqn{w_i^{stdev}} is infinite when \eqn{\sigma} is zero.
+          \deqn{w_i^{stdev} = \frac{1}{\sigma_i^2 + \epsilon},}
+          where \eqn{\epsilon} is a small number included to prevent numerical
+          errors that would otherwise occur when \eqn{\sigma_i = 0}.
+
+          The value of \eqn{\epsilon} is specified by the
+          \code{stdev_weight_param} input argument, which defaults to
+          \code{1e-1} when \code{stdev_weight_param} is \code{NULL} when using
+          this method. With the default value of \eqn{\epsilon},
+          \eqn{w_i^{stdev} = 10} when \eqn{\sigma_i = 0}.
   }
 
   If any values of \eqn{w_i^{stdev}} are undefined, negative, or infinite, an
@@ -377,6 +412,23 @@
           method. This approach avoids over-representing variable types with
           larger magnitude when determining \eqn{E_{agreement}}.
 
+    \item \code{'obs'}: For this method,
+
+          \deqn{N_i = \left( Y_{obs}^i \right)^2 + \epsilon,}
+          where \eqn{\epsilon} is a small number included to prevent numerical
+          errors that would otherwise occur when \eqn{Y_{obs}^i = 0}. In this
+          case, the equation for \eqn{E_{agreement}} essentially uses relative
+          differences rather than absolute differences, which is achieved by
+          normalizing by the observed values, hence the name. This approach
+          avoids over-representing time points where a particular quantity takes
+          its largest values when determining \eqn{E_{agreement}}.
+
+          The value of \eqn{\epsilon} is specified by the
+          \code{normalization_param} input argument, which defaults to
+          \code{1e-1} when \code{normalization_param} is \code{NULL} when using
+          this method. With the default value of \eqn{\epsilon}, \eqn{N_i = 10}
+          when \eqn{Y_{obs}^i = 0}.
+
     \item \code{'mean_max'}: For this method, the "mean" and "max" methods are
           combined so that
 
@@ -384,9 +436,26 @@
           \cdot n_{data} \cdot \left( max_{vtype}^{vdata} \right)^2.}
           This approach avoids over-representing drivers with larger numbers of
           associated observations, and variable types with larger magnitudes.
-          This method is used for parameterizing Soybean-BioCro, and is
-          recommended for most situations.
+          This method is used for parameterizing Soybean-BioCro.
+
+    \item \code{'mean_obs'}: For this method, the "mean" and "obs" methods are
+          combined so that
+
+          \deqn{N_i = n_{vtype}^{vdrivers} \cdot n_{data}%
+          \cdot \left( \left( Y_{obs}^i \right)^2 + \epsilon \right)^2.}
+          This approach avoids over-representing drivers with larger numbers of
+          associated observations, and time points with larger observed values.
+
+          The value of \eqn{\epsilon} is specified by the
+          \code{normalization_param} input argument, which defaults to
+          \code{1e-1} when \code{normalization_param} is \code{NULL} when using
+          this method. With the default value of \eqn{\epsilon},
+          \eqn{N_i = 10 \cdot n_{vtype}^{vdrivers} \cdot n_{data}} when
+          \eqn{Y_{obs}^i = 0}.
   }
+
+  In most situations, it is recommended to use either \code{'mean_max'} or
+  \code{'mean_obs'} depending on user preference or performance.
 
   \strong{Regularization methods}
 
@@ -437,11 +506,12 @@
           \code{post_process_function}.
 
     \item Ensuring that each independent and dependent argument name is either
-          a parameter or initial value of the model. This is accomplished using
-          \code{\link[BioCro]{partial_run_biocro}}. Note that argument names
-          passed to \code{partial_run_biocro} can technically include drivers,
-          but it is unlikely that the value of a driver would be varied during
-          an optimization, so the argument names are not allowed to include
+          a parameter or initial value of the model. Internally, argument names
+          are passed to \code{\link[BioCro]{partial_run_biocro}} via its
+          \code{arg_names} input. Note that argument names passed to
+          \code{partial_run_biocro} can technically include drivers, but it is
+          unlikely that the value of a driver would be varied during an
+          optimization, so the argument names are not allowed to include
           columns in the drivers.
 
     \item Ensuring that the optional \code{dependent_arg_function},
@@ -449,9 +519,9 @@
           functions can be run without causing errors.
 
     \item Ensuring that certain values are finite (such as \eqn{Y_{obs}},
-          \eqn{\sigma}, \eqn{w_i^{stdev}}, and \eqn{N}), and that certain values
-          are not negative (such as \eqn{\sigma}, \eqn{w_i^{stdev}}, and
-          \eqn{N}).
+          \eqn{\sigma_i}, \eqn{w_i^{stdev}}, and \eqn{N_i}), and that certain
+          values are not negative (such as \eqn{\sigma_i}, \eqn{w_i^{stdev}},
+          and \eqn{N_i}).
   }
 
   If any issues are detected, an informative error message will be sent. Note
