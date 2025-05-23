@@ -4,7 +4,7 @@ pkgdown_sha: ~
 articles:
   BioCroValidation: BioCroValidation.html
   parameterizing_soybean_biocro: parameterizing_soybean_biocro.html
-last_built: 2025-05-23T21:19Z
+last_built: 2025-05-23T21:36Z
 urls:
   reference: https://biocro.github.io/BioCroValidation/reference
   article: https://biocro.github.io/BioCroValidation/articles
