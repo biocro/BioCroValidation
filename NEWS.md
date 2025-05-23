@@ -35,7 +35,9 @@ be directly added to this file to describe the related changes.
 
 # UNRELEASED
 
-- Added 2002 and 2005 SoyFACE biomass data.
+# Changes in BioCroValidation Version 0.2.0 (2025-05-23)
+
+- Added 2002 and 2005 SoyFACE biomass and standard deviation data.
 
 - Added several new functions: `objective_function`, `update_model`, and
   `bounds_table`.

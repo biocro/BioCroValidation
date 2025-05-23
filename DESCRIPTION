@@ -1,12 +1,12 @@
 Package: BioCroValidation
-Version: 0.1.0
+Version: 0.2.0-0
 Title: Tools for Validating BioCro Models
 Description: A collection of tools for validating BioCro crop growth models.
 Authors@R: c(
     person("Edward B.", "Lochocki", role = c('cre', 'aut'),
            email = "eloch@illinois.edu",
            comment = c(ORCID = "0000-0002-4912-9783")),
-    person("BioCroField authors", role = "cph")
+    person("BioCroValidation authors", role = "cph")
     )
 Depends:
     R (>= 3.6.0)
@@ -23,5 +23,5 @@ VignetteBuilder: knitr
 License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
-URL: https://github.com/BioCro/BioCroField, https://biocro.github.io/BioCroValidation/
+URL: https://github.com/BioCro/BioCroValidation, https://biocro.github.io/BioCroValidation/
 Config/testthat/edition: 3
