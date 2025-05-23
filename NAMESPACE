@@ -1,1 +1,4 @@
+export(bounds_table)
+export(objective_function)
+export(update_model)
 export(write_model)

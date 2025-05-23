@@ -1,0 +1,822 @@
+---
+title: "Parameterizing Soybean-BioCro"
+output:
+  rmarkdown::html_vignette:
+    toc: true
+    number_sections: true
+vignette: >
+  %\VignetteIndexEntry{Parameterizing Soybean-BioCro}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+bibliography: references.bib
+link-citations: yes
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.width = 7.5,
+  fig.height = 5,
+  fig.align = "center"
+)
+```
+
+# Overview
+
+This article shows how to create an objective function that can be used to
+parameterize BioCro's soybean model
+[@matthews_soybean_biocro_2021; @lochocki_biocro_2022].
+
+Since the original publication of Soybean-BioCro, the BioCro module library has
+undergone several changes, and the model has been re-parameterized several
+times. These parameterizations did not use `BioCroValidation`, since they were
+performed before `BioCroValidation` was created.
+
+However, `BioCroValidation` is able to re-create the objective functions that
+were used for these parameterizations. Here, we re-create the objective function
+that was used for the parameterization included in version `3.2.0` of the BioCro
+R package.
+
+In the commands below, we will use functions from several libraries, so we will
+load them now:
+
+```{r libraries}
+# Load required libraries
+library(BioCroValidation)
+library(BioCro)
+library(dfoptim)
+library(lattice)
+```
+
+# Building the Objective Function
+
+In this section, we will use the `objective_function` function from
+`BioCroValidation` package to create an objective function that can be used to
+parameterize Soybean-BioCro. For more details about this, please see the help
+page for `objective_function` by typing `?objective_function` from an R
+terminal.
+
+## The Base Model Definition
+
+We first need a base model definition that includes the necessary modules,
+initial values, parameters, and differential equation solver specifications. For
+this example, we will simply use Soybean-BioCro as the base model, with just one
+small change: we will use an Euler solver rather than the default solver, which
+will help make the optimization run faster. For reasonable sets of parameter
+values, the Euler solver does not seem to cause any substantial errors when
+running Soybean-BioCro.
+
+```{r base_model_definition}
+# Specify the base model definition
+base_model_definition            <- soybean
+base_model_definition$ode_solver <- default_ode_solvers[['homemade_euler']]
+```
+
+## The Observed Data
+
+The observed data needed to parameterize Soybean-BioCro is included in the
+`BioCroValidation` package as the `soyface_biomass` data set, which consists of
+two years (2002 and 2005) of biomass data and associated standard deviations,
+included in four separate tables. However, each table requires some
+pre-processing to get it ready.
+
+One issue is that the data set specifies the doy of year (DOY) for each harvest,
+but we need to specify the time using BioCro's convention (the number of hours
+since the start of the year).
+
+Another issue is that the data set includes pod and seed values, but
+Soybean-BioCro calculates shell and seed masses, where the shell and seed
+together comprise the pod.
+
+Although the observations do not include root biomass, it is nevertheless
+important to constrain the predicted root mass to reasonable values. To do this,
+it is assumed that the maximum root mass is seventeen percent of the maximum
+aboveground biomass, and that it is achieved at the same time as maximum
+above-ground biomass, based on observations reported in @ordonez_root_2020. In
+the observed data, the sum of stem and leaf mass is largest at the fifth time
+point in both years. So, root mass is estimated at this single time point and
+added to the observed values.
+
+In previous parameterizations, a standard deviation for the root mass was not
+explicitly estimated; instead, the standard-deviation-based weight factor was
+implicitly set to 1. Because the `'logarithm'` method with
+\(\epsilon = 10^{-5}\) was used, a weight factor of 1 implies a standard
+deviation of \(1 / e - 10^{-5} \approx 0.3678694\). See the documentation page
+(`?objective_function`) for more information about this weighting method.
+
+Finally, the data set includes some values that are not needed for the
+parameterization. This includes the leaf litter accumulated between each
+harvest, as well as the `DOY` and `Rep_Mg_per_ha` columns that have been
+superseded by other columns defined above.
+
+Here we will define a helping function that can accomplish the required
+modifications described above; note that some operations are different depending
+on whether the table represents biomass values or standard deviations:
+
+```{r process_tables}
+# Define a helping function for processing data tables
+process_table <- function(data_table, type) {
+  # Define new `time` column
+  data_table$time <- (data_table$DOY - 1) * 24.0
+
+  # Define new `Shell_Mg_per_ha` column
+  data_table$Shell_Mg_per_ha <- if (type == 'biomass') {
+    # The shell is all parts of the pod other than the seed
+    data_table$Rep_Mg_per_ha - data_table$Seed_Mg_per_ha
+  } else {
+    # Add uncertainties in quadrature, a simple approach to error propagation
+    sqrt(data_table$Rep_Mg_per_ha^2 + data_table$Seed_Mg_per_ha^2)
+  }
+
+  # Define new `Root_Mg_per_ha` column, which has just one non-NA value
+  row_to_use <- 5                 # Choose row to use
+  data_table$Root_Mg_per_ha <- NA # Initialize all values to NA
+
+  if (type == 'biomass') {
+    # Estimate a mass at one time point
+    col_to_add <- c(
+      'Leaf_Mg_per_ha',
+      'Stem_Mg_per_ha',
+      'Rep_Mg_per_ha'
+    )
+
+    data_table[row_to_use, 'Root_Mg_per_ha'] <-
+      0.17 * sum(data_table[row_to_use, col_to_add])
+  } else {
+    # Estimate standard deviation at one time point
+    data_table[row_to_use, 'Root_Mg_per_ha'] <- 1 / exp(1) - 1e-5
+  }
+
+  # Remove columns by setting them to NULL
+  data_table$DOY              = NULL
+  data_table$Rep_Mg_per_ha    = NULL
+  data_table$Litter_Mg_per_ha = NULL
+
+  # Return the processed table
+  data_table
+}
+```
+
+## The Data-Driver Pairs
+
+The `BioCro` R package includes weather data for the years in the
+`soyface_biomass` data set. So now we are ready to define the data-driver pairs,
+which includes the weather, the observed biomass, the standard deviation of the
+observed biomass, and the weight to assign to each year:
+
+```{r data_driver_pairs}
+# Define the data-driver pairs
+data_driver_pairs <- list(
+  ambient_2002 = list(
+    data       = process_table(soyface_biomass[['ambient_2002']],     'biomass'),
+    data_stdev = process_table(soyface_biomass[['ambient_2002_std']], 'stdev'),
+    drivers    = BioCro::soybean_weather[['2002']],
+    weight     = 1
+  ),
+  ambient_2005 = list(
+    data       = process_table(soyface_biomass[['ambient_2005']],     'biomass'),
+    data_stdev = process_table(soyface_biomass[['ambient_2005_std']], 'stdev'),
+    drivers    = BioCro::soybean_weather[['2005']],
+    weight     = 1
+  )
+)
+```
+
+Here we have chosen equal weights for the two years.
+
+## The Post-Processing Function
+
+The observed data includes values of the total litter, which is comprised of
+both leaf and stem litter. However, the model does not calculate this quntity;
+instead, it returns separate values of leaf and stem litter. To address this
+issue, we can provide a "post-processing function." This is an (optional)
+function that is applied to each simulation result and can be used to add new
+columns. Here we define such a function, which adds a new column for the total
+litter:
+
+```{r post_process_function}
+# Define the post-processing function
+post_process_function <- function(sim_res) {
+  # Calculate the total litter as the sum of leaf and stem litter
+  within(sim_res, {TotalLitter = LeafLitter + StemLitter})
+}
+```
+
+## The Data Definitions
+
+The data sets above have columns whose names do not match the corresponding
+model outputs. For example, the `Leaf_Mg_per_ha` column of the observed data
+must be compared to the `Leaf` column of the model output, since both represent
+the leaf mass per unit ground area. To handle this mismatch, we can provide a
+set of "data definitions" that specify which columns should be compared:
+
+```{r data_definitions}
+# Define the data definition list, where the element names are columns in the
+# observed data tables, and the element values are the corresponding column
+# names in the model outputs
+data_definitions <- list(
+# Observed               Simulated
+  CumLitter_Mg_per_ha = 'TotalLitter',
+  Leaf_Mg_per_ha      = 'Leaf',
+  Root_Mg_per_ha      = 'Root',
+  Seed_Mg_per_ha      = 'Grain',
+  Shell_Mg_per_ha     = 'Shell',
+  Stem_Mg_per_ha      = 'Stem'
+)
+```
+
+## The Arguments to Vary
+
+Here we wish to vary several parameters related to carbon partitioning for
+growth, senescence, maintenance respiration, and growth respiration:
+
+- For each growing tissue, there are two parameters (\(\alpha\) and \(\beta\))
+  that influence the parbon partitioning coefficients. Here we will vary these
+  for the leaf, stem, and shell (6 parameters in total).
+
+- For each senescing tissue, there are three parameters (\(\alpha_{sen}\),
+  \(\beta_{sen}\), and `rate`) that influence when senescence begins and
+  the overall rate of scenescence. Here we will vary these for the leaf and stem
+  (6 parameters in total).
+
+- For each growing tissue, there is one parameter (`grc`) that influences the
+  rate of carbon use for growth respiration. Here we will vary these for the
+  stem and root (2 parameters in total).
+
+- For each tissue, there is one parameter (`mrc`) that influences the rate of
+  carbon use for maintenance respiration. Here we will vary these for the leaf,
+  stem, and root (3 parameters in total).
+
+Together, this is 17 arguments to vary. Typically, an optimization problem
+requires more time for each free parameter involved, so it is helpful to vary
+the smallest possible set. One way to reduce the number of free parameters is to
+treat some as being "dependent." In other words, to calculate the values of some
+parameters from the values of others, so that only some of them are truly free
+or "independent." Here we will do this by fixing the value of `mrc_stem` to the
+value of `mrc_leaf`. Thus, we can think of this is a single maintenance
+respiration coefficient for the entire shoot; this reduces the number of
+independent parameters by one (to 16).
+
+The independent arguments must be specified as a list of named numeric elements,
+where the name is the argument name and the value is an initial guess for that
+argument. Here we will use the default Soybean-BioCro values as our initial
+guesses:
+
+```{r independent_args}
+# Define a list of independent arguments and their initial values
+independent_arg_names <- c(
+  # Partitioning for leaf, stem, and shell
+  'alphaLeaf',
+  'betaLeaf',
+  'alphaStem',
+  'betaStem',
+  'alphaShell',
+  'betaShell',
+
+  # Senescence for leaf and stem
+  'alphaSeneLeaf',
+  'betaSeneLeaf',
+  'rateSeneLeaf',
+  'alphaSeneStem',
+  'betaSeneStem',
+  'rateSeneStem',
+
+  # Growth respiration for stem and root
+  'grc_stem',
+  'grc_root',
+
+  # Maintenance respiration for leaf and root
+  'mrc_leaf',
+  'mrc_root'
+)
+
+independent_args <- soybean$parameters[independent_arg_names]
+```
+
+The dependent arguments must be specified as a function that takes a list of
+independent arguments as its input, and returns a list of dependent arguments as
+its output:
+
+```{r dependent_arg_function}
+# Define a function that sets `mrc_stem` to the value of `mrc_leaf`
+dependent_arg_function <- function(ind_args) {
+  list(mrc_stem = ind_args[['mrc_leaf']])
+}
+```
+
+## The Quantity Weights
+
+When determining the error metric value, we wish to assign different weights to
+each type of observed value. This can be handled via the `quantity_weights`,
+which must be a list of named numeric elements, where the name of each element
+is an output from the simulation, and its value is the weight.
+
+```{r quantity_weights}
+# Specify the quantity weights; there is no systematic way to determine these,
+# but the following weights have worked well in the past for Soybean-BioCro
+quantity_weights <- list(
+  Grain       = 1.0,
+  Leaf        = 1.0,
+  Root        = 0.1,
+  Shell       = 0.5,
+  Stem        = 1.0,
+  TotalLitter = 0.1
+)
+```
+
+## The Extra Penalty Function
+
+Sometimes an optimizer may choose parameter values that produce close agreement
+with the observed data but are nevertheless unreasonable from a biological
+perspective.
+
+To prevent these unreasonable parameters from being chosen, "extra penalties"
+can be added to the error metric. These penalties can be specified using an
+`extra_penalty_function`, which must take the result from a BioCro simulation
+as its input and return a numeric error penalty value, which generally should be
+zero (when no issues are found) or a large positive number (if an issue has been
+found).
+
+For Soybean-BioCro parameterization, three common issues are that:
+
+1. Carbon is never partitioned to one or more key tissues.
+
+2. Carbon partitioning to the stem and leaf starts at different times.
+
+3. Carbon partitioning to the leaves begins too early or too late.
+
+The function below will return a large value when any of these situations
+occurs, and will otherwise return a value of zero.
+
+```{r extra_penalty_function}
+# Define an extra penalty function
+extra_penalty_function <- function(sim_res) {
+  # Set the penalty value
+  PENALTY <- 9999
+
+  # Get the first times when each partitioning coefficient becomes non-zero
+  k_thresh <- 0.01 # Threshold k value to decide when growth has started
+  hpd      <- 24.0 # Hours per day
+
+  time <- sim_res[['time']]
+
+  time_grain <- time[sim_res[['kGrain']] > k_thresh][1]
+  time_leaf  <- time[sim_res[['kLeaf']]  > k_thresh][1]
+  time_shell <- time[sim_res[['kShell']] > k_thresh][1]
+  time_stem  <- time[sim_res[['kStem']]  > k_thresh][1]
+
+  # Return a penalty if necessary
+  if (is.na(time_grain) | is.na(time_leaf) | is.na(time_shell) | is.na(time_stem)) {
+    # One or more tissues is not growing
+    return(PENALTY)
+  } else if (abs(time_leaf - time_stem) > 5 * hpd) {
+    # The starts of leaf and stem growth are more than 5 days apart
+    return(PENALTY)
+  } else if (time_leaf - time[1] > 20 * hpd | time_leaf - time[1] < 10 * hpd) {
+    # The start of leaf growth is too late (more than 20 days after sowing) or
+    # too early (fewer than 10 days after sowing)
+    return(PENALTY)
+  } else {
+    # No problems were detected
+    return(0.0)
+  }
+}
+```
+
+## The Objective Function
+
+Now we are just about ready to build the objective function. There are a few
+more details to discuss:
+
+- Soybean-BioCro has always used the `'mean_max'` method for determining
+  normalization factors; see Equations 14-16 of @matthews_soybean_biocro_2021
+  for more details.
+
+- Soybean-BioCro has always used the `'logarithm'` method for determining
+  weights from standard deviations with \(\epsilon = 10^{-5}\); see Equation 17
+  of @matthews_soybean_biocro_2021 for more details.
+
+- Soybean-BioCro has not used any regularization.
+
+With this, it is possible to build the function. Note that some useful
+information is printed out when the function is created, such as the full list
+of observed values and their corresponding weights.
+
+```{r objective_function}
+# Create the objective function
+obj_fun <- objective_function(
+  base_model_definition,
+  data_driver_pairs,
+  independent_args,
+  quantity_weights,
+  data_definitions       = data_definitions,
+  normalization_method   = 'mean_max',
+  stdev_weight_method    = 'logarithm',
+  stdev_weight_param     = 1e-5,
+  regularization_method  = 'none',
+  dependent_arg_function = dependent_arg_function,
+  post_process_function  = post_process_function,
+  extra_penalty_function = extra_penalty_function
+)
+```
+
+# Optimizing the Parameter Values
+
+The objective function is designed to be passed to a minimization algorithm,
+which will determine the argument values that produce the best agreement between
+the model predictions and the observations.
+
+Soybean-BioCro has already been parameterized, so there is already good
+agreement between the model and the data. This can be seen by examining the
+value of the error metric when using the default Soybean-BioCro values:
+
+```{r}
+# Evaluate the error function with default Soybean-BioCro parameters
+default_error <- obj_fun(as.numeric(independent_args))
+```
+
+This evaluates to `r default_error`. This is a low value for a Soybean-BioCro
+parameterization, indicating that good agreement has already been found.
+
+Here, as an example, we will intentionally change each parameter value by a
+small random amount, and then use an optimizer to improve the parameter values;
+in an ideal world, the optimizer will eventually pick parameter values close to
+the original Soybean-BioCro values.
+
+There are many optimizers available in R. Base R includes the `optim` function,
+and others are available from the `dfoptim` and `DEoptim` packages. Here we will
+use the `nmkb` optimizer from the `dfoptim` library, which requires upper and
+lower bounds for each parameter and an initial guess.
+
+## Choosing an Initial Guess
+
+As mentioned above, we will intentionally choose a "bad" initial guess by
+tweaking each parameter value by a small random amount. Note that we set a seed
+to ensure the same result is obtained every time this is performed. Also note
+that the initial guess must be a numeric vector, where the elements are ordered
+as they are in `independent_args`.
+
+```{r initial_guess}
+# Set a seed
+set.seed(1234)
+
+# Make an initial guess by perturbing the default values by a small amount
+rel_size <- 0.02
+
+initial_guess <- as.numeric(independent_args) *
+  (1.0 + runif(length(independent_args), -rel_size, rel_size))
+```
+
+Even though the changes to parameter values are small, there is still a
+substantial change in the value of the error metric:
+
+```{r}
+# Evaluate the error function with default Soybean-BioCro parameters
+initial_error <- obj_fun(initial_guess)
+```
+
+This evaluates to `r initial_error`, which is about
+`r round(100 * (initial_error - default_error) / initial_error)` percent larger
+than with the default parameter values.
+
+## Choosing Lower and Upper Bounds
+
+There is not always a systematic approach to choosing lower and upper bounds for
+parameter values, but the following bounds have worked well for Soybean-BioCro
+in the past:
+
+- The \(\alpha\) parameters used in partitioning and senescence calculations are
+  confined to the interval [0, 50].
+
+- The \(\beta\) parameters used in partitioning and senescence calculations are
+  confined to the interval [-50, 0].
+
+- The senescence rates have a lower bound of zero, but have different upper
+  bounds for each tissue.
+
+- The maintenance respiration coefficients are confined to the interval
+  [1e-6, 1e-2].
+
+- The growth respiration coefficients must be positive and non-zero, but have
+  different bounds for each tissue.
+
+There are many possible ways to specify the bounds in R, but ultimately they
+must be expressed as numeric vectors, where the elements are ordered as they are
+in `independent_args`. Here we use the `bounds_table` function from
+`BioCroValidation` to create a data frame where the lower and upper bounds are
+stored as columns. Later, the columns can be passed to the optimizer. The
+`bounds_table` function will also check the initial guess to ensure it lies
+within the bounds; for more information about this function, see its help page
+by typing `?bounds_table` from an R terminal.
+
+```{r setting_bounds}
+# Specify some bounds
+aul <- 50   # Upper limit for alpha parameters
+bll <- -50  # Lower limit for beta parameters
+mll <- 1e-6 # Lower limit for mrc parameters
+mul <- 1e-2 # Upper limit for mrc parameters
+
+# Define a table with the bounds in the same order as `independent_args`
+bounds <- bounds_table(
+  independent_args,
+  list(
+    alphaLeaf     = c(0,      aul),
+    alphaStem     = c(0,      aul),
+    alphaShell    = c(0,      aul),
+    alphaSeneLeaf = c(0,      aul),
+    alphaSeneStem = c(0,      aul),
+    betaLeaf      = c(bll,    0),
+    betaStem      = c(bll,    0),
+    betaShell     = c(bll,    0),
+    betaSeneLeaf  = c(bll,    0),
+    betaSeneStem  = c(bll,    0),
+    rateSeneLeaf  = c(0,      0.0125),
+    rateSeneStem  = c(0,      0.005),
+    mrc_leaf      = c(mll,    mul),
+    mrc_root      = c(mll,    mul),
+    grc_stem      = c(8e-4,   0.08),
+    grc_root      = c(0.0025, 0.075)
+  ),
+  initial_guess
+)
+```
+
+## Running the Optimizer
+
+Now we will use an optimizer to improve on the initial guess. As mentioned
+above, we will use the `nmkb` optimizer from the `dfoptim` package. This is a
+good choice when a decent starting guess is known. If a broader search is
+necessary, `DEoptim` from the `DEoptim` package may be more appropriate,
+although it generally needs more time to run.
+
+To make sure this example does not take too much time, we will use a loose
+tolerance; a more realistic example would probably use `1e-4` or `1e-5`.
+
+```{r run_optimizer, eval = FALSE}
+# Run the optimizer
+optim_res <- nmkb(
+  initial_guess,
+  obj_fun,
+  bounds[['lower']],
+  bounds[['upper']],
+  control = list(
+    tol = 1e-2,
+    restarts.max = 10
+  ),
+  debug_mode = FALSE # Passed to obj_fun; set to TRUE to enable debug mode
+)
+```
+
+```{r, echo = FALSE}
+timing <- system.time({
+<<run_optimizer>>
+})
+```
+
+When this document was generated, running the optimizer required the following
+amount of time:
+
+```{r, echo = FALSE}
+print(timing)
+```
+
+The total time was about `r round(timing[3] / 60, 2)` minutes. For a real
+parameterization problem, it can be many times longer, and may even need days to
+run on a personal laptop computer.
+
+The optimizer also reports how many times the objective function was called,
+among other details:
+
+```{r}
+str(optim_res)
+```
+
+The value of `feval` is `r optim_res[['feval']]`, so on average, each call of
+the objective function required approximately
+`r round(timing[3] / optim_res[['feval']], 3)` seconds.
+
+## Comparing Parameter Values
+
+Let's see whether the optimized parameters are closer to the default parameters
+than the initial guess was.
+
+```{r compare_param}
+# Create a table of the various independent argument values
+ind_arg_table <- data.frame(
+  arg_name      = independent_arg_names,
+  defaults      = as.numeric(independent_args),
+  initial_guess = initial_guess,
+  optimized     = optim_res[['par']],
+  stringsAsFactors = FALSE
+)
+
+# Add differences
+ind_arg_table <- within(ind_arg_table, {
+  initial_diff   = abs(initial_guess - defaults)
+  optimized_diff = abs(optimized - defaults)
+  improved       = optimized_diff < initial_diff
+})
+
+# View results
+print(ind_arg_table)
+```
+
+In this table, when the `improved` column is `TRUE`, this means that the
+optimized parameter value is closer to the default value than the initial guess
+was; in other words, it means that the optimizer truly improved on the initial
+guess. In this example, `r sum(ind_arg_table[['improved']])` out of
+`r nrow(ind_arg_table)` parameter estimates were improved
+(`r round(100 * sum(ind_arg_table[['improved']]) / nrow(ind_arg_table))` percent).
+
+We can also compare the error metric to its original value. As shown above, it
+is now `r optim_res[['value']]`, which is only
+`r round(100 * (optim_res[['value']] - default_error) / optim_res[['value']], 1)`
+percent larger than with the default parameter values.
+
+The optimized parameter values could likely be improved by using a more
+stringent tolerance for the optimizer, but this would require more time to run.
+
+## Comparing Model Outputs
+
+Another way to evaluate the results of the optimization is to compare
+simulations using the default, perturbed, and re-optimized versions of the
+model.
+
+Following the re-parameterization, we now have new values of the independent
+arguments, but this is not enough to actually run the new version of the model.
+Thus, the next step is to form a new model definition by updating the values of
+the default soybean model. This can be accomplished using the `update_model`
+function from `BioCroValidation`:
+
+```{r form_new_models}
+# Get model definition lists for the perturbed and re-parameterized versions of
+# the soybean model
+soybean_perturbed <- update_model(
+  BioCro::soybean,
+  independent_args,
+  initial_guess,
+  dependent_arg_function = dependent_arg_function
+)
+
+soybean_reparam <- update_model(
+  BioCro::soybean,
+  independent_args,
+  optim_res[['par']],
+  dependent_arg_function = dependent_arg_function
+)
+```
+
+We can check that the three models have different values of key parameters, such
+as the "dependent" argument `mrc_stem`:
+
+```{r}
+print(BioCro::soybean$parameters$mrc_stem)
+
+print(soybean_perturbed$parameters$mrc_stem)
+
+print(soybean_reparam$parameters$mrc_stem)
+```
+
+Now we can run each version of the model for a single year and visually compare
+their outputs:
+
+```{r comparison_plots}
+# Define a helper function that runs a single model for the year 2005
+run_2005 <- function(model_definition) {
+  with(model_definition, {run_biocro(
+    initial_values,
+    parameters,
+    soybean_weather[['2005']],
+    direct_modules,
+    differential_modules,
+    ode_solver
+  )})
+}
+
+# Run each model and combine the results
+full_res <- rbind(
+  within(run_2005(BioCro::soybean),   {model = 'Default Soybean-BioCro'}),
+  within(run_2005(soybean_perturbed), {model = 'Perturbed Soybean-BioCro'}),
+  within(run_2005(soybean_reparam),   {model = 'Re-parameterized Soybean-BioCro'})
+)
+
+# Plot the results
+xyplot(
+  Leaf + Stem + Root + Grain ~ fractional_doy,
+  group = model,
+  data = full_res,
+  type = 'l',
+  auto.key = list(space = 'top'),
+  xlab = 'Day of year (2005)',
+  ylab = 'Biomass (Mg / ha)'
+)
+```
+
+Here we can see that while the simulated values for some tissues do not differ
+much between the models, there are large differences in other tissues; for these
+cases, the default and re-optimized versions are similar and the perturbed
+version is much different.
+
+## Saving the New Model Definition
+
+A realistic parameterization takes a long time to complete, so it is important
+to save the results for later use. One approach is to save the model definition
+list using the `save` or `saveRDS` functions from base R. However, these options
+create binary files that are not human-readable, and they cannot be easily
+tracked using `git`. As an alternative, the `BioCroValidation` includes a
+function called `write_model` that forms a string representing an R command that
+can be called to re-create a model definition. This command string can be
+written to a text file, making it easy to read and to track with `git`.
+
+Here we apply `write_model` to the re-optimized soybean model:
+
+```{r write_model_command}
+# Convert the re-parameterized soybean model to an R command string
+r_cmd_string <- with(soybean_reparam, write_model(
+  'soybean_reparam',
+  direct_modules,
+  differential_modules,
+  initial_values,
+  parameters,
+  ode_solver
+))
+```
+
+We can view the resulting R command string:
+
+```{r}
+writeLines(r_cmd_string)
+```
+
+It can also be written to a text file:
+
+```{r write_model_to_file, eval = FALSE}
+# Save the model definition as an R file in the current working directory
+writeLines(r_cmd_string, './soybean_reparam.R')
+```
+
+# Commands From This Document
+
+```{r, eval = FALSE}
+###
+### Preliminaries
+###
+
+<<libraries>>
+
+###
+### Prepare inputs for `objective_function`
+###
+
+<<base_model_definition>>
+
+<<process_tables>>
+
+<<data_driver_pairs>>
+
+<<post_process_function>>
+
+<<data_definitions>>
+
+<<independent_args>>
+
+<<dependent_arg_function>>
+
+<<quantity_weights>>
+
+<<extra_penalty_function>>
+
+###
+### Create the objective function
+###
+
+<<objective_function>>
+
+###
+### Use an optimizer to choose parameter values
+###
+
+<<initial_guess>>
+
+<<setting_bounds>>
+
+<<run_optimizer>>
+
+###
+### Check and record the new values
+###
+
+<<compare_param>>
+
+<<form_new_models>>
+
+<<comparison_plots>>
+
+<<write_model_command>>
+
+<<write_model_to_file>>
+
+```
+
+# References

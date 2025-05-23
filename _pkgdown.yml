@@ -1,5 +1,6 @@
 url: https://biocro.github.io/BioCroValidation/
 template:
+  math-rendering: mathjax
   bootstrap: 5
   bootswatch: flatly
   theme: arrow-light

@@ -1,0 +1,92 @@
+---
+title: "Getting Started With BioCroValidation"
+output:
+  rmarkdown::html_vignette:
+    toc: true
+    number_sections: true
+vignette: >
+  %\VignetteIndexEntry{Getting Started With BioCroValidation}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.width = 6,
+  fig.height = 5,
+  fig.align = "center"
+)
+```
+
+# Overview
+
+**BioCroValidation** is an R package that provides a suite of tools for
+validating BioCro crop growth models.
+
+Validation is a key part of using and developing BioCro models. The goal of this
+package is to provide some convenient "helping" functions to aid with various
+aspects of model validation, especially parameterization.
+
+The central tool in the package is the `objective_function` function. As its
+name implies, it can be used to create an objective function that calculates the
+value of an error metric value given a set of model parameter values. In turn,
+the objective function itself can be passed to an optimizer.
+
+While it is possible for each BioCro user to write their own customized
+objective function, creating one can be a very complex process because there are
+many potential aspects to consider:
+
+- **Mathematical / Statistical Approach:** This refers to choices like "Do I
+  want to normalize the error terms by each observed value, or by the largest
+  observed value for each measured quantity?" or "Do I want to use L1 or L2
+  regularization?"
+
+- **Implementation of Mathematical / Statistical Approach:** Once an approach
+  has been identified, code must be written to properly implement it.
+
+- **Error Checks:** A wide variety of strange conditions can occur during
+  parameterization, and the objective function must be ready to handle them. For
+  example, how should the objective function respond when a simulation does not
+  run to completion, or when an optimizer passes `NA` as a parameter value?
+
+- **Technical Details:** Parameterization can take a long time to perform, so it
+  is important for the objective function code to be as efficient and fast as
+  possible.
+
+The goal of `objective_function` is to allow users to make the key choices about
+their mathematical approach using clear code statements like
+`regularization_method = 'L2'`, while the implementation details, error checks,
+and other technical details are handled internally. This will result in clear
+scripts that are also more reliable.
+
+Besides `objective_function`, the package also includes a few other functions
+with a similar goal of clarifying code and hiding implementation details, such
+as `bounds_table` and `update_model`.
+
+# Installing BioCroValidation
+
+The easiest way to install `BioCroValidation` is to type the following from
+within an R terminal:
+
+```{r, eval = FALSE}
+remotes::install_github('biocro/BioCroValidation')
+```
+
+Note that this method requires the `remotes` package, which can be installed
+from within R by typing `install.packages('remotes')`.
+
+# Learning More
+
+The `BioCroValidation` package includes extensive documentation. The best place
+to start is the
+[Parameterizing Soybean-BioCro](parameterizing_soybean_biocro.html)
+article, which illustrates the full process of defining an objective function,
+running an optimization, examining the results, and saving the new model
+definition.
+
+Another key resource is the help page for `objective_function`, which can be
+accessed online or by typing `?objective_function` in an R terminal. This
+document explains all the available options for normalization approaches,
+regularization approaches, and other aspects of defining an objective function.

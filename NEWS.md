@@ -33,10 +33,22 @@ In the case of a hotfix, a short section headed by the new release number should
 be directly added to this file to describe the related changes.
 -->
 
+# Changes in BioCroValidation Version 0.2.0 (2025-05-23)
+
+- Added 2002 and 2005 SoyFACE biomass and standard deviation data.
+
+- Added several new functions: `objective_function`, `update_model`, and
+  `bounds_table`.
+
+- Added two new vignettes: a "Getting Started" article (`BioCroValidation.Rmd`)
+  and a user guide illustrating how to perform a model parameterization
+  (`parameterizing_soybean_biocro.Rmd`).
+
 # Changes in BioCroValidation Version 0.1.0
 
 - This is the first version of BioCroValidation. At this point, the package is
   in a state of rapid development, and not all changes will be described here.
+
 - We are reserving version `1.0.0` for a more stable and complete future
   release; until then, major changes should only increase the minor version
   number.

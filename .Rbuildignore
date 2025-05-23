@@ -4,6 +4,9 @@
 # reason, there should not be any blank comment lines, because they would
 # exclude any files with `#` in the filename, possibly causing confusing issues.
 
+^Rhistory$
+# History files
+
 ^.*\.Rproj$
 # Designates the directory as an RStudio Project.
 
