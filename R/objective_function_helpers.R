@@ -62,6 +62,13 @@ get_model_runner <- function(
                     c(x, as.numeric(dependent_arg_function(x_for_dep_arg_func)))
                 }
 
+                if (any(!is.finite(x_for_partial))) {
+                    stop(
+                        'At least one independent or dependent argument ',
+                        'value is not finite'
+                    )
+                }
+
                 initial_res <- partial_func(x_for_partial)
 
                 if (is.null(post_process_function)) {
@@ -272,13 +279,17 @@ one_error <- function(
     normalization
 )
 {
-    qw <- if (predicted < observed) {
-        quantity_weight[1] # Underprediction
+    if (!is.finite(predicted)) {
+        NA
     } else {
-        quantity_weight[2] # Overprediction
-    }
+        qw <- if (predicted < observed) {
+            quantity_weight[1] # Underprediction
+        } else {
+            quantity_weight[2] # Overprediction
+        }
 
-    (observed - predicted)^2 * qw * ddp_weight * var_weight / normalization
+        (observed - predicted)^2 * qw * ddp_weight * var_weight / normalization
+    }
 }
 
 # Helping function for returning a failure value
@@ -348,8 +359,14 @@ error_from_res <- function(
 
     # Return the sum of the penalty and error terms, or the individual errors
     if (return_terms) {
+        error_terms_by_quantity <- as.list(tapply(
+            errors,
+            long_form_data_table[['quantity_name']],
+            sum
+        ))
+
         list(
-            least_squares_term = error_sum,
+            least_squares_terms = error_terms_by_quantity,
             extra_penalty = penalty
         )
     } else {
@@ -386,7 +403,18 @@ get_obj_fun <- function(
     regularization_method
 )
 {
-    function(x, lambda = 0, return_terms = FALSE) {
+    function(x, lambda = 0, return_terms = FALSE, debug_mode = FALSE) {
+        if (debug_mode) {
+            msg <- paste0(
+                '\nTime: ',
+                Sys.time(),
+                '    Independent argument values: ',
+                paste(x, collapse = ', '),
+                '\n'
+            )
+            cat(msg)
+        }
+
         errors <- lapply(seq_along(model_runners), function(i) {
             runner <- model_runners[[i]]
             res    <- runner(x)
@@ -405,15 +433,36 @@ get_obj_fun <- function(
         reg_penalty <- regularization_penalty(x, regularization_method, lambda)
 
         if (return_terms) {
-            list(
+            error_metric_terms <- list(
                 terms_from_data_driver_pairs = stats::setNames(
                     errors,
                     names(model_runners)
                 ),
                 regularization_penalty = reg_penalty
             )
+
+            if (debug_mode) {
+                cat(paste0('Time: ', Sys.time()), '    Error metric terms: ')
+                utils::str(error_metric_terms)
+                cat('\n')
+            }
+
+            error_metric_terms
         } else {
-            sum(as.numeric(errors)) + reg_penalty
+            error_metric <- sum(as.numeric(errors)) + reg_penalty
+
+            if (debug_mode) {
+                msg <- paste0(
+                    'Time: ',
+                    Sys.time(),
+                    '    Error metric: ',
+                    error_metric,
+                    '\n'
+                )
+                cat(msg)
+            }
+
+            error_metric
         }
     }
 }

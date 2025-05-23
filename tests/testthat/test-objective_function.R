@@ -2,22 +2,25 @@
 model <- BioCro::soybean
 model$ode_solver <- BioCro::default_ode_solvers[['homemade_euler']]
 
-convert_time <- function(x) {
+process_table <- function(x) {
     within(x, {
-        time = (DOY - 1) * 24.0
-        DOY  = NULL
+        time                = (DOY - 1) * 24.0
+        DOY                 = NULL
+        Seed_Mg_per_ha      = NULL
+        Litter_Mg_per_ha    = NULL
+        CumLitter_Mg_per_ha = NULL
     })
 }
 
 ddps <- list(
         ambient_2002 = list(
-        data       = convert_time(soyface_biomass[['ambient_2002']]),
-        data_stdev = convert_time(soyface_biomass[['ambient_2002_std']]),
+        data       = process_table(soyface_biomass[['ambient_2002']]),
+        data_stdev = process_table(soyface_biomass[['ambient_2002_std']]),
         drivers    = BioCro::soybean_weather[['2002']],
         weight     = 1
     ),
         ambient_2005 = list(
-        data       = convert_time(soyface_biomass[['ambient_2005']]),
+        data       = process_table(soyface_biomass[['ambient_2005']]),
         drivers    = BioCro::soybean_weather[['2005']],
         weight     = 2
     )
@@ -30,7 +33,7 @@ independent_args <- with(BioCro::soybean[['parameters']], {
 data_definitions <- list(
     Leaf_Mg_per_ha = 'Leaf',
     Stem_Mg_per_ha = 'Stem',
-    Pod_Mg_per_ha = 'Pod'
+    Rep_Mg_per_ha = 'Pod'
 )
 
 dependent_arg_function <- function(x) {
@@ -379,6 +382,7 @@ test_that('Bad variance methods are detected', {
 })
 
 test_that('Bad return values are detected', {
+    # A penalty evaluates to NA
     expect_error(
         objective_function(
             model,
@@ -391,6 +395,54 @@ test_that('Bad return values are detected', {
             verbose_startup = verbose_startup
         ),
         'The objective function did not return a finite value when using the initial argument values; instead, it returned: NA'
+    )
+
+    # A predicted value is NA
+    expect_error(
+        objective_function(
+            model,
+            ddps,
+            independent_args,
+            quantity_weights,
+            data_definitions = data_definitions,
+            post_process_function = function(x) {within(x, {Pod = NA})},
+            verbose_startup = verbose_startup
+        ),
+        'The objective function did not return a finite value when using the initial argument values; instead, it returned: NA'
+    )
+
+    # A post-processing function removes the `time` column
+    expect_error(
+        objective_function(
+            model,
+            ddps,
+            independent_args,
+            quantity_weights,
+            data_definitions = data_definitions,
+            post_process_function = function(x) {within(x, {
+                Pod = Grain + Shell
+                time = NULL
+            })},
+            verbose_startup = verbose_startup
+        ),
+        'Some data columns were missing from runner outputs:
+ambient_2002: time
+ambient_2005: time',
+        fixed = TRUE
+    )
+
+    # A post-processing function doesn't return a data frame
+    expect_error(
+        objective_function(
+            model,
+            ddps,
+            independent_args,
+            quantity_weights,
+            data_definitions = data_definitions,
+            post_process_function = function(x) {1.0},
+            verbose_startup = verbose_startup
+        ),
+        'Some runners did not produce data frames: ambient_2002, ambient_2005'
     )
 })
 
@@ -415,7 +467,7 @@ test_that('Bad data values and weights are detected', {
         objective_function(
             model,
             within(ddps, {
-                ambient_2005$data_stdev = convert_time(soyface_biomass[['ambient_2005_std']])
+                ambient_2005$data_stdev = process_table(soyface_biomass[['ambient_2005_std']])
                 ambient_2005$data_stdev[['Leaf_Mg_per_ha']] <- -0.1
             }),
             independent_args,
@@ -431,6 +483,43 @@ test_that('Bad data values and weights are detected', {
   ambient_2005:
   The following columns contained non-finite values: w_var
   The following columns contained negative values: quantity_stdev',
+        fixed = TRUE
+    )
+})
+
+test_that('NA argument values and predicted values are handled', {
+    # An independent argument value is NA
+    expect_error(
+        objective_function(
+            model,
+            ddps,
+            within(independent_args, {alphaLeaf = NA}),
+            quantity_weights,
+            data_definitions = data_definitions,
+            post_process_function = post_process_function,
+            verbose_startup = verbose_startup
+        ),
+        'The model could not be run with the following drivers:
+ambient_2002: Error in runner(as.numeric(independent_args)): At least one independent or dependent argument value is not finite
+ambient_2005: Error in runner(as.numeric(independent_args)): At least one independent or dependent argument value is not finite',
+        fixed = TRUE
+    )
+
+    # A dependent argument value is NA
+    expect_error(
+        objective_function(
+            model,
+            ddps,
+            independent_args,
+            quantity_weights,
+            data_definitions = data_definitions,
+            dependent_arg_function = function(x) {list(alphaStem = NA)},
+            post_process_function = post_process_function,
+            verbose_startup = verbose_startup
+        ),
+        'The model could not be run with the following drivers:
+ambient_2002: Error in runner(as.numeric(independent_args)): At least one independent or dependent argument value is not finite
+ambient_2005: Error in runner(as.numeric(independent_args)): At least one independent or dependent argument value is not finite',
         fixed = TRUE
     )
 })

@@ -8,14 +8,19 @@ Authors@R: c(
            comment = c(ORCID = "0000-0002-4912-9783")),
     person("BioCroField authors", role = "cph")
     )
-License: MIT + file LICENSE
-Encoding: UTF-8
-LazyData: true
 Depends:
     R (>= 3.6.0)
 Imports:
     BioCro (>= 3.2.0)
 Suggests:
+    dfoptim,
+    lattice,
+    knitr,
+    rmarkdown,
     testthat (>= 3.0.0)
+VignetteBuilder: knitr
+License: MIT + file LICENSE
+Encoding: UTF-8
+LazyData: true
 URL: https://github.com/BioCro/BioCroField, https://biocro.github.io/BioCroValidation/
 Config/testthat/edition: 3

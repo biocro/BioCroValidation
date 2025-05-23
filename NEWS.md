@@ -37,7 +37,10 @@ be directly added to this file to describe the related changes.
 
 - Added 2002 and 2005 SoyFACE biomass data.
 
-- Added the `objective_function` function.
+- Added several new functions: `objective_function`, `update_model`, and
+  `bounds_table`
+
+- Added a vignette illustrating how to perform a model parameterization.
 
 # Changes in BioCroValidation Version 0.1.0
 

@@ -148,7 +148,8 @@ check_data_driver_pairs <- function(base_model_definition, data_driver_pairs) {
 check_args_to_vary <- function(
     independent_args,
     dependent_arg_function,
-    data_driver_pairs
+    data_driver_pairs,
+    verbose
 )
 {
     # Make sure the independent arguments have names
@@ -166,6 +167,15 @@ check_args_to_vary <- function(
         if (is.null(dep_arg_names)) {
             stop('The return value of `dependent_arg_function` must have names')
         }
+    }
+
+    # Print argument names, if necessary
+    if (verbose) {
+        cat('\nThe independent arguments and their initial values:\n\n')
+        utils::str(independent_args)
+
+        cat('\nThe dependent arguments and their initial values:\n\n')
+        utils::str(dependent_arg_function(independent_args))
     }
 
     # Make sure no drivers were specified
@@ -235,8 +245,19 @@ check_runner_results <- function(
         stop(msg)
     }
 
+    # Make sure each runner produces a data frame
+    is_df <- sapply(initial_runner_res, is.data.frame)
+
+    if (any(!is_df)) {
+        msg <- paste(
+            'Some runners did not produce data frames:',
+            paste(names(initial_runner_res)[!is_df], collapse = ', ')
+        )
+        stop(msg)
+    }
+
     # Make sure each runner produces the necessary columns in its output
-    expected_columns <- as.character(full_data_definitions)
+    expected_columns <- c('time', as.character(full_data_definitions))
 
     missing_columns <- lapply(initial_runner_res, function(res) {
         expected_columns[!expected_columns %in% colnames(res)]
@@ -402,12 +423,15 @@ check_obj_fun <- function(obj_fun, initial_ind_arg_values, verbose) {
     initial_error_terms <-
         obj_fun(as.numeric(initial_ind_arg_values), return_terms = TRUE)
 
+    initial_error <- sum(unlist(initial_error_terms))
+
     if (verbose) {
         cat('\nThe initial error metric terms:\n\n')
         utils::str(initial_error_terms)
-    }
 
-    initial_error <- sum(unlist(initial_error_terms))
+        cat('\nThe initial error metric value:\n\n')
+        print(initial_error)
+    }
 
     if (!is.finite(initial_error)) {
         stop(

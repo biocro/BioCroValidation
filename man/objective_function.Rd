@@ -468,7 +468,7 @@
 
 \value{
   A function \code{obj_fun} with signature
-  \code{obj_fun(x, lambda = 0, return_terms = FALSE)}.
+  \code{obj_fun(x, lambda = 0, return_terms = FALSE, debug_mode = FALSE)}.
 
   Here, \code{x} is a numeric vector of values of the independent arguments (in
   the same order as in \code{independent_arg_names}), and \code{lambda} is the
@@ -484,6 +484,15 @@
   Setting it to \code{TRUE} can be useful for troubleshooting, or for
   diagnostics such as checking the quality of fit for each of the data-driver
   pairs.
+
+  The \code{debug_mode} argument determines whether \code{obj_fun} is running in
+  debug mode. In debug mode, each time \code{obj_fun} is called, it will print
+  the values of \code{x} and the error metric to the R terminal. This can be
+  useful when troubleshooting a problem with an optimization, since it provides
+  a record of any problematic parameter combinations. When setting
+  \code{debug_mode} to \code{TRUE}, also consider using \code{\link[base]{sink}}
+  to write the outputs to a file instead of the R terminal. In that case, there
+  will still be a record even if R crashes.
 }
 
 \examples{
@@ -505,11 +514,19 @@ if (require(BioCro)) {
   # in two data tables; it also includes the standard deviations of the measured
   # biomasses, which are included in two separate tables. However, these data
   # tables each have a `DOY` column rather than a `time` column, so we need to
-  # alter them. Here we will do this by defining a short helper function.
-  convert_time <- function(x) {
+  # alter them. The tables also include other columns we do not wish to use in
+  # this example. So, we will define a short helper function that can be used to
+  # pre-process each table.
+  process_table <- function(x) {
     within(x, {
-      time = (DOY - 1) * 24.0 # Define new `time` column
-      DOY  = NULL             # Remove unneeded `DOY` column
+      # Define new `time` column
+      time = (DOY - 1) * 24.0
+
+      # Remove unneeded columns
+      DOY                 = NULL
+      Seed_Mg_per_ha      = NULL
+      Litter_Mg_per_ha    = NULL
+      CumLitter_Mg_per_ha = NULL
     })
   }
 
@@ -518,14 +535,14 @@ if (require(BioCro)) {
   # heavily as the 2002 data.
   data_driver_pairs <- list(
     ambient_2002 = list(
-      data       = convert_time(soyface_biomass[['ambient_2002']]),
-      data_stdev = convert_time(soyface_biomass[['ambient_2002_std']]),
+      data       = process_table(soyface_biomass[['ambient_2002']]),
+      data_stdev = process_table(soyface_biomass[['ambient_2002_std']]),
       drivers    = BioCro::soybean_weather[['2002']],
       weight     = 1
     ),
     ambient_2005 = list(
-      data       = convert_time(soyface_biomass[['ambient_2005']]),
-      data_stdev = convert_time(soyface_biomass[['ambient_2005_std']]),
+      data       = process_table(soyface_biomass[['ambient_2005']]),
+      data_stdev = process_table(soyface_biomass[['ambient_2005_std']]),
       drivers    = BioCro::soybean_weather[['2005']],
       weight     = 2
     )
@@ -538,7 +555,7 @@ if (require(BioCro)) {
   data_definitions <- list(
     Leaf_Mg_per_ha = 'Leaf',
     Stem_Mg_per_ha = 'Stem',
-    Pod_Mg_per_ha = 'Pod'
+    Rep_Mg_per_ha = 'Pod'
   )
 
   # The data contains values of pod mass, but the model does not calculate pod
@@ -599,24 +616,17 @@ if (require(BioCro)) {
   # This function could now be passed to an optimizer; here we will simply
   # evaluate it for two sets of parameter values.
 
-  # First try the initial values.
-  cat('\nError metric calculated from initial argument values:\n')
-  print(
-    obj_fun(as.numeric(independent_args))
-  )
-
-  # Now try doubling each parameter value; in this case, the value of the
+  # Try doubling each parameter value; in this case, the value of the
   # objective function increases, indicating a lower degree of agreement between
-  # the model and the observed data.
+  # the model and the observed data. Here we will call `obj_fun` in debug mode,
+  # which will automatically print the value of the error metric.
   cat('\nError metric calculated by doubling the initial argument values:\n')
-  print(
-    obj_fun(2 * as.numeric(independent_args))
-  )
+  error_metric <- obj_fun(2 * as.numeric(independent_args), debug_mode = TRUE)
 
-  # We can also see the values of each term that makes up the error metric
+  # We can also see the values of each term that makes up the error metric;
+  # again, we will call `obj_fun` in debug mode for automatic printing.
   cat('\nError metric terms calculated by doubling the initial argument values:\n')
-  str(
-    obj_fun(2 * as.numeric(independent_args), return_terms = TRUE)
-  )
+  error_terms <-
+    obj_fun(2 * as.numeric(independent_args), return_terms = TRUE, debug_mode = TRUE)
 }
 }
