@@ -200,23 +200,25 @@ add_norm <- function(
             qname_subset <-
                     data_table[data_table[['quantity_name']] == qname, ]
 
+            npts <- nrow(qname_subset)
+            qmax <- max(abs(qname_subset[['quantity_value']]))
+            qobs <- data_table[j, 'quantity_value']
+
+            eps_max <- get_param_default(normalization_param, 1e-1)
+            eps_obs <- get_param_default(normalization_param, 1e-1)
+
             if (tolower(normalization_method) == 'equal') {
                 1.0
             } else if (tolower(normalization_method) == 'mean') {
-                nrow(qname_subset) * n_ddp
+                npts * n_ddp
             } else if (tolower(normalization_method) == 'max') {
-                max(qname_subset[['quantity_value']])^2
+                qmax^2 + eps_max
             } else if (tolower(normalization_method) == 'obs') {
-                eps <- get_param_default(normalization_param, 1e-1)
-                data_table[i, 'quantity_value']^2 + eps
+                qobs^2 + eps_obs
             } else if (tolower(normalization_method) == 'mean_max') {
-                npts <- nrow(qname_subset)
-                qmax <- max(qname_subset[['quantity_value']])
-                npts * n_ddp * qmax^2
+                npts * n_ddp * (qmax^2 + eps_max)
             } else if (tolower(normalization_method) == 'mean_obs') {
-                npts <- nrow(qname_subset)
-                eps <- get_param_default(normalization_param, 1e-1)
-                npts * n_ddp * (data_table[i, 'quantity_value']^2 + eps)
+                npts * n_ddp * (qobs^2 + eps_obs)
             } else {
                 stop('Unsupported normalization_method: ', normalization_method)
             }
@@ -234,15 +236,16 @@ add_w_var <- function(long_form_data, stdev_weight_method, stdev_weight_param) {
         data_table <- long_form_data[[i]]
         data_stdev <- data_table[['quantity_stdev']]
 
+        eps_log <- get_param_default(stdev_weight_param, 1e-5)
+        eps_inv <- get_param_default(stdev_weight_param, 1e-1)
+
         data_table[['w_var']] <-
             if (tolower(stdev_weight_method) == 'equal') {
                 1.0
             } else if (tolower(stdev_weight_method) == 'logarithm') {
-                eps <- get_param_default(stdev_weight_param, 1e-5)
-                log(1 / (data_stdev + eps))
+                log(1.0 / (data_stdev + eps_log))
             } else if (tolower(stdev_weight_method) == 'inverse') {
-                eps <- get_param_default(stdev_weight_param, 1e-1)
-                1 / (data_stdev^2 + eps)
+                1.0 / (data_stdev^2 + eps_inv)
             } else {
                 stop('Unsupported stdev_weight_method: ', stdev_weight_method)
             }

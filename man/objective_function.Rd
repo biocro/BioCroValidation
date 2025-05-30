@@ -24,7 +24,7 @@
   parameterization procedure.
 
   For a detailed example of using \code{objective_function}, see the
-  "Parameterizing Soybean-BioCro" vignette/article.
+  "Parameterizing Soybean-BioCro" vignette.
 }
 
 \usage{
@@ -81,8 +81,8 @@
   \item{independent_args}{
     A list of named numeric values. The names will determine the independent
     arguments to be varied during their optimization, and the values specify
-    "initial" or "test" values of each argument that will be used internally to
-    check that the objective function is properly defined and can be evaluated.
+    "test" values of each argument that will be used internally to check that
+    the objective function is properly defined and can be evaluated.
   }
 
   \item{quantity_weights}{
@@ -165,16 +165,17 @@
   \strong{Overview}
 
   When parameterizing a BioCro model, the general idea is to vary a subset of
-  the model's parameters to achieve the best agreement with a set of observed
-  data. The degree of agreement is expressed as an "error metric," which
-  includes terms derived from the agreement between the modeled and observed
-  values, as well as (optional) penalty terms. A function that calculates an
-  error metric when given a set of parameter values is called an "objective
-  function." Defining an objective function suitable for BioCro parameterization
-  can be complicated, but the \code{objective_function} function helps to
-  simplify the process of creating such a function. It is designed to
-  accommodate the following scenarios, which often occur in the context of
-  BioCro model parameterization:
+  the model's \code{parameters} and/or \code{initial_values} to achieve the
+  best agreement with a set of observed data. The degree of agreement is
+  expressed as an "error metric," which includes terms derived from the
+  agreement between the modeled and observed values, as well as (optional)
+  penalty terms. A function that calculates an error metric when given a set of
+  argument values (\code{parameters} and/or \code{initial_values}) is called an
+  "objective function." Defining an objective function suitable for BioCro
+  parameterization can be complicated, but the \code{objective_function}
+  function helps to simplify the process of creating such a function. It is
+  designed to accommodate the following scenarios, which often occur in the
+  context of BioCro model parameterization:
 
   \itemize{
     \item \strong{Multi-year or multi-location data:} Often the model needs to
@@ -267,7 +268,7 @@
           by retrieving the value of the \eqn{Y_i} variable at the closest time
           to \eqn{t_i} that is included in the model output. It is assumed that
           the model always outputs the same sequence of time values each time it
-          is run with a particular set of drivers, regardless of the input
+          is run with a particular set of drivers, regardless of the provided
           argument values.
 
           The quantity-based weight factors \eqn{w_i^{quantity}} are directly
@@ -314,7 +315,7 @@
           The function \eqn{f_{user}} must accept a single data frame as an
           input and return a single numeric value as its output, but has no
           other requirements. It is specified via the
-          \code{extra_penalty_function} argument. When
+          \code{extra_penalty_function}. When
           \code{extra_penalty_function} is \code{NULL}, \eqn{P_{user}} is zero.
 
     \item \strong{Regularization penalty term:} The regularization penalty term
@@ -350,14 +351,14 @@
           ln \left( \frac{1}{\sigma_i + \epsilon} \right),}
           where \eqn{ln} denotes a logarithm with base \eqn{e} and
           \eqn{\epsilon} is a small number included to prevent numerical errors
-          that would otherwise occur when \eqn{\sigma = 0}. This method was
+          that would otherwise occur when \eqn{\sigma_i = 0}. This method was
           used in the original Soybean-BioCro paper.
 
-          The value of \eqn{\epsilon} is specified by the
-          \code{stdev_weight_param} input argument, which defaults to
-          \code{1e-5} when \code{stdev_weight_param} is \code{NULL} when using
-          this method. With the default value of \eqn{\epsilon},
-          \eqn{w_i^{stdev} \approx 11.512} when \eqn{\sigma = 0}.
+          The value of \eqn{\epsilon} is specified by \code{stdev_weight_param},
+          which defaults to \code{1e-5} if \code{stdev_weight_param} is
+          \code{NULL} when using this method. With the default value of
+          \eqn{\epsilon}, \eqn{w_i^{stdev} \approx 11.512} when
+          \eqn{\sigma = 0}.
 
           Note: this method should be used with caution, because
           \eqn{w_i^{stdev}} is zero for \eqn{\sigma_i = 1 - \epsilon}, and it
@@ -369,11 +370,10 @@
           where \eqn{\epsilon} is a small number included to prevent numerical
           errors that would otherwise occur when \eqn{\sigma_i = 0}.
 
-          The value of \eqn{\epsilon} is specified by the
-          \code{stdev_weight_param} input argument, which defaults to
-          \code{1e-1} when \code{stdev_weight_param} is \code{NULL} when using
-          this method. With the default value of \eqn{\epsilon},
-          \eqn{w_i^{stdev} = 10} when \eqn{\sigma_i = 0}.
+          The value of \eqn{\epsilon} is specified by \code{stdev_weight_param},
+          which defaults to \code{1e-1} if \code{stdev_weight_param} is
+          \code{NULL} when using this method. With the default value of
+          \eqn{\epsilon}, \eqn{w_i^{stdev} = 10} when \eqn{\sigma_i = 0}.
   }
 
   If any values of \eqn{w_i^{stdev}} are undefined, negative, or infinite, an
@@ -404,13 +404,21 @@
     \item \code{'max'}: For this method, when \eqn{Y_i} is named \code{vtype}
           and the observation is from a set called \code{vdata}, then
 
-          \deqn{N_i = \left( max_{vtype}^{vdata} \right)^2,}
-          where \eqn{max_{vtype}^{vdata}} is the maximum observed value of
-          \code{vtype} across \code{vdata}. In this case, the observed and
+          \deqn{N_i = \left( max_{vtype}^{vdata} \right)^2 + \epsilon,}
+          where \eqn{max_{vtype}^{vdata}} is the maximum observed absolute value
+          of \code{vtype} across \code{vdata} and \eqn{\epsilon} is a small
+          number included to prevent numerical errors that would otherwise occur
+          when \eqn{max_{vtype}^{vdata} = 0}. In this case, the observed and
           modeled values that appear in the equation for \eqn{E_{agreement}} are
-          essentially normalized by their maximum value, hence the name for this
-          method. This approach avoids over-representing variable types with
-          larger magnitude when determining \eqn{E_{agreement}}.
+          essentially normalized by their maximum magnitude, hence the name for
+          this method. This approach avoids over-representing variable types
+          with larger magnitude when determining \eqn{E_{agreement}}.
+
+          The value of \eqn{\epsilon} is specified by
+          \code{normalization_param}, which defaults to \code{1e-1} if
+          \code{normalization_param} is \code{NULL} when using this method.
+          With the default value of \eqn{\epsilon}, \eqn{N_i = 10} when
+          \eqn{max_{vtype}^{vdata} = 0}.
 
     \item \code{'obs'}: For this method,
 
@@ -423,35 +431,34 @@
           avoids over-representing time points where a particular quantity takes
           its largest values when determining \eqn{E_{agreement}}.
 
-          The value of \eqn{\epsilon} is specified by the
-          \code{normalization_param} input argument, which defaults to
-          \code{1e-1} when \code{normalization_param} is \code{NULL} when using
-          this method. With the default value of \eqn{\epsilon}, \eqn{N_i = 10}
-          when \eqn{Y_{obs}^i = 0}.
+          The value of \eqn{\epsilon} is specified by
+          \code{normalization_param}, which defaults to \code{1e-1} if
+          \code{normalization_param} is \code{NULL} when using this method.
+          With the default value of \eqn{\epsilon}, \eqn{N_i = 10} when
+          \eqn{Y_{obs}^i = 0}.
 
     \item \code{'mean_max'}: For this method, the "mean" and "max" methods are
           combined so that
 
-          \deqn{N_i = n_{vtype}^{vdrivers}%
-          \cdot n_{data} \cdot \left( max_{vtype}^{vdata} \right)^2.}
+          \deqn{N_i = n_{vtype}^{vdrivers} \cdot n_{data}%
+          \cdot \left[ \left( max_{vtype}^{vdata} \right)^2 + \epsilon \right].}
           This approach avoids over-representing drivers with larger numbers of
           associated observations, and variable types with larger magnitudes.
           This method is used for parameterizing Soybean-BioCro.
+
+          The value \eqn{\epsilon} is specified by \code{normalization_param},
+          using the same default value as in the \code{'max'} method.
 
     \item \code{'mean_obs'}: For this method, the "mean" and "obs" methods are
           combined so that
 
           \deqn{N_i = n_{vtype}^{vdrivers} \cdot n_{data}%
-          \cdot \left( \left( Y_{obs}^i \right)^2 + \epsilon \right)^2.}
+          \cdot \left[ \left( Y_{obs}^i \right)^2 + \epsilon \right].}
           This approach avoids over-representing drivers with larger numbers of
           associated observations, and time points with larger observed values.
 
-          The value of \eqn{\epsilon} is specified by the
-          \code{normalization_param} input argument, which defaults to
-          \code{1e-1} when \code{normalization_param} is \code{NULL} when using
-          this method. With the default value of \eqn{\epsilon},
-          \eqn{N_i = 10 \cdot n_{vtype}^{vdrivers} \cdot n_{data}} when
-          \eqn{Y_{obs}^i = 0}.
+          The value \eqn{\epsilon} is specified by \code{normalization_param},
+          using the same default value as in the \code{'obs'} method.
   }
 
   In most situations, it is recommended to use either \code{'mean_max'} or
@@ -505,14 +512,14 @@
           output, when accounting for the \code{data_definitions} and
           \code{post_process_function}.
 
-    \item Ensuring that each independent and dependent argument name is either
-          a parameter or initial value of the model. Internally, argument names
-          are passed to \code{\link[BioCro]{partial_run_biocro}} via its
-          \code{arg_names} input. Note that argument names passed to
-          \code{partial_run_biocro} can technically include drivers, but it is
-          unlikely that the value of a driver would be varied during an
-          optimization, so the argument names are not allowed to include
-          columns in the drivers.
+    \item Ensuring that each independent and dependent argument name is a member
+          of the model's \code{parameters} or \code{initial_values}. Internally,
+          argument names are passed to \code{\link[BioCro]{partial_run_biocro}}
+          via its \code{arg_names} input. Note that argument names passed to
+          \code{partial_run_biocro} can technically include members of the
+          \code{drivers}, but it is unlikely that the value of a driver would be
+          varied during an optimization, so the argument names are not allowed
+          to include columns in the \code{drivers}.
 
     \item Ensuring that the optional \code{dependent_arg_function},
           \code{post_process_function}, and \code{extra_penalty_function}
@@ -544,22 +551,20 @@
   the same order as in \code{independent_arg_names}), and \code{lambda} is the
   value of the regularization parameter.
 
-  The \code{return_terms} argument determines the return value of
-  \code{obj_fun}. When \code{return_terms} is \code{FALSE}, \code{obj_fun}
-  returns values of the error metric \eqn{E}. When \code{return_terms} is
-  \code{TRUE}, \code{obj_fun} returns a list including each individual term of
-  the total error metric.
+  When \code{return_terms} is \code{FALSE}, \code{obj_fun} returns values of the
+  error metric \eqn{E}. When \code{return_terms} is \code{TRUE}, \code{obj_fun}
+  returns a list including each individual term of the total error metric.
 
   During optimization, \code{return_terms} should always be \code{FALSE}.
   Setting it to \code{TRUE} can be useful for troubleshooting, or for
   diagnostics such as checking the quality of fit for each of the data-driver
   pairs.
 
-  The \code{debug_mode} argument determines whether \code{obj_fun} is running in
-  debug mode. In debug mode, each time \code{obj_fun} is called, it will print
-  the values of \code{x} and the error metric to the R terminal. This can be
-  useful when troubleshooting a problem with an optimization, since it provides
-  a record of any problematic parameter combinations. When setting
+  When \code{debug_mode} is \code{TRUE}, \code{obj_fun} operates in "debug
+  mode." In debug mode, each time \code{obj_fun} is called, it will print the
+  values of \code{x} and the error metric to the R terminal. This can be useful
+  when troubleshooting a problem with an optimization, since it provides a
+  record of any problematic parameter combinations. When setting
   \code{debug_mode} to \code{TRUE}, also consider using \code{\link[base]{sink}}
   to write the outputs to a file instead of the R terminal. In that case, there
   will still be a record even if R crashes.
@@ -690,12 +695,12 @@ if (require(BioCro)) {
   # objective function increases, indicating a lower degree of agreement between
   # the model and the observed data. Here we will call `obj_fun` in debug mode,
   # which will automatically print the value of the error metric.
-  cat('\nError metric calculated by doubling the initial argument values:\n')
+  cat('\nError metric calculated by doubling the original argument values:\n')
   error_metric <- obj_fun(2 * as.numeric(independent_args), debug_mode = TRUE)
 
   # We can also see the values of each term that makes up the error metric;
   # again, we will call `obj_fun` in debug mode for automatic printing.
-  cat('\nError metric terms calculated by doubling the initial argument values:\n')
+  cat('\nError metric terms calculated by doubling the original argument values:\n')
   error_terms <-
     obj_fun(2 * as.numeric(independent_args), return_terms = TRUE, debug_mode = TRUE)
 }
