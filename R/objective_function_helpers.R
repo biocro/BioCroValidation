@@ -207,17 +207,19 @@ add_norm <- function(
             eps_max <- get_param_default(normalization_param, 1e-1)
             eps_obs <- get_param_default(normalization_param, 1e-1)
 
-            if (tolower(normalization_method) == 'equal') {
+            method <- toupper(normalization_method)
+
+            if (method == 'EQUAL') {
                 1.0
-            } else if (tolower(normalization_method) == 'mean') {
+            } else if (method == 'MEAN') {
                 npts * n_ddp
-            } else if (tolower(normalization_method) == 'max') {
+            } else if (method == 'MAX') {
                 qmax^2 + eps_max
-            } else if (tolower(normalization_method) == 'obs') {
+            } else if (method == 'OBS') {
                 qobs^2 + eps_obs
-            } else if (tolower(normalization_method) == 'mean_max') {
+            } else if (method == 'MEAN_MAX') {
                 npts * n_ddp * (qmax^2 + eps_max)
-            } else if (tolower(normalization_method) == 'mean_obs') {
+            } else if (method == 'MEAN_OBS') {
                 npts * n_ddp * (qobs^2 + eps_obs)
             } else {
                 stop('Unsupported normalization_method: ', normalization_method)
@@ -239,12 +241,14 @@ add_w_var <- function(long_form_data, stdev_weight_method, stdev_weight_param) {
         eps_log <- get_param_default(stdev_weight_param, 1e-5)
         eps_inv <- get_param_default(stdev_weight_param, 1e-1)
 
+        method <- toupper(stdev_weight_method)
+
         data_table[['w_var']] <-
-            if (tolower(stdev_weight_method) == 'equal') {
+            if (method == 'EQUAL') {
                 1.0
-            } else if (tolower(stdev_weight_method) == 'logarithm') {
+            } else if (method == 'LOGARITHM') {
                 log(1.0 / (data_stdev + eps_log))
-            } else if (tolower(stdev_weight_method) == 'inverse') {
+            } else if (method == 'INVERSE') {
                 1.0 / (data_stdev^2 + eps_inv)
             } else {
                 stop('Unsupported stdev_weight_method: ', stdev_weight_method)
@@ -408,11 +412,13 @@ regularization_penalty <- function(
     regularization_lambda
 )
 {
-    if (toupper(regularization_method) == 'NONE') {
+    method <- toupper(regularization_method)
+
+    if (method == 'NONE') {
         0.0
-    } else if (toupper(regularization_method) == 'LASSO' || toupper(regularization_method) == 'L1') {
+    } else if (method %in% c('LASSO', 'L1')) {
         regularization_lambda * sum(abs(ind_arg_vals))
-    } else if (toupper(regularization_method) == 'RIDGE' || toupper(regularization_method) == 'L2') {
+    } else if (method %in% c('RIDGE', 'L2')) {
         regularization_lambda * sum(ind_arg_vals^2)
     } else {
         stop('Unsupported regularization method: ', regularization_method)
