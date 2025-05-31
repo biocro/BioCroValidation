@@ -128,7 +128,8 @@
 
   \item{regularization_method}{
     A string indicating the regularization method to be used when calculating
-    the regularization penalty term; see below for more details.
+    the regularization penalty term, or a function that calculates the penalty;
+    see below for more details.
   }
 
   \item{dependent_arg_function}{
@@ -333,9 +334,10 @@
 
   \strong{Standard-deviation-based weight methods}
 
-  The following methods are available for determining weight factors from values
-  of the standard deviation (\eqn{\sigma}), which can be (optionally) supplied
-  via the \code{data_stdev} elements of the \code{data_driver_pairs}:
+  The following pre-set methods are available for determining weight factors
+  from values of the standard deviation (\eqn{\sigma}), which can be
+  (optionally) supplied via the \code{data_stdev} elements of the
+  \code{data_driver_pairs}:
 
   \itemize{
     \item \code{'equal'}: For this method, \eqn{w_i^{stdev}} is always set to
@@ -381,7 +383,7 @@
 
   \strong{Normalization methods}
 
-  The following normalization methods are available:
+  The following pre-set normalization methods are available:
 
   \itemize{
     \item \code{'equal'}: For this method, \eqn{N_i} is always set to 1. In
@@ -466,7 +468,7 @@
 
   \strong{Regularization methods}
 
-  The following regularization methods are available:
+  The following pre-set regularization methods are available:
 
   \itemize{
     \item \code{'none'}: For this method, \eqn{P_{regularization}} is always set
@@ -492,6 +494,10 @@
           \eqn{X_j} is the value of the \eqn{j^{th}} argument. See the "Value"
           section below for details of how to specify \eqn{\lambda}.
   }
+
+  It is also possible to supply a function that accepts two input arguments
+  (\code{x} and \code{lambda}, as described in the "Value" section below) and
+  returns a numeric penalty value.
 
   \strong{Input checks}
 
@@ -649,6 +655,8 @@ if (require(BioCro)) {
   # original Soybean-BioCro model.
   independent_args <- BioCro::soybean[['parameters']][c('alphaLeaf', 'betaLeaf')]
 
+  initial_guess <- as.numeric(independent_args)
+
   dependent_arg_function <- function(ind_args) {
     list(alphaStem = ind_args[['alphaLeaf']])
   }
@@ -675,6 +683,12 @@ if (require(BioCro)) {
     }
   }
 
+  # We want to use the regularization term to penalize deviations away from the
+  # initial guess, so we will define a custom L2 regularization function
+  regularization_function <- function(x, lambda) {
+    lambda * sum((x - initial_guess)^2)
+  }
+
   # Now we can finally create the objective function
   obj_fun <- objective_function(
     base_model_definition,
@@ -683,6 +697,7 @@ if (require(BioCro)) {
     quantity_weights,
     data_definitions = data_definitions,
     stdev_weight_method = 'logarithm',
+    regularization_method = regularization_function,
     dependent_arg_function = dependent_arg_function,
     post_process_function = post_process_function,
     extra_penalty_function = extra_penalty_function
@@ -691,17 +706,18 @@ if (require(BioCro)) {
   # This function could now be passed to an optimizer; here we will simply
   # evaluate it for two sets of parameter values.
 
-  # Try doubling each parameter value; in this case, the value of the
-  # objective function increases, indicating a lower degree of agreement between
-  # the model and the observed data. Here we will call `obj_fun` in debug mode,
-  # which will automatically print the value of the error metric.
+  # Try doubling each parameter value and setting lambda to a nonzero value; in
+  # this case, the value of the objective function increases, indicating a lower
+  # degree of agreement between the model and the observed data. Here we will
+  # call `obj_fun` in debug mode, which will automatically print the value of
+  # the error metric.
   cat('\nError metric calculated by doubling the original argument values:\n')
-  error_metric <- obj_fun(2 * as.numeric(independent_args), debug_mode = TRUE)
+  error_metric <- obj_fun(2 * initial_guess, 0.001, debug_mode = TRUE)
 
   # We can also see the values of each term that makes up the error metric;
   # again, we will call `obj_fun` in debug mode for automatic printing.
   cat('\nError metric terms calculated by doubling the original argument values:\n')
   error_terms <-
-    obj_fun(2 * as.numeric(independent_args), return_terms = TRUE, debug_mode = TRUE)
+    obj_fun(2 * initial_guess, 0.001, return_terms = TRUE, debug_mode = TRUE)
 }
 }

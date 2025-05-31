@@ -412,16 +412,20 @@ regularization_penalty <- function(
     regularization_lambda
 )
 {
-    method <- toupper(regularization_method)
-
-    if (method == 'NONE') {
-        0.0
-    } else if (method %in% c('LASSO', 'L1')) {
-        regularization_lambda * sum(abs(ind_arg_vals))
-    } else if (method %in% c('RIDGE', 'L2')) {
-        regularization_lambda * sum(ind_arg_vals^2)
+    if (is.function(regularization_method)) {
+        regularization_method(ind_arg_vals, regularization_lambda)
     } else {
-        stop('Unsupported regularization method: ', regularization_method)
+        method <- toupper(regularization_method)
+
+        if (method == 'NONE') {
+            0.0
+        } else if (method %in% c('LASSO', 'L1')) {
+            regularization_lambda * sum(abs(ind_arg_vals))
+        } else if (method %in% c('RIDGE', 'L2')) {
+            regularization_lambda * sum(ind_arg_vals^2)
+        } else {
+            stop('Unsupported regularization method: ', regularization_method)
+        }
     }
 }
 
