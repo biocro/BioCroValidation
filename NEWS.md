@@ -38,6 +38,8 @@ be directly added to this file to describe the related changes.
 - Fixed typos in the help page for `objective_function`, and in the `add_norm`
   function (defined in `R/objective_function_helpers.R`)
 
+- Allowed user-supplied regularization functions
+
 # Changes in BioCroValidation Version 0.2.0 (2025-05-23)
 
 - Added 2002 and 2005 SoyFACE biomass and standard deviation data.
