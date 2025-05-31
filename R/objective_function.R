@@ -76,14 +76,16 @@ objective_function <- function(
         long_form_data,
         normalization_method,
         normalization_param,
-        length(data_driver_pairs)
+        length(data_driver_pairs),
+        verbose_startup
     )
 
     # Add variance-based weights
     long_form_data <- add_w_var(
         long_form_data,
         stdev_weight_method,
-        stdev_weight_param
+        stdev_weight_param,
+        verbose_startup
     )
 
     # Print the long form data, if desired. Do this before checking the data,
@@ -109,11 +111,15 @@ objective_function <- function(
     # Get the data-driver pair weights
     ddp_weights <- get_ddp_weights(data_driver_pairs)
 
-    # Print the data-driver pair weights, if desired
-    if (verbose_startup) {
-        cat('\nThe user-supplied data-driver pair weights:\n\n')
-        utils::str(ddp_weights)
-    }
+    # Print additional startup information, if desired
+    print_misc_verbose_startup(
+        ddp_weights,
+        regularization_method,
+        dependent_arg_function,
+        post_process_function,
+        extra_penalty_function,
+        verbose_startup
+    )
 
     # Create the objective function
     obj_fun <- get_obj_fun(

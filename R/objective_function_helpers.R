@@ -188,9 +188,32 @@ add_norm <- function(
     long_form_data,
     normalization_method,
     normalization_param,
-    n_ddp
+    n_ddp,
+    verbose_startup
 )
 {
+    eps_max <- get_param_default(normalization_param, 1e-1)
+    eps_obs <- get_param_default(normalization_param, 1e-1)
+
+    method <- toupper(normalization_method)
+
+    if (verbose_startup) {
+        method_info <- if (method %in% c('MAX', 'MEAN_MAX')) {
+            paste(method, 'with eps =', eps_max)
+        } else if (method %in% c('OBS', 'MEAN_OBS')) {
+            paste(method, 'with eps =', eps_obs)
+        } else {
+            method
+        }
+
+        cat(paste(
+            '\nNormalization method:',
+            method_info,
+            '\n',
+            collapse = ''
+        ))
+    }
+
     for (i in seq_along(long_form_data)) {
         data_table <- long_form_data[[i]]
 
@@ -203,11 +226,6 @@ add_norm <- function(
             npts <- nrow(qname_subset)
             qmax <- max(abs(qname_subset[['quantity_value']]))
             qobs <- data_table[j, 'quantity_value']
-
-            eps_max <- get_param_default(normalization_param, 1e-1)
-            eps_obs <- get_param_default(normalization_param, 1e-1)
-
-            method <- toupper(normalization_method)
 
             if (method == 'EQUAL') {
                 1.0
@@ -233,15 +251,38 @@ add_norm <- function(
 }
 
 # Helping function for getting variance-based weights
-add_w_var <- function(long_form_data, stdev_weight_method, stdev_weight_param) {
+add_w_var <- function(
+    long_form_data,
+    stdev_weight_method,
+    stdev_weight_param,
+    verbose_startup
+)
+{
+    eps_log <- get_param_default(stdev_weight_param, 1e-5)
+    eps_inv <- get_param_default(stdev_weight_param, 1e-1)
+
+    method <- toupper(stdev_weight_method)
+
+    if (verbose_startup) {
+        method_info <- if (method == 'LOGARITHM') {
+            paste(method, 'with eps =', eps_log)
+        } else if (method == 'INVERSE') {
+            paste(method, 'with eps =', eps_inv)
+        } else {
+            method
+        }
+
+        cat(paste(
+            '\nStandard-deviation-based weight method:',
+            method_info,
+            '\n',
+            collapse = ''
+        ))
+    }
+
     for (i in seq_along(long_form_data)) {
         data_table <- long_form_data[[i]]
         data_stdev <- data_table[['quantity_stdev']]
-
-        eps_log <- get_param_default(stdev_weight_param, 1e-5)
-        eps_inv <- get_param_default(stdev_weight_param, 1e-1)
-
-        method <- toupper(stdev_weight_method)
 
         data_table[['w_var']] <-
             if (method == 'EQUAL') {
@@ -500,6 +541,51 @@ get_obj_fun <- function(
             }
 
             error_metric
+        }
+    }
+}
+
+# Print the data-driver pair weights, information about the regularization
+# method, and information about optional functions, if desired
+print_misc_verbose_startup <- function(
+    ddp_weights,
+    regularization_method,
+    dependent_arg_function,
+    post_process_function,
+    extra_penalty_function,
+    verbose_startup
+)
+{
+    if (verbose_startup){
+        user_func_msg <- 'user-supplied function:\n\n'
+
+        cat('\nThe user-supplied data-driver pair weights:\n\n')
+        utils::str(ddp_weights)
+
+        cat('\nRegularization method: ')
+
+        if (is.function(regularization_method)) {
+            cat(user_func_msg)
+            print(regularization_method)
+        } else {
+            cat(paste0(toupper(regularization_method), '\n'))
+        }
+
+        func_to_print <- list(
+            list(info = 'Dependent argument', func = dependent_arg_function),
+            list(info = 'Post-processing',    func = post_process_function),
+            list(info = 'Extra penalty',      func = extra_penalty_function)
+        )
+
+        for (x in func_to_print) {
+            cat(paste0('\n', x$info, ' function: '))
+
+            if (is.null(x$func)) {
+                cat('none\n')
+            } else {
+                cat(user_func_msg)
+                print(x$func)
+            }
         }
     }
 }
