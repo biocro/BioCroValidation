@@ -188,9 +188,32 @@ add_norm <- function(
     long_form_data,
     normalization_method,
     normalization_param,
-    n_ddp
+    n_ddp,
+    verbose_startup
 )
 {
+    eps_max <- get_param_default(normalization_param, 1e-1)
+    eps_obs <- get_param_default(normalization_param, 1e-1)
+
+    method <- toupper(normalization_method)
+
+    if (verbose_startup) {
+        method_info <- if (method %in% c('MAX', 'MEAN_MAX')) {
+            paste(method, 'with eps =', eps_max)
+        } else if (method %in% c('OBS', 'MEAN_OBS')) {
+            paste(method, 'with eps =', eps_obs)
+        } else {
+            method
+        }
+
+        cat(paste(
+            '\nNormalization method:',
+            method_info,
+            '\n',
+            collapse = ''
+        ))
+    }
+
     for (i in seq_along(long_form_data)) {
         data_table <- long_form_data[[i]]
 
@@ -204,20 +227,17 @@ add_norm <- function(
             qmax <- max(abs(qname_subset[['quantity_value']]))
             qobs <- data_table[j, 'quantity_value']
 
-            eps_max <- get_param_default(normalization_param, 1e-1)
-            eps_obs <- get_param_default(normalization_param, 1e-1)
-
-            if (tolower(normalization_method) == 'equal') {
+            if (method == 'EQUAL') {
                 1.0
-            } else if (tolower(normalization_method) == 'mean') {
+            } else if (method == 'MEAN') {
                 npts * n_ddp
-            } else if (tolower(normalization_method) == 'max') {
+            } else if (method == 'MAX') {
                 qmax^2 + eps_max
-            } else if (tolower(normalization_method) == 'obs') {
+            } else if (method == 'OBS') {
                 qobs^2 + eps_obs
-            } else if (tolower(normalization_method) == 'mean_max') {
+            } else if (method == 'MEAN_MAX') {
                 npts * n_ddp * (qmax^2 + eps_max)
-            } else if (tolower(normalization_method) == 'mean_obs') {
+            } else if (method == 'MEAN_OBS') {
                 npts * n_ddp * (qobs^2 + eps_obs)
             } else {
                 stop('Unsupported normalization_method: ', normalization_method)
@@ -231,20 +251,45 @@ add_norm <- function(
 }
 
 # Helping function for getting variance-based weights
-add_w_var <- function(long_form_data, stdev_weight_method, stdev_weight_param) {
+add_w_var <- function(
+    long_form_data,
+    stdev_weight_method,
+    stdev_weight_param,
+    verbose_startup
+)
+{
+    eps_log <- get_param_default(stdev_weight_param, 1e-5)
+    eps_inv <- get_param_default(stdev_weight_param, 1e-1)
+
+    method <- toupper(stdev_weight_method)
+
+    if (verbose_startup) {
+        method_info <- if (method == 'LOGARITHM') {
+            paste(method, 'with eps =', eps_log)
+        } else if (method == 'INVERSE') {
+            paste(method, 'with eps =', eps_inv)
+        } else {
+            method
+        }
+
+        cat(paste(
+            '\nStandard-deviation-based weight method:',
+            method_info,
+            '\n',
+            collapse = ''
+        ))
+    }
+
     for (i in seq_along(long_form_data)) {
         data_table <- long_form_data[[i]]
         data_stdev <- data_table[['quantity_stdev']]
 
-        eps_log <- get_param_default(stdev_weight_param, 1e-5)
-        eps_inv <- get_param_default(stdev_weight_param, 1e-1)
-
         data_table[['w_var']] <-
-            if (tolower(stdev_weight_method) == 'equal') {
+            if (method == 'EQUAL') {
                 1.0
-            } else if (tolower(stdev_weight_method) == 'logarithm') {
+            } else if (method == 'LOGARITHM') {
                 log(1.0 / (data_stdev + eps_log))
-            } else if (tolower(stdev_weight_method) == 'inverse') {
+            } else if (method == 'INVERSE') {
                 1.0 / (data_stdev^2 + eps_inv)
             } else {
                 stop('Unsupported stdev_weight_method: ', stdev_weight_method)
@@ -408,14 +453,20 @@ regularization_penalty <- function(
     regularization_lambda
 )
 {
-    if (toupper(regularization_method) == 'NONE') {
-        0.0
-    } else if (toupper(regularization_method) == 'LASSO' || toupper(regularization_method) == 'L1') {
-        regularization_lambda * sum(abs(ind_arg_vals))
-    } else if (toupper(regularization_method) == 'RIDGE' || toupper(regularization_method) == 'L2') {
-        regularization_lambda * sum(ind_arg_vals^2)
+    if (is.function(regularization_method)) {
+        regularization_method(ind_arg_vals, regularization_lambda)
     } else {
-        stop('Unsupported regularization method: ', regularization_method)
+        method <- toupper(regularization_method)
+
+        if (method == 'NONE') {
+            0.0
+        } else if (method %in% c('LASSO', 'L1')) {
+            regularization_lambda * sum(abs(ind_arg_vals))
+        } else if (method %in% c('RIDGE', 'L2')) {
+            regularization_lambda * sum(ind_arg_vals^2)
+        } else {
+            stop('Unsupported regularization method: ', regularization_method)
+        }
     }
 }
 
@@ -490,6 +541,51 @@ get_obj_fun <- function(
             }
 
             error_metric
+        }
+    }
+}
+
+# Print the data-driver pair weights, information about the regularization
+# method, and information about optional functions, if desired
+print_misc_verbose_startup <- function(
+    ddp_weights,
+    regularization_method,
+    dependent_arg_function,
+    post_process_function,
+    extra_penalty_function,
+    verbose_startup
+)
+{
+    if (verbose_startup){
+        user_func_msg <- 'user-supplied function:\n\n'
+
+        cat('\nThe user-supplied data-driver pair weights:\n\n')
+        utils::str(ddp_weights)
+
+        cat('\nRegularization method: ')
+
+        if (is.function(regularization_method)) {
+            cat(user_func_msg)
+            print(regularization_method)
+        } else {
+            cat(paste0(toupper(regularization_method), '\n'))
+        }
+
+        func_to_print <- list(
+            list(info = 'Dependent argument', func = dependent_arg_function),
+            list(info = 'Post-processing',    func = post_process_function),
+            list(info = 'Extra penalty',      func = extra_penalty_function)
+        )
+
+        for (x in func_to_print) {
+            cat(paste0('\n', x$info, ' function: '))
+
+            if (is.null(x$func)) {
+                cat('none\n')
+            } else {
+                cat(user_func_msg)
+                print(x$func)
+            }
         }
     }
 }

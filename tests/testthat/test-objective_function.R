@@ -103,6 +103,25 @@ test_that('Objective functions can be created and behave as expected', {
         obj_fun(as.numeric(independent_args), lambda = 0.5)
     )
 
+    # Two data-driver pairs, with dependent arguments and L4 regularization
+    obj_fun <- expect_silent(
+        objective_function(
+            model,
+            ddps,
+            independent_args,
+            quantity_weights,
+            data_definitions = data_definitions,
+            dependent_arg_function = dependent_arg_function,
+            post_process_function = post_process_function,
+            regularization_method = function(x, lambda) {lambda * sum(x^4)},
+            verbose_startup = verbose_startup
+        )
+    )
+
+    expect_silent(
+        obj_fun(as.numeric(independent_args), lambda = 0.5)
+    )
+
     expect_true(
         is.list(
             obj_fun(as.numeric(independent_args), lambda = 0.5, return_terms = TRUE)
