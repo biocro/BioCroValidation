@@ -40,6 +40,13 @@ be directly added to this file to describe the related changes.
 
 - Allowed user-supplied regularization functions
 
+- Errors that occur while running simulations are now caught so they do not
+  prevent an optimization from finishing
+
+- More options for `debug_mode` are now available; the default setting
+  (`minimal`) only prints info to the terminal when an issue with a simulation
+  occurs
+
 # Changes in BioCroValidation Version 0.2.0 (2025-05-23)
 
 - Added 2002 and 2005 SoyFACE biomass and standard deviation data.
