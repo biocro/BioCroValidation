@@ -73,7 +73,7 @@ test_that('Objective functions can be created and behave as expected', {
 
     # Here we intentionally pass a bad value of Catm that will trigger an error
     error_val <- expect_silent(
-        obj_fun(as.numeric(within(independent_args, {Catm = -1})))
+        obj_fun(as.numeric(within(independent_args, {Catm = -1})), debug_mode = 'none')
     )
 
     expect_equal(error_val, 2 * BioCroValidation:::FAILURE_VALUE)
