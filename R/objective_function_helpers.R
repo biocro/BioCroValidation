@@ -495,7 +495,13 @@ get_obj_fun <- function(
 
         errors <- lapply(seq_along(model_runners), function(i) {
             runner <- model_runners[[i]]
-            res    <- runner(x)
+
+            res <- tryCatch(
+                runner(x),
+                error = function(e) {
+                    data.frame()
+                }
+            )
 
             error_from_res(
                 res,
