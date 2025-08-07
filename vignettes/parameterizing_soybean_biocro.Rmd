@@ -564,7 +564,7 @@ optim_res <- nmkb(
     tol = 1e-2,
     restarts.max = 10
   ),
-  debug_mode = FALSE # Passed to obj_fun; set to TRUE to enable debug mode
+  debug_mode = 'minimal' # Passed to obj_fun
 )
 ```
 
