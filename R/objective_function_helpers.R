@@ -470,6 +470,24 @@ regularization_penalty <- function(
     }
 }
 
+# Helping function for debug printing. Here, `obj` should either be a list (in
+# which case its "structure" will be printed via `str`) or a numeric vector (in
+# which case its values will be printed with up to 32 decimal places).
+# `obj_name` should be a string describing what is being printed. The printout
+# will include newlines at the start and end, along with a timestamp.
+debug_print <- function(obj, obj_name) {
+    cat(paste0('\nTime: ', Sys.time()), '    ', obj_name, ': ')
+
+    if (is.list(obj)) {
+        cat('\n\n')
+        utils::str(obj)
+    } else {
+        cat(paste(sprintf('%.32f', obj), collapse = ', '))
+    }
+
+    cat('\n')
+}
+
 # Helping function that forms the overall objective function
 get_obj_fun <- function(
     model_runners,
@@ -483,14 +501,7 @@ get_obj_fun <- function(
 {
     function(x, lambda = 0, return_terms = FALSE, debug_mode = FALSE) {
         if (debug_mode) {
-            msg <- paste0(
-                '\nTime: ',
-                Sys.time(),
-                '    Independent argument values: ',
-                paste(x, collapse = ', '),
-                '\n'
-            )
-            cat(msg)
+            debug_print(x, 'Independent argument values')
         }
 
         errors <- lapply(seq_along(model_runners), function(i) {
@@ -526,9 +537,7 @@ get_obj_fun <- function(
             )
 
             if (debug_mode) {
-                cat(paste0('Time: ', Sys.time()), '    Error metric terms: ')
-                utils::str(error_metric_terms)
-                cat('\n')
+                debug_print(error_metric_terms, 'Error metric terms')
             }
 
             error_metric_terms
@@ -536,14 +545,7 @@ get_obj_fun <- function(
             error_metric <- sum(as.numeric(errors)) + reg_penalty
 
             if (debug_mode) {
-                msg <- paste0(
-                    'Time: ',
-                    Sys.time(),
-                    '    Error metric: ',
-                    error_metric,
-                    '\n'
-                )
-                cat(msg)
+                debug_print(error_metric, 'Error metric')
             }
 
             error_metric
