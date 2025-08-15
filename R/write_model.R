@@ -7,6 +7,18 @@ write_model <- function(
     ode_solver
 )
 {
+    # Get the longest name among the initial values and parameters
+    all_names <- c(
+        names(initial_values),
+        names(parameters)
+    )
+
+    name_width <- max(sapply(all_names, nchar))
+
+    # Alphabetize the initial values and parameters
+    initial_values <- initial_values[order(tolower(names(initial_values)))]
+    parameters     <- parameters[order(tolower(names(parameters)))]
+
     # Fill in the module definition template (defined below)
     model_text <- sprintf(
         model_definition_template,
@@ -18,8 +30,8 @@ write_model <- function(
         ode_solver[['adaptive_rel_error_tol']],
         ode_solver[['adaptive_abs_error_tol']],
         ode_solver[['adaptive_max_steps']],
-        paste(paste0('        "', names(initial_values), '" = ', initial_values), collapse = ',\n'),
-        paste(paste0('        "', names(parameters), '" = ', parameters), collapse = ',\n')
+        paste(paste0('        ', format(names(initial_values), width = name_width), ' = ', initial_values), collapse = ',\n'),
+        paste(paste0('        ', format(names(parameters), width = name_width), ' = ', parameters), collapse = ',\n')
     )
 }
 
@@ -31,11 +43,11 @@ model_definition_template <- '%s <- list(
 %s
     ),
     ode_solver = list(
-        type = "%s",
-        output_step_size = %f,
+        type                   = "%s",
+        output_step_size       = %f,
         adaptive_rel_error_tol = %e,
         adaptive_abs_error_tol = %e,
-        adaptive_max_steps = %i
+        adaptive_max_steps     = %i
     ),
     initial_values = list(
 %s
