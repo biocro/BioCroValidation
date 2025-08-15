@@ -19,12 +19,20 @@ write_model <- function(
     initial_values <- initial_values[order(tolower(names(initial_values)))]
     parameters     <- parameters[order(tolower(names(parameters)))]
 
+    # Prepare the module list strings
+    dir_module_string <- paste(paste0('        ', names(direct_modules), ' = "', direct_modules, '"'), collapse = ',\n')
+    diff_module_string <- paste(paste0('        ', names(differential_modules), ' = "', differential_modules, '"'), collapse = ',\n')
+
+    # Remove any lines without names
+    dir_module_string <- gsub('         = ', '        ', dir_module_string)
+    diff_module_string <- gsub('         = ', '        ', diff_module_string)
+
     # Fill in the module definition template (defined below)
     model_text <- sprintf(
         model_definition_template,
         name,
-        paste(paste0('        "', direct_modules, '"'), collapse = ',\n'),
-        paste(paste0('        "', differential_modules, '"'), collapse = ',\n'),
+        dir_module_string,
+        diff_module_string,
         ode_solver[['type']],
         ode_solver[['output_step_size']],
         ode_solver[['adaptive_rel_error_tol']],
