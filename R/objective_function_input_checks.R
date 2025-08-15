@@ -420,8 +420,11 @@ check_long_form_data <- function(long_form_data) {
 # Helping function for checking the objective function; will throw an error if a
 # problem is detected, and will otherwise be silent with no return value.
 check_obj_fun <- function(obj_fun, initial_ind_arg_values, verbose) {
-    initial_error_terms <-
-        obj_fun(as.numeric(initial_ind_arg_values), return_terms = TRUE)
+    initial_error_terms <- obj_fun(
+        as.numeric(initial_ind_arg_values),
+        return_terms = TRUE,
+        debug_mode = 'none'
+    )
 
     initial_error <- sum(unlist(initial_error_terms))
 

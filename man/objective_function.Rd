@@ -551,7 +551,7 @@
 
 \value{
   A function \code{obj_fun} with signature
-  \code{obj_fun(x, lambda = 0, return_terms = FALSE, debug_mode = FALSE)}.
+  \code{obj_fun(x, lambda = 0, return_terms = FALSE, debug_mode = 'minimal')}.
 
   Here, \code{x} is a numeric vector of values of the independent arguments (in
   the same order as in \code{independent_arg_names}), and \code{lambda} is the
@@ -566,14 +566,23 @@
   diagnostics such as checking the quality of fit for each of the data-driver
   pairs.
 
-  When \code{debug_mode} is \code{TRUE}, \code{obj_fun} operates in "debug
-  mode." In debug mode, each time \code{obj_fun} is called, it will print the
-  values of \code{x} and the error metric to the R terminal. This can be useful
-  when troubleshooting a problem with an optimization, since it provides a
-  record of any problematic parameter combinations. When setting
-  \code{debug_mode} to \code{TRUE}, also consider using \code{\link[base]{sink}}
-  to write the outputs to a file instead of the R terminal. In that case, there
-  will still be a record even if R crashes.
+  When \code{debug_mode} is \code{'minimal'} or \code{'everything'},
+  \code{obj_fun} operates in "debug mode." In the "minimal" version, problematic
+  values of \code{x} will be printed to the terminal, along with an explanation
+  of the problem that was caused. In the "everything" version, the values of
+  \code{x} and the error metric will be printed to the terminal every time
+  \code{obj_fun} is called. When \code{debug_mode} is \code{'none'} (or any
+  other value not mentioned above), no debug printing will occur.
+
+  Debug mode can be useful when troubleshooting a problem with an optimization,
+  since it provides a record of any problematic parameter combinations. Once a
+  problematic set of argument values is identified, it can be investigated
+  further by calling \code{obj_fun} again with \code{x} set to the problematic
+  values and \code{return_terms} set to \code{TRUE}.
+
+  When setting \code{debug_mode} to \code{TRUE}, also consider using
+  \code{\link[base]{sink}} to write the outputs to a file instead of the R
+  terminal. In that case, there will still be a record even if R crashes.
 }
 
 \examples{
@@ -712,12 +721,12 @@ if (require(BioCro)) {
   # call `obj_fun` in debug mode, which will automatically print the value of
   # the error metric.
   cat('\nError metric calculated by doubling the original argument values:\n')
-  error_metric <- obj_fun(2 * initial_guess, 0.001, debug_mode = TRUE)
+  error_metric <- obj_fun(2 * initial_guess, 0.001, debug_mode = 'everything')
 
   # We can also see the values of each term that makes up the error metric;
   # again, we will call `obj_fun` in debug mode for automatic printing.
   cat('\nError metric terms calculated by doubling the original argument values:\n')
   error_terms <-
-    obj_fun(2 * initial_guess, 0.001, return_terms = TRUE, debug_mode = TRUE)
+    obj_fun(2 * initial_guess, 0.001, return_terms = TRUE, debug_mode = 'everything')
 }
 }

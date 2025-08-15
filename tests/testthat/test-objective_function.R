@@ -27,7 +27,7 @@ ddps <- list(
 )
 
 independent_args <- with(BioCro::soybean[['parameters']], {
-    list(alphaLeaf = alphaLeaf, betaLeaf = betaLeaf)
+    list(alphaLeaf = alphaLeaf, betaLeaf = betaLeaf, Catm = Catm)
 })
 
 data_definitions <- list(
@@ -70,6 +70,13 @@ test_that('Objective functions can be created and behave as expected', {
     expect_silent(
         obj_fun(as.numeric(independent_args))
     )
+
+    # Here we intentionally pass a bad value of Catm that will trigger an error
+    error_val <- expect_silent(
+        obj_fun(as.numeric(within(independent_args, {Catm = -1})), debug_mode = 'none')
+    )
+
+    expect_equal(error_val, 2 * BioCroValidation:::FAILURE_VALUE)
 
     # One data-driver pair, no dependent arguments
     obj_fun <- expect_silent(
@@ -205,7 +212,7 @@ ambient_2005: Error: `bad_arg_name` from `arg_names` is not in the `initial_valu
     )
 })
 
-test_that('Model failures are detected', {
+test_that('Model failures at startup are detected', {
     expect_error(
         objective_function(
             within(model, {parameters$lnfun = 1}),

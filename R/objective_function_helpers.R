@@ -4,6 +4,13 @@
 # Value to return when a simulation fails to run
 FAILURE_VALUE <- 1e10
 
+# Define the allowed debug modes
+DEBUG_MODES <- c(
+    'none',
+    'minimal',
+    'everything'
+)
+
 # Helping function for getting a full list of argument names
 get_full_arg_names <- function(independent_args, dependent_arg_function) {
     # Get the independent argument names
@@ -364,6 +371,24 @@ one_error <- function(
     }
 }
 
+# Helping function for debug printing. Here, `obj` should either be a list (in
+# which case its "structure" will be printed via `str`) or a numeric vector (in
+# which case its values will be printed with up to 32 decimal places).
+# `obj_name` should be a string describing what is being printed. The printout
+# will include newlines at the start and end, along with a timestamp.
+debug_print <- function(obj, obj_name) {
+    cat(paste0('\nTime: ', Sys.time()), '    ', obj_name, ': ')
+
+    if (is.list(obj)) {
+        cat('\n\n')
+        utils::str(obj)
+    } else {
+        cat(paste(sprintf('%.32f', obj), collapse = ', '))
+    }
+
+    cat('\n')
+}
+
 # Helping function for returning a failure value
 failure_value <- function(error_sum, return_terms) {
     if (return_terms) {
@@ -384,13 +409,40 @@ error_from_res <- function(
     ddp_weight,
     normalization_method,
     extra_penalty_function,
-    return_terms
+    return_terms,
+    x,
+    debug_mode
 )
 {
+    # If there was an error, return a very high value
+    if (is.null(simulation_result)) {
+        return(
+            failure_value(NA, return_terms)
+        )
+    }
+
     # If the simulation did not finish, return a very high value
     expected_npts <- long_form_data_table[1, 'expected_npts']
 
     if (nrow(simulation_result) < expected_npts) {
+        if (debug_mode %in% c(DEBUG_MODES[2], DEBUG_MODES[3])) {
+            # debug_mode is `minimal` or `everything`, so indicate that the
+            # simulation did not finish; if debug_mode is `minimal`, the inputs
+            # have not yet been printed, so we need to print them here
+            if (debug_mode == DEBUG_MODES[2]) {
+                debug_print(x, 'Independent argument values')
+            }
+
+            msg <- paste0(
+                '\nSimulation did not finish; produced ',
+                nrow(simulation_result),
+                ' rows instead of the expected ',
+                expected_npts, '\n'
+            )
+
+            cat(msg)
+        }
+
         return(
             failure_value(NA, return_terms)
         )
@@ -424,6 +476,24 @@ error_from_res <- function(
 
     # If the error sum is not finite, return a very high value
     if (!is.finite(error_sum)) {
+        if (debug_mode %in% c(DEBUG_MODES[2], DEBUG_MODES[3])) {
+            # debug_mode is `minimal` or `everything`, so indicate that the sum
+            # of squared errors is not finite; if debug_mode is `minimal`, the
+            # inputs have not yet been printed, so we need to print them here
+            if (debug_mode == DEBUG_MODES[2]) {
+                debug_print(x, 'Independent argument values')
+            }
+
+            msg <- paste0(
+                '\nSum of squared errors is not finite: ',
+                error_sum,
+                '\n'
+            )
+
+            cat(msg)
+        }
+
+
         return(
             failure_value(error_sum, return_terms)
         )
@@ -470,7 +540,16 @@ regularization_penalty <- function(
     }
 }
 
-# Helping function that forms the overall objective function
+# Helping function that forms the overall objective function. Here, `debug_mode`
+# should be a numeric value, and the debug outputs work as follows:
+#
+# - debug_mode 1: Minimal debug printing; inputs and error messages will be
+#   printed only if a simulation fails to complete
+#
+# - debug mode 2: Maximal debug printing; all inputs and outputs will be printed
+#
+# - any other value: No debug printing
+#
 get_obj_fun <- function(
     model_runners,
     long_form_data,
@@ -481,21 +560,32 @@ get_obj_fun <- function(
     regularization_method
 )
 {
-    function(x, lambda = 0, return_terms = FALSE, debug_mode = FALSE) {
-        if (debug_mode) {
-            msg <- paste0(
-                '\nTime: ',
-                Sys.time(),
-                '    Independent argument values: ',
-                paste(x, collapse = ', '),
-                '\n'
-            )
-            cat(msg)
+    function(x, lambda = 0, return_terms = FALSE, debug_mode = 'minimal') {
+        if (tolower(debug_mode) == DEBUG_MODES[3]) {
+            # debug_mode is `everything`, so print the inputs
+            debug_print(x, 'Independent argument values')
         }
 
         errors <- lapply(seq_along(model_runners), function(i) {
             runner <- model_runners[[i]]
-            res    <- runner(x)
+
+            res <- tryCatch(
+                runner(x),
+                error = function(e) {
+                    if (debug_mode %in% c(DEBUG_MODES[2], DEBUG_MODES[3])) {
+                        # debug_mode is `minimal` or `everything`, so print the
+                        # error message; if debug_mode is `minimal`, the inputs
+                        # have not yet been printed, so we need to print them
+                        # here
+                        if (debug_mode == DEBUG_MODES[2]) {
+                            debug_print(x, 'Independent argument values')
+                        }
+                        cat(paste0('\n', conditionMessage(e), '\n'))
+                    }
+                    # Return NULL to indicate that an error occurred
+                    NULL
+                }
+            )
 
             error_from_res(
                 res,
@@ -504,7 +594,9 @@ get_obj_fun <- function(
                 ddp_weights[[i]],
                 normalization_method,
                 extra_penalty_function,
-                return_terms
+                return_terms,
+                x,
+                debug_mode
             )
         })
 
@@ -519,25 +611,18 @@ get_obj_fun <- function(
                 regularization_penalty = reg_penalty
             )
 
-            if (debug_mode) {
-                cat(paste0('Time: ', Sys.time()), '    Error metric terms: ')
-                utils::str(error_metric_terms)
-                cat('\n')
+            if (tolower(debug_mode) == DEBUG_MODES[3]) {
+                # debug_mode is `everything`, so print the error metric terms
+                debug_print(error_metric_terms, 'Error metric terms')
             }
 
             error_metric_terms
         } else {
             error_metric <- sum(as.numeric(errors)) + reg_penalty
 
-            if (debug_mode) {
-                msg <- paste0(
-                    'Time: ',
-                    Sys.time(),
-                    '    Error metric: ',
-                    error_metric,
-                    '\n'
-                )
-                cat(msg)
+            if (tolower(debug_mode) == DEBUG_MODES[3]) {
+                # debug_mode is `everything`, so print the error metric
+                debug_print(error_metric, 'Error metric')
             }
 
             error_metric
