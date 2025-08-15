@@ -47,6 +47,10 @@ be directly added to this file to describe the related changes.
   (`minimal`) only prints info to the terminal when an issue with a simulation
   occurs
 
+- Improved formatting of output from `write_module`, so that initial value and
+  parameter lists are alphabetized, equals signs are aligned, and module names
+  are preserved
+
 # Changes in BioCroValidation Version 0.2.0 (2025-05-23)
 
 - Added 2002 and 2005 SoyFACE biomass and standard deviation data.
