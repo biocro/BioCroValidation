@@ -62,6 +62,11 @@
   output. See examples below. Note that it is customary to name the R script
   file as \code{name.R}, where \code{name} is the value provided to the function
   itself.
+
+  The \code{initial_values} and \code{parameters} will be alphabetized
+  (case-insensitive). The \code{ode_solver} elements will be printed in the
+  customary BioCro order. The \code{direct_modules} and
+  \code{differential_modules} will not be reordered.
 }
 
 \value{
@@ -85,7 +90,7 @@ if (require(BioCro)) {
 
   if (interactive()) {
     # Use writeLines to save as a `.R` file
-    writeLines(out, "./test_soybean_model.h")
+    writeLines(out, "./test_soybean_model.R")
   }
 }
 }
