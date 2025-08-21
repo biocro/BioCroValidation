@@ -55,8 +55,8 @@
   \item{data_driver_pairs}{
     A list of named elements, where each element is a "data-driver pair." A
     data-driver pair is a list with three required elements: \code{data},
-    \code{drivers}, and \code{weight}. Optionally, it may also have a
-    \code{data_stdev} element.
+    \code{drivers}, and \code{weight}. Optionally, it may also have elements
+    named \code{data_stdev}, \code{initial_values}, and \code{parameters}.
 
     The \code{data} element must be a data frame with one column named
     \code{time}, whose values follow BioCro's definition of
@@ -76,6 +76,13 @@
     should represent the standard deviation associated with each entry in
     \code{data}. If \code{data_stdev} is not supplied, all standard deviations
     will be set to 1.
+
+    The optional \code{initial_values} and \code{parameters} elements must be
+    named lists of driver-specific initial values and parameters, respectively,
+    that will overwrite the default values specified in the
+    \code{base_model_definition}. When driver-specific \code{initial_values} are
+    provided, they must be provided for each of the data-driver pairs; the same
+    rule applies for driver-specific \code{parameters}.
   }
 
   \item{independent_args}{
@@ -185,7 +192,10 @@
           simulation must be compared to associated sets of observed data. Here,
           this is handled through the \code{data_driver_pairs}, which allows the
           user to specify which drivers and data sets should be compared to each
-          other.
+          other. Optionally, it is also possible to specify different initial
+          values or parameters for each set of drivers; for example, the
+          atmospheric CO2 concentration may need to change for different years,
+          or soil properties may need to change for different locations.
 
     \item \strong{Complicated normalization:} Care must be taken to ensure that
           certain years or output variables are not over-valued in the error
@@ -622,18 +632,21 @@ if (require(BioCro)) {
 
   # The data-driver pairs can now be created by associating each data set with
   # its corresponding weather data. Here we will weight the 2005 data twice as
-  # heavily as the 2002 data.
+  # heavily as the 2002 data. Note that we also specify different atmospheric
+  # CO2 concentrations for each year.
   data_driver_pairs <- list(
     ambient_2002 = list(
       data       = process_table(soyface_biomass[['ambient_2002']]),
       data_stdev = process_table(soyface_biomass[['ambient_2002_std']]),
       drivers    = BioCro::soybean_weather[['2002']],
+      parameters = list(Catm = with(BioCro::catm_data, {Catm[year == '2002']})),
       weight     = 1
     ),
     ambient_2005 = list(
       data       = process_table(soyface_biomass[['ambient_2005']]),
       data_stdev = process_table(soyface_biomass[['ambient_2005_std']]),
       drivers    = BioCro::soybean_weather[['2005']],
+      parameters = list(Catm = with(BioCro::catm_data, {Catm[year == '2005']})),
       weight     = 2
     )
   )

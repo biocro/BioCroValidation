@@ -40,6 +40,8 @@ be directly added to this file to describe the related changes.
 
 - Allowed user-supplied regularization functions
 
+- Allowed driver-specific initial values and parameters
+
 - Errors that occur while running simulations are now caught so they do not
   prevent an optimization from finishing
 
@@ -50,6 +52,9 @@ be directly added to this file to describe the related changes.
 - Improved formatting of output from `write_module`, so that initial value and
   parameter lists are alphabetized, equals signs are aligned, and module names
   are preserved
+
+- Fixed a bug where calling `objective_function` with
+  `dependent_arg_function = NULL` and `verbose_mode = TRUE` caused an error
 
 # Changes in BioCroValidation Version 0.2.0 (2025-05-23)
 

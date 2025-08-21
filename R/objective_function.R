@@ -19,7 +19,11 @@ objective_function <- function(
 )
 {
     # Check the data-driver pairs
-    check_data_driver_pairs(base_model_definition, data_driver_pairs)
+    check_data_driver_pairs(
+        base_model_definition,
+        data_driver_pairs,
+        verbose_startup
+    )
 
     # Check the arguments to be varied
     check_args_to_vary(
