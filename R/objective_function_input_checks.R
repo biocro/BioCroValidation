@@ -318,7 +318,7 @@ check_args_to_vary <- function(
         cat('\nThe dependent arguments and their initial values:\n\n')
 
         if (is.null(dependent_arg_function)) {
-            cat('\nNone.\n')
+            cat('  None\n')
         } else {
             utils::str(dependent_arg_function(independent_args))
         }
