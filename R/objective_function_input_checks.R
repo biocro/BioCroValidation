@@ -174,8 +174,10 @@ check_args_to_vary <- function(
         cat('\nThe independent arguments and their initial values:\n\n')
         utils::str(independent_args)
 
-        cat('\nThe dependent arguments and their initial values:\n\n')
-        utils::str(dependent_arg_function(independent_args))
+        if(!is.null(dependent_arg_function)){
+            cat('\nThe dependent arguments and their initial values:\n\n')
+            utils::str(dependent_arg_function(independent_args))
+        }
     }
 
     # Make sure no drivers were specified
