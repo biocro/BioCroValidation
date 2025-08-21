@@ -360,22 +360,22 @@ test_that('Driver-specific initial values are checked and used', {
         'The following driver-specific initial values are not included in the base model definition: "extra_iv"'
     )
 
+    # Here we specify a "bad" initial value of Leaf for 2005. This will trigger
+    # an error, but the particular error may depend on the particular version of
+    # BioCro being used, so we don't check the error message content.
     expect_error(
         objective_function(
             model,
             within(ddps, {
                 ambient_2002$initial_values = list(Leaf = 0.1) # This shouldn't cause a problem
-                ambient_2005$initial_values = list(Leaf = -1)  # This should trigger an error in the Ci solver
+                ambient_2005$initial_values = list(Leaf = -1)  # This should trigger an error
             }),
             independent_args,
             quantity_weights,
             data_definitions = data_definitions,
             post_process_function = post_process_function,
             verbose_startup = verbose_startup
-        ),
-        'The model could not be run with the following drivers:
-ambient_2005',
-        fixed = TRUE
+        )
     )
 })
 
@@ -436,22 +436,23 @@ test_that('Driver-specific parameters are checked and used', {
         'The following driver-specific parameters are not included in the base model definition: "extra_param"'
     )
 
+    # Here we specify a "bad" value of the Ball-Berry intercept for 2005. This
+    # will trigger an error, but the particular error may depend on the
+    # particular version of BioCro being used, so we don't check the error
+    # message content.
     expect_error(
         objective_function(
             model,
             within(ddps, {
                 ambient_2002$parameters = list(b0 = 0.1) # This shouldn't cause a problem
-                ambient_2005$parameters = list(b0 = -1)  # This should trigger an `hs < 0` error from the Ball-Berry model code
+                ambient_2005$parameters = list(b0 = -1)  # This should trigger an error
             }),
             independent_args,
             quantity_weights,
             data_definitions = data_definitions,
             post_process_function = post_process_function,
             verbose_startup = verbose_startup
-        ),
-        'The model could not be run with the following drivers:
-ambient_2005',
-        fixed = TRUE
+        )
     )
 })
 
