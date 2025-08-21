@@ -40,6 +40,8 @@ be directly added to this file to describe the related changes.
 
 - Allowed user-supplied regularization functions
 
+- Allowed driver-specific initial values and parameters
+
 - Errors that occur while running simulations are now caught so they do not
   prevent an optimization from finishing
 

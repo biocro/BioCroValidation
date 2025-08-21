@@ -285,6 +285,158 @@ test_that('Data-driver pairs must have correct elements', {
     )
 })
 
+test_that('Driver-specific initial values are checked and used', {
+    expect_error(
+        objective_function(
+            model,
+            within(ddps, {ambient_2002$initial_values = 5}),
+            independent_args,
+            quantity_weights,
+            data_definitions = data_definitions,
+            post_process_function = post_process_function,
+            verbose_startup = verbose_startup
+        ),
+        'When provided, the driver-specific initial values must be a list of named elements'
+    )
+
+    expect_error(
+        objective_function(
+            model,
+            within(ddps, {ambient_2002$initial_values = list(5)}),
+            independent_args,
+            quantity_weights,
+            data_definitions = data_definitions,
+            post_process_function = post_process_function,
+            verbose_startup = verbose_startup
+        ),
+        'When provided, the driver-specific initial values must be a list of named elements'
+    )
+
+    expect_error(
+        objective_function(
+            model,
+            within(ddps, {ambient_2002$initial_values = list(Leaf = 5)}),
+            independent_args,
+            quantity_weights,
+            data_definitions = data_definitions,
+            post_process_function = post_process_function,
+            verbose_startup = verbose_startup
+        ),
+        'The following driver-specific initial value names were provided in the data-driver pairs:\nambient_2002 : Leaf\nambient_2005 : \nWhen provided, these names must be the same for each set of drivers',
+        fixed = TRUE
+    )
+
+    expect_error(
+        objective_function(
+            model,
+            within(ddps, {
+                ambient_2002$initial_values = list(extra_iv = 5)
+                ambient_2005$initial_values = list(extra_iv = 7)
+            }),
+            independent_args,
+            quantity_weights,
+            data_definitions = data_definitions,
+            post_process_function = post_process_function,
+            verbose_startup = verbose_startup
+        ),
+        'The following driver-specific initial values are not included in the base model definition: "extra_iv"'
+    )
+
+    expect_error(
+        objective_function(
+            model,
+            within(ddps, {
+                ambient_2002$initial_values = list(Leaf = 0.1) # This shouldn't cause a problem
+                ambient_2005$initial_values = list(Leaf = -1)  # This should trigger an error in the Ci solver
+            }),
+            independent_args,
+            quantity_weights,
+            data_definitions = data_definitions,
+            post_process_function = post_process_function,
+            verbose_startup = verbose_startup
+        ),
+        'The model could not be run with the following drivers:
+ambient_2005',
+        fixed = TRUE
+    )
+})
+
+test_that('Driver-specific parameters are checked and used', {
+    expect_error(
+        objective_function(
+            model,
+            within(ddps, {ambient_2002$parameters = 5}),
+            independent_args,
+            quantity_weights,
+            data_definitions = data_definitions,
+            post_process_function = post_process_function,
+            verbose_startup = verbose_startup
+        ),
+        'When provided, the driver-specific parameters must be a list of named elements'
+    )
+
+    expect_error(
+        objective_function(
+            model,
+            within(ddps, {ambient_2002$parameters = list(5)}),
+            independent_args,
+            quantity_weights,
+            data_definitions = data_definitions,
+            post_process_function = post_process_function,
+            verbose_startup = verbose_startup
+        ),
+        'When provided, the driver-specific parameters must be a list of named elements'
+    )
+
+    expect_error(
+        objective_function(
+            model,
+            within(ddps, {ambient_2002$parameters = list(Catm = 5)}),
+            independent_args,
+            quantity_weights,
+            data_definitions = data_definitions,
+            post_process_function = post_process_function,
+            verbose_startup = verbose_startup
+        ),
+        'The following driver-specific parameter names were provided in the data-driver pairs:\nambient_2002 : Catm\nambient_2005 : \nWhen provided, these names must be the same for each set of drivers',
+        fixed = TRUE
+    )
+
+    expect_error(
+        objective_function(
+            model,
+            within(ddps, {
+                ambient_2002$parameters = list(extra_param = 5)
+                ambient_2005$parameters = list(extra_param = 7)
+            }),
+            independent_args,
+            quantity_weights,
+            data_definitions = data_definitions,
+            post_process_function = post_process_function,
+            verbose_startup = verbose_startup
+        ),
+        'The following driver-specific parameters are not included in the base model definition: "extra_param"'
+    )
+
+    expect_error(
+        objective_function(
+            model,
+            within(ddps, {
+                ambient_2002$parameters = list(b0 = 0.1) # This shouldn't cause a problem
+                ambient_2005$parameters = list(b0 = -1)  # This should trigger an `hs < 0` error from the Ball-Berry model code
+            }),
+            independent_args,
+            quantity_weights,
+            data_definitions = data_definitions,
+            post_process_function = post_process_function,
+            verbose_startup = verbose_startup
+        ),
+        'The model could not be run with the following drivers:
+ambient_2005',
+        fixed = TRUE
+    )
+})
+
 test_that('Data must have a `time` column', {
     expect_error(
         objective_function(
