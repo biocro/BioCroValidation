@@ -91,6 +91,24 @@ test_that('Objective functions can be created and behave as expected', {
         )
     )
 
+    # Make sure there are no errors for one data-driver pair, no dependent
+    # arguments in verbose mode
+    sink(tempfile())
+
+    expect_no_error(
+        objective_function(
+            model,
+            ddps[1],
+            independent_args,
+            quantity_weights,
+            data_definitions = data_definitions,
+            post_process_function = post_process_function,
+            verbose_startup = TRUE
+        )
+    )
+
+    sink()
+
     # Two data-driver pairs, with dependent arguments and L2 regularization
     obj_fun <- expect_silent(
         objective_function(

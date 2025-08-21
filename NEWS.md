@@ -53,6 +53,9 @@ be directly added to this file to describe the related changes.
   parameter lists are alphabetized, equals signs are aligned, and module names
   are preserved
 
+- Fixed a bug where calling `objective_function` with
+  `dependent_arg_function = NULL` and `verbose_mode = TRUE` caused an error
+
 # Changes in BioCroValidation Version 0.2.0 (2025-05-23)
 
 - Added 2002 and 2005 SoyFACE biomass and standard deviation data.
