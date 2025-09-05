@@ -46,13 +46,13 @@ get_model_runner <- function(
     # Build the runner
     tryCatch({
             partial_func <- BioCro::partial_run_biocro(
-                combine_lists(
+                utils::modifyList(
                     base_model_definition[['initial_values']],
-                    ddp[['initial_values']]
+                    c(list(), ddp[['initial_values']])
                 ),
-                combine_lists(
+                utils::modifyList(
                     base_model_definition[['parameters']],
-                    ddp[['parameters']]
+                    c(list(), ddp[['parameters']])
                 ),
                 ddp[['drivers']],
                 base_model_definition[['direct_modules']],

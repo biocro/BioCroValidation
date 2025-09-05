@@ -235,13 +235,13 @@ check_data_driver_pairs <- function(base_model_definition, data_driver_pairs, ve
     # base model definition
     valid_definitions <- sapply(data_driver_pairs, function(ddp) {
         BioCro::validate_dynamical_system_inputs(
-            combine_lists(
+            utils::modifyList(
                 base_model_definition[['initial_values']],
-                ddp[['initial_values']]
+                c(list(), ddp[['initial_values']])
             ),
-            combine_lists(
+            utils::modifyList(
                 base_model_definition[['parameters']],
-                ddp[['parameters']]
+                c(list(), ddp[['parameters']])
             ),
             ddp[['drivers']],
             base_model_definition[['direct_modules']],
