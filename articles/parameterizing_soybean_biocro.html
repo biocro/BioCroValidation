@@ -66,7 +66,7 @@
       <h1>Parameterizing Soybean-BioCro</h1>
             
       
-      <small class="dont-index">Source: <a href="https://github.com/BioCro/BioCroValidation/blob/main/vignettes/parameterizing_soybean_biocro.Rmd" class="external-link"><code>vignettes/parameterizing_soybean_biocro.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/BioCro/BioCroValidation/blob/v0.3.0/vignettes/parameterizing_soybean_biocro.Rmd" class="external-link"><code>vignettes/parameterizing_soybean_biocro.Rmd</code></a></small>
       <div class="d-none name"><code>parameterizing_soybean_biocro.Rmd</code></div>
     </div>
 
@@ -709,7 +709,7 @@ the full list of observed values and their corresponding weights.</p>
 <span><span class="co">#&gt; {</span></span>
 <span><span class="co">#&gt;     list(mrc_stem = ind_args[["mrc_leaf"]])</span></span>
 <span><span class="co">#&gt; }</span></span>
-<span><span class="co">#&gt; &lt;bytecode: 0x565251785a78&gt;</span></span>
+<span><span class="co">#&gt; &lt;bytecode: 0x5605a18ccf48&gt;</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Post-processing function: user-supplied function:</span></span>
 <span><span class="co">#&gt; </span></span>
@@ -719,7 +719,7 @@ the full list of observed values and their corresponding weights.</p>
 <span><span class="co">#&gt;         TotalLitter = LeafLitter + StemLitter</span></span>
 <span><span class="co">#&gt;     })</span></span>
 <span><span class="co">#&gt; }</span></span>
-<span><span class="co">#&gt; &lt;bytecode: 0x565250327100&gt;</span></span>
+<span><span class="co">#&gt; &lt;bytecode: 0x5605a046ee70&gt;</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Extra penalty function: user-supplied function:</span></span>
 <span><span class="co">#&gt; </span></span>
@@ -922,8 +922,8 @@ loose tolerance; a more realistic example would probably use
 <p>When this document was generated, running the optimizer required the
 following amount of time:</p>
 <pre><code><span><span class="co">#&gt;    user  system elapsed </span></span>
-<span><span class="co">#&gt;  84.169   0.536  84.713</span></span></code></pre>
-<p>The total time was about 1.41 minutes. For a real parameterization
+<span><span class="co">#&gt;  85.392   0.514  85.915</span></span></code></pre>
+<p>The total time was about 1.43 minutes. For a real parameterization
 problem, it can be many times longer, and may even need days to run on a
 personal laptop computer.</p>
 <p>The optimizer also reports how many times the objective function was
@@ -938,7 +938,7 @@ called, among other details:</p>
 <span><span class="co">#&gt;  $ convergence: num 0</span></span>
 <span><span class="co">#&gt;  $ message    : chr "Successful convergence"</span></span></code></pre></div>
 <p>The value of <code>feval</code> is 213, so on average, each call of
-the objective function required approximately 0.398 seconds.</p>
+the objective function required approximately 0.403 seconds.</p>
 </div>
 <div class="section level3">
 <h3 id="comparing-parameter-values">Comparing Parameter Values<a class="anchor" aria-label="anchor" href="#comparing-parameter-values"></a>

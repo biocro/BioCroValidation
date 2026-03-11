@@ -883,7 +883,7 @@ if (require(BioCro)) {
 #> {
 #>     lambda * sum((x - initial_guess)^2)
 #> }
-#> <environment: 0x555f3cc2dc38>
+#> <environment: 0x559f6ae95a78>
 #> 
 #> Dependent argument function: user-supplied function:
 #> 
@@ -891,7 +891,7 @@ if (require(BioCro)) {
 #> {
 #>     list(alphaStem = ind_args[["alphaLeaf"]])
 #> }
-#> <environment: 0x555f3cc2dc38>
+#> <environment: 0x559f6ae95a78>
 #> 
 #> Post-processing function: user-supplied function:
 #> 
@@ -901,7 +901,7 @@ if (require(BioCro)) {
 #>         Pod = Grain + Shell
 #>     })
 #> }
-#> <environment: 0x555f3cc2dc38>
+#> <environment: 0x559f6ae95a78>
 #> 
 #> Extra penalty function: user-supplied function:
 #> 
@@ -915,7 +915,7 @@ if (require(BioCro)) {
 #>         0
 #>     }
 #> }
-#> <environment: 0x555f3cc2dc38>
+#> <environment: 0x559f6ae95a78>
 #> 
 #> The initial error metric terms:
 #> 
@@ -941,15 +941,15 @@ if (require(BioCro)) {
 #> 
 #> Error metric calculated by doubling the original argument values:
 #> 
-#> Time: 2026-03-11 23:03:09.565925      Independent argument values : 46.73542898017520030862215207889676, -36.22026162863519971324421931058168
+#> Time: 2026-03-11 23:06:22.096594      Independent argument values : 46.73542898017520030862215207889676, -36.22026162863519971324421931058168
 #> 
-#> Time: 2026-03-11 23:03:09.972865      Error metric : 2.99754729469563185872971189382952
+#> Time: 2026-03-11 23:06:22.581442      Error metric : 2.99754729469563185872971189382952
 #> 
 #> Error metric terms calculated by doubling the original argument values:
 #> 
-#> Time: 2026-03-11 23:03:09.973026      Independent argument values : 46.73542898017520030862215207889676, -36.22026162863519971324421931058168
+#> Time: 2026-03-11 23:06:22.58162      Independent argument values : 46.73542898017520030862215207889676, -36.22026162863519971324421931058168
 #> 
-#> Time: 2026-03-11 23:03:10.367931      Error metric terms : 
+#> Time: 2026-03-11 23:06:23.081557      Error metric terms : 
 #> 
 #> List of 2
 #>  $ terms_from_data_driver_pairs:List of 2
