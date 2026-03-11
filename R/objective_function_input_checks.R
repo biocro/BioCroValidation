@@ -4,7 +4,7 @@
 
 # Helping function for checking the data-driver pairs; will throw an error if
 # a problem is detected, and will otherwise be silent with no return value.
-check_data_driver_pairs <- function(base_model_definition, data_driver_pairs) {
+check_data_driver_pairs <- function(base_model_definition, data_driver_pairs, verbose) {
     # There must be at least one data-driver pair
     if (length(data_driver_pairs) < 1) {
         stop('`data_driver_pairs` must have at least one element')
@@ -37,7 +37,7 @@ check_data_driver_pairs <- function(base_model_definition, data_driver_pairs) {
     }
 
     # Only required or optional elements should be provided
-    optional_elements <- 'data_stdev'
+    optional_elements <- c('data_stdev', 'initial_values', 'parameters')
 
     acceptable_elements <- c(required_elements, optional_elements)
 
@@ -117,12 +117,132 @@ check_data_driver_pairs <- function(base_model_definition, data_driver_pairs) {
         stop(msg)
     }
 
+    # When provided, the driver-specific initial values and parameters must be
+    # lists
+    iv_is_list <- sapply(data_driver_pairs, function(x) {
+        iv <- x[['initial_values']]
+
+        if (!is.null(iv)) {
+            is.list(iv) && !is.null(names(iv))
+        } else {
+            TRUE
+        }
+    })
+
+    if (any(!iv_is_list)) {
+        stop(
+            'When provided, the driver-specific initial values must be a list ',
+            'of named elements'
+        )
+    }
+
+    param_is_list <- sapply(data_driver_pairs, function(x) {
+        param <- x[['parameters']]
+
+        if (!is.null(param)) {
+            is.list(param) && !is.null(names(param))
+        } else {
+            TRUE
+        }
+    })
+
+    if (any(!param_is_list)) {
+        stop(
+            'When provided, the driver-specific parameters must be a list ',
+            'of named elements'
+        )
+    }
+
+    # Names of driver-specific initial values and parameter names must be the
+    # same for all data-driver pairs
+    iv_names <- lapply(data_driver_pairs, function(x) {
+        sort(names(x[['initial_values']]))
+    })
+
+    if (length(unique(iv_names)) > 1) {
+        msg <- paste0(
+            'The following driver-specific initial value names were provided ',
+            'in the data-driver pairs:\n',
+            paste(
+                names(iv_names), ':',
+                sapply(iv_names, function(x) {paste(x, collapse = ', ')}),
+                collapse = '\n'
+            ),
+            '\nWhen provided, these names must be the same for each set of ',
+            'drivers'
+        )
+
+        stop(msg)
+    }
+
+    param_names <- lapply(data_driver_pairs, function(x) {
+        sort(names(x[['parameters']]))
+    })
+
+    if (length(unique(param_names)) > 1) {
+        msg <- paste0(
+            'The following driver-specific parameter names were provided ',
+            'in the data-driver pairs:\n',
+            paste(
+                names(param_names), ':',
+                sapply(param_names, function(x) {paste(x, collapse = ', ')}),
+                collapse = '\n'
+            ),
+            '\nWhen provided, these names must be the same for each set of ',
+            'drivers'
+        )
+
+        stop(msg)
+    }
+
+    # Each driver-specific initial value and parameter must be included in the
+    # base model definition
+    iv_names_to_check <- unique(unlist(iv_names))
+
+    iv_names_okay <-
+        iv_names_to_check %in% names(base_model_definition[['initial_values']])
+
+    if (!all(iv_names_okay)) {
+        bad_names <- iv_names_to_check[!iv_names_okay]
+
+        msg <- paste(
+            'The following driver-specific initial values are not included in',
+            'the base model definition:',
+            paste0('"', bad_names, '"', collapse = ', ')
+        )
+
+        stop(msg)
+    }
+
+    param_names_to_check <- unique(unlist(param_names))
+
+    param_names_okay <-
+        param_names_to_check %in% names(base_model_definition[['parameters']])
+
+    if (!all(param_names_okay)) {
+        bad_names <- param_names_to_check[!param_names_okay]
+
+        msg <- paste(
+            'The following driver-specific parameters are not included in',
+            'the base model definition:',
+            paste0('"', bad_names, '"', collapse = ', ')
+        )
+
+        stop(msg)
+    }
+
     # Each set of drivers must form a valid dynamical system along with the
     # base model definition
     valid_definitions <- sapply(data_driver_pairs, function(ddp) {
         BioCro::validate_dynamical_system_inputs(
-            base_model_definition[['initial_values']],
-            base_model_definition[['parameters']],
+            utils::modifyList(
+                base_model_definition[['initial_values']],
+                c(list(), ddp[['initial_values']])
+            ),
+            utils::modifyList(
+                base_model_definition[['parameters']],
+                c(list(), ddp[['parameters']])
+            ),
             ddp[['drivers']],
             base_model_definition[['direct_modules']],
             base_model_definition[['differential_modules']],
@@ -139,6 +259,27 @@ check_data_driver_pairs <- function(base_model_definition, data_driver_pairs) {
         )
 
         stop(msg)
+    }
+
+    # Print driver-specific initial values and parameters, if necessary
+    if (verbose) {
+        cat('\nDriver-specific initial values:\n\n')
+
+        if (all(sapply(iv_names, is.null))) {
+            cat('  None\n')
+        } else {
+            iv <- lapply(data_driver_pairs, function(x) {x[['initial_values']]})
+            utils::str(iv)
+        }
+
+        cat('\nDriver-specific parameters:\n\n')
+
+        if (all(sapply(param_names, is.null))) {
+            cat('  None\n')
+        } else {
+            param <- lapply(data_driver_pairs, function(x) {x[['parameters']]})
+            utils::str(param)
+        }
     }
 
     return(invisible(NULL))
@@ -175,7 +316,12 @@ check_args_to_vary <- function(
         utils::str(independent_args)
 
         cat('\nThe dependent arguments and their initial values:\n\n')
-        utils::str(dependent_arg_function(independent_args))
+
+        if (is.null(dependent_arg_function)) {
+            cat('  None\n')
+        } else {
+            utils::str(dependent_arg_function(independent_args))
+        }
     }
 
     # Make sure no drivers were specified
@@ -420,8 +566,11 @@ check_long_form_data <- function(long_form_data) {
 # Helping function for checking the objective function; will throw an error if a
 # problem is detected, and will otherwise be silent with no return value.
 check_obj_fun <- function(obj_fun, initial_ind_arg_values, verbose) {
-    initial_error_terms <-
-        obj_fun(as.numeric(initial_ind_arg_values), return_terms = TRUE)
+    initial_error_terms <- obj_fun(
+        as.numeric(initial_ind_arg_values),
+        return_terms = TRUE,
+        debug_mode = 'none'
+    )
 
     initial_error <- sum(unlist(initial_error_terms))
 

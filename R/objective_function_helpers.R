@@ -4,6 +4,13 @@
 # Value to return when a simulation fails to run
 FAILURE_VALUE <- 1e10
 
+# Define the allowed debug modes
+DEBUG_MODES <- c(
+    'none',
+    'minimal',
+    'everything'
+)
+
 # Helping function for getting a full list of argument names
 get_full_arg_names <- function(independent_args, dependent_arg_function) {
     # Get the independent argument names
@@ -39,8 +46,14 @@ get_model_runner <- function(
     # Build the runner
     tryCatch({
             partial_func <- BioCro::partial_run_biocro(
-                base_model_definition[['initial_values']],
-                base_model_definition[['parameters']],
+                utils::modifyList(
+                    base_model_definition[['initial_values']],
+                    c(list(), ddp[['initial_values']])
+                ),
+                utils::modifyList(
+                    base_model_definition[['parameters']],
+                    c(list(), ddp[['parameters']])
+                ),
                 ddp[['drivers']],
                 base_model_definition[['direct_modules']],
                 base_model_definition[['differential_modules']],
@@ -188,9 +201,32 @@ add_norm <- function(
     long_form_data,
     normalization_method,
     normalization_param,
-    n_ddp
+    n_ddp,
+    verbose_startup
 )
 {
+    eps_max <- get_param_default(normalization_param, 1e-1)
+    eps_obs <- get_param_default(normalization_param, 1e-1)
+
+    method <- toupper(normalization_method)
+
+    if (verbose_startup) {
+        method_info <- if (method %in% c('MAX', 'MEAN_MAX')) {
+            paste(method, 'with eps =', eps_max)
+        } else if (method %in% c('OBS', 'MEAN_OBS')) {
+            paste(method, 'with eps =', eps_obs)
+        } else {
+            method
+        }
+
+        cat(paste(
+            '\nNormalization method:',
+            method_info,
+            '\n',
+            collapse = ''
+        ))
+    }
+
     for (i in seq_along(long_form_data)) {
         data_table <- long_form_data[[i]]
 
@@ -200,23 +236,22 @@ add_norm <- function(
             qname_subset <-
                     data_table[data_table[['quantity_name']] == qname, ]
 
-            if (tolower(normalization_method) == 'equal') {
+            npts <- nrow(qname_subset)
+            qmax <- max(abs(qname_subset[['quantity_value']]))
+            qobs <- data_table[j, 'quantity_value']
+
+            if (method == 'EQUAL') {
                 1.0
-            } else if (tolower(normalization_method) == 'mean') {
-                nrow(qname_subset) * n_ddp
-            } else if (tolower(normalization_method) == 'max') {
-                max(qname_subset[['quantity_value']])^2
-            } else if (tolower(normalization_method) == 'obs') {
-                eps <- get_param_default(normalization_param, 1e-1)
-                data_table[i, 'quantity_value']^2 + eps
-            } else if (tolower(normalization_method) == 'mean_max') {
-                npts <- nrow(qname_subset)
-                qmax <- max(qname_subset[['quantity_value']])
-                npts * n_ddp * qmax^2
-            } else if (tolower(normalization_method) == 'mean_obs') {
-                npts <- nrow(qname_subset)
-                eps <- get_param_default(normalization_param, 1e-1)
-                npts * n_ddp * (data_table[i, 'quantity_value']^2 + eps)
+            } else if (method == 'MEAN') {
+                npts * n_ddp
+            } else if (method == 'MAX') {
+                qmax^2 + eps_max
+            } else if (method == 'OBS') {
+                qobs^2 + eps_obs
+            } else if (method == 'MEAN_MAX') {
+                npts * n_ddp * (qmax^2 + eps_max)
+            } else if (method == 'MEAN_OBS') {
+                npts * n_ddp * (qobs^2 + eps_obs)
             } else {
                 stop('Unsupported normalization_method: ', normalization_method)
             }
@@ -229,20 +264,46 @@ add_norm <- function(
 }
 
 # Helping function for getting variance-based weights
-add_w_var <- function(long_form_data, stdev_weight_method, stdev_weight_param) {
+add_w_var <- function(
+    long_form_data,
+    stdev_weight_method,
+    stdev_weight_param,
+    verbose_startup
+)
+{
+    eps_log <- get_param_default(stdev_weight_param, 1e-5)
+    eps_inv <- get_param_default(stdev_weight_param, 1e-1)
+
+    method <- toupper(stdev_weight_method)
+
+    if (verbose_startup) {
+        method_info <- if (method == 'LOGARITHM') {
+            paste(method, 'with eps =', eps_log)
+        } else if (method == 'INVERSE') {
+            paste(method, 'with eps =', eps_inv)
+        } else {
+            method
+        }
+
+        cat(paste(
+            '\nStandard-deviation-based weight method:',
+            method_info,
+            '\n',
+            collapse = ''
+        ))
+    }
+
     for (i in seq_along(long_form_data)) {
         data_table <- long_form_data[[i]]
         data_stdev <- data_table[['quantity_stdev']]
 
         data_table[['w_var']] <-
-            if (tolower(stdev_weight_method) == 'equal') {
+            if (method == 'EQUAL') {
                 1.0
-            } else if (tolower(stdev_weight_method) == 'logarithm') {
-                eps <- get_param_default(stdev_weight_param, 1e-5)
-                log(1 / (data_stdev + eps))
-            } else if (tolower(stdev_weight_method) == 'inverse') {
-                eps <- get_param_default(stdev_weight_param, 1e-1)
-                1 / (data_stdev^2 + eps)
+            } else if (method == 'LOGARITHM') {
+                log(1.0 / (data_stdev + eps_log))
+            } else if (method == 'INVERSE') {
+                1.0 / (data_stdev^2 + eps_inv)
             } else {
                 stop('Unsupported stdev_weight_method: ', stdev_weight_method)
             }
@@ -316,6 +377,24 @@ one_error <- function(
     }
 }
 
+# Helping function for debug printing. Here, `obj` should either be a list (in
+# which case its "structure" will be printed via `str`) or a numeric vector (in
+# which case its values will be printed with up to 32 decimal places).
+# `obj_name` should be a string describing what is being printed. The printout
+# will include newlines at the start and end, along with a timestamp.
+debug_print <- function(obj, obj_name) {
+    cat(paste0('\nTime: ', Sys.time()), '    ', obj_name, ': ')
+
+    if (is.list(obj)) {
+        cat('\n\n')
+        utils::str(obj)
+    } else {
+        cat(paste(sprintf('%.32f', obj), collapse = ', '))
+    }
+
+    cat('\n')
+}
+
 # Helping function for returning a failure value
 failure_value <- function(error_sum, return_terms) {
     if (return_terms) {
@@ -336,13 +415,40 @@ error_from_res <- function(
     ddp_weight,
     normalization_method,
     extra_penalty_function,
-    return_terms
+    return_terms,
+    x,
+    debug_mode
 )
 {
+    # If there was an error, return a very high value
+    if (is.null(simulation_result)) {
+        return(
+            failure_value(NA, return_terms)
+        )
+    }
+
     # If the simulation did not finish, return a very high value
     expected_npts <- long_form_data_table[1, 'expected_npts']
 
     if (nrow(simulation_result) < expected_npts) {
+        if (debug_mode %in% c(DEBUG_MODES[2], DEBUG_MODES[3])) {
+            # debug_mode is `minimal` or `everything`, so indicate that the
+            # simulation did not finish; if debug_mode is `minimal`, the inputs
+            # have not yet been printed, so we need to print them here
+            if (debug_mode == DEBUG_MODES[2]) {
+                debug_print(x, 'Independent argument values')
+            }
+
+            msg <- paste0(
+                '\nSimulation did not finish; produced ',
+                nrow(simulation_result),
+                ' rows instead of the expected ',
+                expected_npts, '\n'
+            )
+
+            cat(msg)
+        }
+
         return(
             failure_value(NA, return_terms)
         )
@@ -376,6 +482,24 @@ error_from_res <- function(
 
     # If the error sum is not finite, return a very high value
     if (!is.finite(error_sum)) {
+        if (debug_mode %in% c(DEBUG_MODES[2], DEBUG_MODES[3])) {
+            # debug_mode is `minimal` or `everything`, so indicate that the sum
+            # of squared errors is not finite; if debug_mode is `minimal`, the
+            # inputs have not yet been printed, so we need to print them here
+            if (debug_mode == DEBUG_MODES[2]) {
+                debug_print(x, 'Independent argument values')
+            }
+
+            msg <- paste0(
+                '\nSum of squared errors is not finite: ',
+                error_sum,
+                '\n'
+            )
+
+            cat(msg)
+        }
+
+
         return(
             failure_value(error_sum, return_terms)
         )
@@ -405,18 +529,33 @@ regularization_penalty <- function(
     regularization_lambda
 )
 {
-    if (toupper(regularization_method) == 'NONE') {
-        0.0
-    } else if (toupper(regularization_method) == 'LASSO' || toupper(regularization_method) == 'L1') {
-        regularization_lambda * sum(abs(ind_arg_vals))
-    } else if (toupper(regularization_method) == 'RIDGE' || toupper(regularization_method) == 'L2') {
-        regularization_lambda * sum(ind_arg_vals^2)
+    if (is.function(regularization_method)) {
+        regularization_method(ind_arg_vals, regularization_lambda)
     } else {
-        stop('Unsupported regularization method: ', regularization_method)
+        method <- toupper(regularization_method)
+
+        if (method == 'NONE') {
+            0.0
+        } else if (method %in% c('LASSO', 'L1')) {
+            regularization_lambda * sum(abs(ind_arg_vals))
+        } else if (method %in% c('RIDGE', 'L2')) {
+            regularization_lambda * sum(ind_arg_vals^2)
+        } else {
+            stop('Unsupported regularization method: ', regularization_method)
+        }
     }
 }
 
-# Helping function that forms the overall objective function
+# Helping function that forms the overall objective function. Here, `debug_mode`
+# should be a numeric value, and the debug outputs work as follows:
+#
+# - debug_mode 1: Minimal debug printing; inputs and error messages will be
+#   printed only if a simulation fails to complete
+#
+# - debug mode 2: Maximal debug printing; all inputs and outputs will be printed
+#
+# - any other value: No debug printing
+#
 get_obj_fun <- function(
     model_runners,
     long_form_data,
@@ -427,21 +566,32 @@ get_obj_fun <- function(
     regularization_method
 )
 {
-    function(x, lambda = 0, return_terms = FALSE, debug_mode = FALSE) {
-        if (debug_mode) {
-            msg <- paste0(
-                '\nTime: ',
-                Sys.time(),
-                '    Independent argument values: ',
-                paste(x, collapse = ', '),
-                '\n'
-            )
-            cat(msg)
+    function(x, lambda = 0, return_terms = FALSE, debug_mode = 'minimal') {
+        if (tolower(debug_mode) == DEBUG_MODES[3]) {
+            # debug_mode is `everything`, so print the inputs
+            debug_print(x, 'Independent argument values')
         }
 
         errors <- lapply(seq_along(model_runners), function(i) {
             runner <- model_runners[[i]]
-            res    <- runner(x)
+
+            res <- tryCatch(
+                runner(x),
+                error = function(e) {
+                    if (debug_mode %in% c(DEBUG_MODES[2], DEBUG_MODES[3])) {
+                        # debug_mode is `minimal` or `everything`, so print the
+                        # error message; if debug_mode is `minimal`, the inputs
+                        # have not yet been printed, so we need to print them
+                        # here
+                        if (debug_mode == DEBUG_MODES[2]) {
+                            debug_print(x, 'Independent argument values')
+                        }
+                        cat(paste0('\n', conditionMessage(e), '\n'))
+                    }
+                    # Return NULL to indicate that an error occurred
+                    NULL
+                }
+            )
 
             error_from_res(
                 res,
@@ -450,7 +600,9 @@ get_obj_fun <- function(
                 ddp_weights[[i]],
                 normalization_method,
                 extra_penalty_function,
-                return_terms
+                return_terms,
+                x,
+                debug_mode
             )
         })
 
@@ -465,28 +617,66 @@ get_obj_fun <- function(
                 regularization_penalty = reg_penalty
             )
 
-            if (debug_mode) {
-                cat(paste0('Time: ', Sys.time()), '    Error metric terms: ')
-                utils::str(error_metric_terms)
-                cat('\n')
+            if (tolower(debug_mode) == DEBUG_MODES[3]) {
+                # debug_mode is `everything`, so print the error metric terms
+                debug_print(error_metric_terms, 'Error metric terms')
             }
 
             error_metric_terms
         } else {
             error_metric <- sum(as.numeric(errors)) + reg_penalty
 
-            if (debug_mode) {
-                msg <- paste0(
-                    'Time: ',
-                    Sys.time(),
-                    '    Error metric: ',
-                    error_metric,
-                    '\n'
-                )
-                cat(msg)
+            if (tolower(debug_mode) == DEBUG_MODES[3]) {
+                # debug_mode is `everything`, so print the error metric
+                debug_print(error_metric, 'Error metric')
             }
 
             error_metric
+        }
+    }
+}
+
+# Print the data-driver pair weights, information about the regularization
+# method, and information about optional functions, if desired
+print_misc_verbose_startup <- function(
+    ddp_weights,
+    regularization_method,
+    dependent_arg_function,
+    post_process_function,
+    extra_penalty_function,
+    verbose_startup
+)
+{
+    if (verbose_startup){
+        user_func_msg <- 'user-supplied function:\n\n'
+
+        cat('\nThe user-supplied data-driver pair weights:\n\n')
+        utils::str(ddp_weights)
+
+        cat('\nRegularization method: ')
+
+        if (is.function(regularization_method)) {
+            cat(user_func_msg)
+            print(regularization_method)
+        } else {
+            cat(paste0(toupper(regularization_method), '\n'))
+        }
+
+        func_to_print <- list(
+            list(info = 'Dependent argument', func = dependent_arg_function),
+            list(info = 'Post-processing',    func = post_process_function),
+            list(info = 'Extra penalty',      func = extra_penalty_function)
+        )
+
+        for (x in func_to_print) {
+            cat(paste0('\n', x$info, ' function: '))
+
+            if (is.null(x$func)) {
+                cat('none\n')
+            } else {
+                cat(user_func_msg)
+                print(x$func)
+            }
         }
     }
 }

@@ -25,7 +25,7 @@ from within R by typing `install.packages('remotes')`.
 ### Usage
 
 The best way to learn about using `BioCroValidation` is to visit the
-[BioCroValidation website](https://biocro.github.io/BioCroValidation/index.html)
+[BioCroValidation website](https://biocro.org/BioCroValidation/index.html)
 and click the "Get Started" link in the top menu bar. The website includes
 documentation for all the functions and data sets included in the package, as
 well as articles that describe its general features and several important use

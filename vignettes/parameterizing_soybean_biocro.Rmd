@@ -163,7 +163,8 @@ process_table <- function(data_table, type) {
 The `BioCro` R package includes weather data for the years in the
 `soyface_biomass` data set. So now we are ready to define the data-driver pairs,
 which includes the weather, the observed biomass, the standard deviation of the
-observed biomass, and the weight to assign to each year:
+observed biomass, the atmospheric CO2 concentration to use for each year, and
+the weight to assign to each year:
 
 ```{r data_driver_pairs}
 # Define the data-driver pairs
@@ -172,12 +173,14 @@ data_driver_pairs <- list(
     data       = process_table(soyface_biomass[['ambient_2002']],     'biomass'),
     data_stdev = process_table(soyface_biomass[['ambient_2002_std']], 'stdev'),
     drivers    = BioCro::soybean_weather[['2002']],
+    parameters = list(Catm = with(BioCro::catm_data, {Catm[year == '2002']})),
     weight     = 1
   ),
   ambient_2005 = list(
     data       = process_table(soyface_biomass[['ambient_2005']],     'biomass'),
     data_stdev = process_table(soyface_biomass[['ambient_2005_std']], 'stdev'),
     drivers    = BioCro::soybean_weather[['2005']],
+    parameters = list(Catm = with(BioCro::catm_data, {Catm[year == '2005']})),
     weight     = 1
   )
 )
@@ -564,7 +567,7 @@ optim_res <- nmkb(
     tol = 1e-2,
     restarts.max = 10
   ),
-  debug_mode = FALSE # Passed to obj_fun; set to TRUE to enable debug mode
+  debug_mode = 'minimal' # Passed to obj_fun
 )
 ```
 
@@ -630,9 +633,11 @@ guess. In this example, `r sum(ind_arg_table[['improved']])` out of
 (`r round(100 * sum(ind_arg_table[['improved']]) / nrow(ind_arg_table))` percent).
 
 We can also compare the error metric to its original value. As shown above, it
-is now `r optim_res[['value']]`, which is only
-`r round(100 * (optim_res[['value']] - default_error) / optim_res[['value']], 1)`
-percent larger than with the default parameter values.
+is now `r optim_res[['value']]`, which is
+`r round(100 * abs(optim_res[['value']] - default_error) / optim_res[['value']], 1)`
+percent
+`r if (optim_res[['value']] > default_error) {'larger'} else {'smaller'}`
+than with the default parameter values.
 
 The optimized parameter values could likely be improved by using a more
 stringent tolerance for the optimizer, but this would require more time to run.

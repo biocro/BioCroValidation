@@ -27,7 +27,7 @@ ddps <- list(
 )
 
 independent_args <- with(BioCro::soybean[['parameters']], {
-    list(alphaLeaf = alphaLeaf, betaLeaf = betaLeaf)
+    list(alphaLeaf = alphaLeaf, betaLeaf = betaLeaf, Catm = Catm)
 })
 
 data_definitions <- list(
@@ -71,6 +71,13 @@ test_that('Objective functions can be created and behave as expected', {
         obj_fun(as.numeric(independent_args))
     )
 
+    # Here we intentionally pass a bad value of Catm that will trigger an error
+    error_val <- expect_silent(
+        obj_fun(as.numeric(within(independent_args, {Catm = -1})), debug_mode = 'none')
+    )
+
+    expect_equal(error_val, 2 * BioCroValidation:::FAILURE_VALUE)
+
     # One data-driver pair, no dependent arguments
     obj_fun <- expect_silent(
         objective_function(
@@ -84,6 +91,24 @@ test_that('Objective functions can be created and behave as expected', {
         )
     )
 
+    # Make sure there are no errors for one data-driver pair, no dependent
+    # arguments in verbose mode
+    sink(tempfile())
+
+    expect_no_error(
+        objective_function(
+            model,
+            ddps[1],
+            independent_args,
+            quantity_weights,
+            data_definitions = data_definitions,
+            post_process_function = post_process_function,
+            verbose_startup = TRUE
+        )
+    )
+
+    sink()
+
     # Two data-driver pairs, with dependent arguments and L2 regularization
     obj_fun <- expect_silent(
         objective_function(
@@ -95,6 +120,25 @@ test_that('Objective functions can be created and behave as expected', {
             dependent_arg_function = dependent_arg_function,
             post_process_function = post_process_function,
             regularization_method = 'L2',
+            verbose_startup = verbose_startup
+        )
+    )
+
+    expect_silent(
+        obj_fun(as.numeric(independent_args), lambda = 0.5)
+    )
+
+    # Two data-driver pairs, with dependent arguments and L4 regularization
+    obj_fun <- expect_silent(
+        objective_function(
+            model,
+            ddps,
+            independent_args,
+            quantity_weights,
+            data_definitions = data_definitions,
+            dependent_arg_function = dependent_arg_function,
+            post_process_function = post_process_function,
+            regularization_method = function(x, lambda) {lambda * sum(x^4)},
             verbose_startup = verbose_startup
         )
     )
@@ -186,7 +230,7 @@ ambient_2005: Error: `bad_arg_name` from `arg_names` is not in the `initial_valu
     )
 })
 
-test_that('Model failures are detected', {
+test_that('Model failures at startup are detected', {
     expect_error(
         objective_function(
             within(model, {parameters$lnfun = 1}),
@@ -256,6 +300,159 @@ test_that('Data-driver pairs must have correct elements', {
             verbose_startup = verbose_startup
         ),
         'The following data-driver pairs have a `data_stdev` element that does not match the columns and/or times of their `data` element: ambient_2002'
+    )
+})
+
+test_that('Driver-specific initial values are checked and used', {
+    expect_error(
+        objective_function(
+            model,
+            within(ddps, {ambient_2002$initial_values = 5}),
+            independent_args,
+            quantity_weights,
+            data_definitions = data_definitions,
+            post_process_function = post_process_function,
+            verbose_startup = verbose_startup
+        ),
+        'When provided, the driver-specific initial values must be a list of named elements'
+    )
+
+    expect_error(
+        objective_function(
+            model,
+            within(ddps, {ambient_2002$initial_values = list(5)}),
+            independent_args,
+            quantity_weights,
+            data_definitions = data_definitions,
+            post_process_function = post_process_function,
+            verbose_startup = verbose_startup
+        ),
+        'When provided, the driver-specific initial values must be a list of named elements'
+    )
+
+    expect_error(
+        objective_function(
+            model,
+            within(ddps, {ambient_2002$initial_values = list(Leaf = 5)}),
+            independent_args,
+            quantity_weights,
+            data_definitions = data_definitions,
+            post_process_function = post_process_function,
+            verbose_startup = verbose_startup
+        ),
+        'The following driver-specific initial value names were provided in the data-driver pairs:\nambient_2002 : Leaf\nambient_2005 : \nWhen provided, these names must be the same for each set of drivers',
+        fixed = TRUE
+    )
+
+    expect_error(
+        objective_function(
+            model,
+            within(ddps, {
+                ambient_2002$initial_values = list(extra_iv = 5)
+                ambient_2005$initial_values = list(extra_iv = 7)
+            }),
+            independent_args,
+            quantity_weights,
+            data_definitions = data_definitions,
+            post_process_function = post_process_function,
+            verbose_startup = verbose_startup
+        ),
+        'The following driver-specific initial values are not included in the base model definition: "extra_iv"'
+    )
+
+    # Here we specify a "bad" initial value of Leaf for 2005. This will trigger
+    # an error, but the particular error may depend on the particular version of
+    # BioCro being used, so we don't check the error message content.
+    expect_error(
+        objective_function(
+            model,
+            within(ddps, {
+                ambient_2002$initial_values = list(Leaf = 0.1) # This shouldn't cause a problem
+                ambient_2005$initial_values = list(Leaf = -1)  # This should trigger an error
+            }),
+            independent_args,
+            quantity_weights,
+            data_definitions = data_definitions,
+            post_process_function = post_process_function,
+            verbose_startup = verbose_startup
+        )
+    )
+})
+
+test_that('Driver-specific parameters are checked and used', {
+    expect_error(
+        objective_function(
+            model,
+            within(ddps, {ambient_2002$parameters = 5}),
+            independent_args,
+            quantity_weights,
+            data_definitions = data_definitions,
+            post_process_function = post_process_function,
+            verbose_startup = verbose_startup
+        ),
+        'When provided, the driver-specific parameters must be a list of named elements'
+    )
+
+    expect_error(
+        objective_function(
+            model,
+            within(ddps, {ambient_2002$parameters = list(5)}),
+            independent_args,
+            quantity_weights,
+            data_definitions = data_definitions,
+            post_process_function = post_process_function,
+            verbose_startup = verbose_startup
+        ),
+        'When provided, the driver-specific parameters must be a list of named elements'
+    )
+
+    expect_error(
+        objective_function(
+            model,
+            within(ddps, {ambient_2002$parameters = list(Catm = 5)}),
+            independent_args,
+            quantity_weights,
+            data_definitions = data_definitions,
+            post_process_function = post_process_function,
+            verbose_startup = verbose_startup
+        ),
+        'The following driver-specific parameter names were provided in the data-driver pairs:\nambient_2002 : Catm\nambient_2005 : \nWhen provided, these names must be the same for each set of drivers',
+        fixed = TRUE
+    )
+
+    expect_error(
+        objective_function(
+            model,
+            within(ddps, {
+                ambient_2002$parameters = list(extra_param = 5)
+                ambient_2005$parameters = list(extra_param = 7)
+            }),
+            independent_args,
+            quantity_weights,
+            data_definitions = data_definitions,
+            post_process_function = post_process_function,
+            verbose_startup = verbose_startup
+        ),
+        'The following driver-specific parameters are not included in the base model definition: "extra_param"'
+    )
+
+    # Here we specify a "bad" value of the Ball-Berry intercept for 2005. This
+    # will trigger an error, but the particular error may depend on the
+    # particular version of BioCro being used, so we don't check the error
+    # message content.
+    expect_error(
+        objective_function(
+            model,
+            within(ddps, {
+                ambient_2002$parameters = list(b0 = 0.1) # This shouldn't cause a problem
+                ambient_2005$parameters = list(b0 = -1)  # This should trigger an error
+            }),
+            independent_args,
+            quantity_weights,
+            data_definitions = data_definitions,
+            post_process_function = post_process_function,
+            verbose_startup = verbose_startup
+        )
     )
 })
 
