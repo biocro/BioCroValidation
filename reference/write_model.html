@@ -19,7 +19,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">BioCroValidation</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -113,6 +113,10 @@
   output. See examples below. Note that it is customary to name the R script
   file as <code>name.R</code>, where <code>name</code> is the value provided to the function
   itself.</p>
+<p>The <code>initial_values</code> and <code>parameters</code> will be alphabetized
+  (case-insensitive). The <code>ode_solver</code> elements will be printed in the
+  customary BioCro order. The <code>direct_modules</code> and
+  <code>differential_modules</code> will not be reordered.</p>
     </div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
@@ -137,201 +141,210 @@
 <span class="r-in"><span></span></span>
 <span class="r-in"><span>  <span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/interactive.html" class="external-link">interactive</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span></span>
 <span class="r-in"><span>    <span class="co"># Use writeLines to save as a `.R` file</span></span></span>
-<span class="r-in"><span>    <span class="fu"><a href="https://rdrr.io/r/base/writeLines.html" class="external-link">writeLines</a></span><span class="op">(</span><span class="va">out</span>, <span class="st">"./test_soybean_model.h"</span><span class="op">)</span></span></span>
+<span class="r-in"><span>    <span class="fu"><a href="https://rdrr.io/r/base/writeLines.html" class="external-link">writeLines</a></span><span class="op">(</span><span class="va">out</span>, <span class="st">"./test_soybean_model.R"</span><span class="op">)</span></span></span>
 <span class="r-in"><span>  <span class="op">}</span></span></span>
 <span class="r-in"><span><span class="op">}</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> test_soybean_model &lt;- list(</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     direct_modules = list(</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "BioCro:format_time",</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "BioCro:stomata_water_stress_linear",</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "BioCro:sla_linear",</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         "BioCro:maintenance_respiration_calculator",</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         "BioCro:senescence_coefficient_logistic",</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         "BioCro:stefan_boltzmann_longwave",</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         partitioning_coefficients = "BioCro:partitioning_coefficient_logistic",</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         leaf_water_stress = "BioCro:leaf_water_stress_exponential",</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         specific_leaf_area = "BioCro:sla_linear",</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>         "BioCro:parameter_calculator",</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "BioCro:soybean_development_rate_calculator",</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "BioCro:leaf_water_stress_exponential",</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "BioCro:partitioning_coefficient_logistic",</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "BioCro:soil_evaporation",</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "BioCro:solar_position_michalsky",</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "BioCro:shortwave_atmospheric_scattering",</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "BioCro:incident_shortwave_from_ground_par",</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>         "BioCro:height_from_lai",</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>         "BioCro:canopy_gbw_thornley",</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "BioCro:stefan_boltzmann_longwave",</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         "BioCro:soil_evaporation",</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         stomata_water_stress = "BioCro:stomata_water_stress_linear",</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         "BioCro:format_time",</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         "BioCro:soybean_development_rate_calculator",</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         solar_coordinates = "BioCro:solar_position_michalsky",</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         "BioCro:shortwave_atmospheric_scattering",</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         "BioCro:incident_shortwave_from_ground_par",</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>         "BioCro:ten_layer_canopy_properties",</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "BioCro:ten_layer_c3_canopy",</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         canopy_photosynthesis = "BioCro:ten_layer_c3_canopy",</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>         "BioCro:ten_layer_canopy_integrator",</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "BioCro:no_leaf_resp_neg_assim_partitioning_growth_calculator",</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "BioCro:senescence_coefficient_logistic",</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "BioCro:carbon_assimilation_to_biomass"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         "BioCro:carbon_assimilation_to_biomass",</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         partitioning_growth_calculator = "BioCro:partitioning_growth_calculator"</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     ),</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     differential_modules = list(</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "BioCro:senescence_logistic",</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         senescence = "BioCro:senescence_logistic",</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>         "BioCro:maintenance_respiration",</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>         "BioCro:partitioning_growth",</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "BioCro:two_layer_soil_profile",</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         soil_profile = "BioCro:two_layer_soil_profile",</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>         "BioCro:development_index",</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "BioCro:thermal_time_linear"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         thermal_time = "BioCro:thermal_time_linear"</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     ),</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     ode_solver = list(</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         type = "boost_rkck54",</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         output_step_size = 1.000000,</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         type                   = "boost_rkck54",</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         output_step_size       = 1.000000,</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>         adaptive_rel_error_tol = 1.000000e-04,</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>         adaptive_abs_error_tol = 1.000000e-04,</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         adaptive_max_steps = 200</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         adaptive_max_steps     = 200</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     ),</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     initial_values = list(</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "Leaf" = 0.06312,</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "Stem" = 0.00789,</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "Root" = 0.00789,</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "Grain" = 1e-05,</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "Shell" = 1e-05,</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "LeafLitter" = 0,</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "RootLitter" = 0,</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "StemLitter" = 0,</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "soil_water_content" = 0.32,</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "cws1" = 0.32,</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "cws2" = 0.32,</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "DVI" = -1,</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "TTc" = 0,</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "Rhizome" = 1e-07,</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "RhizomeLitter" = 0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         cws1                        = 0.32,</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         cws2                        = 0.32,</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         DVI                         = -1,</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         Grain                       = 1e-05,</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         Leaf                        = 0.06312,</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         LeafLitter                  = 0,</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         Rhizome                     = 1e-07,</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         RhizomeLitter               = 0,</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         Root                        = 0.00789,</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         RootLitter                  = 0,</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         Shell                       = 1e-05,</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         soil_water_content          = 0.32,</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         Stem                        = 0.00789,</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         StemLitter                  = 0,</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         TTc                         = 0</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     ),</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     parameters = list(</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "soil_air_entry" = -2.6,</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "soil_b_coefficient" = 5.2,</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "soil_bulk_density" = 1.35,</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "soil_clay_content" = 0.34,</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "soil_field_capacity" = 0.32,</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "soil_sand_content" = 0.32,</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "soil_saturated_conductivity" = 6.4e-05,</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "soil_saturation_capacity" = 0.52,</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "soil_silt_content" = 0.34,</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "soil_wilting_point" = 0.2,</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "iSp" = 3.5,</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "Sp_thermal_time_decay" = 0,</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "LeafN" = 2,</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "LeafN_0" = 2,</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "vmax_n_intercept" = 0,</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "vmax1" = 110,</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "alphab1" = 0,</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "alpha1" = 0,</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "maturity_group" = 3,</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "Tbase_emr" = 10,</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "TTemr_threshold" = 60,</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "Rmax_emrV0" = 0.199,</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "Tmin_emrV0" = 5,</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "Topt_emrV0" = 31.5,</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "Tmax_emrV0" = 45,</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "Tmin_R0R1" = 5,</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "Topt_R0R1" = 31.5,</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "Tmax_R0R1" = 45,</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "Tmin_R1R7" = 0,</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "Topt_R1R7" = 21.5,</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "Tmax_R1R7" = 38.7,</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "sowing_fractional_doy" = 0,</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "alphaLeaf" = 23.8895,</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "alphaStem" = 24.8248,</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "betaLeaf" = -18.0851,</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "betaStem" = -18.5214,</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "alphaRoot" = 36.967,</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "betaRoot" = -40.1915,</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "alphaShell" = 13.5955,</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "betaShell" = -9.9809,</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "kRhizome_emr" = 0,</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "rsec" = 0.2,</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "soil_clod_size" = 0.04,</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "soil_reflectance" = 0.2,</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "soil_transmission" = 0.01,</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "specific_heat_of_air" = 1010,</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "lat" = 40,</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "longitude" = -88,</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "atmospheric_pressure" = 101325,</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "atmospheric_transmittance" = 0.6,</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "atmospheric_scattering" = 0.3,</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "par_energy_fraction" = 0.5,</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "par_energy_content" = 0.219,</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "heightf" = 6,</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "min_gbw_canopy" = 0.005,</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "dry_biomass_per_carbon" = 30.026,</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "emissivity_sky" = 1,</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "chil" = 0.81,</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "k_diffuse" = 0.7,</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "kpLN" = 0,</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "leaf_reflectance_nir" = 0.42,</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "leaf_reflectance_par" = 0.1,</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "leaf_transmittance_nir" = 0.42,</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "leaf_transmittance_par" = 0.05,</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "lnfun" = 0,</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "Gstar_c" = 19.02,</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "Gstar_Ea" = 37830,</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "Jmax_c" = 17.57,</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "Jmax_Ea" = 43540,</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "Kc_c" = 38.05,</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "Kc_Ea" = 79430,</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "Ko_c" = 20.3,</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "Ko_Ea" = 36380,</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "phi_PSII_0" = 0.352,</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "phi_PSII_1" = 0.022,</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "phi_PSII_2" = -0.00034,</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "Rd_c" = 18.72,</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "Rd_Ea" = 46390,</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "theta_0" = 0.76,</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "theta_1" = 0.018,</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "theta_2" = -0.00037,</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "Tp_c" = 19.77399,</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "Tp_Ha" = 62990,</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "Tp_Hd" = 182140,</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "Tp_S" = 588,</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "Vcmax_c" = 26.35,</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "Vcmax_Ea" = 65330,</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "jmax" = 195,</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "jmax_mature" = 195,</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "sf_jmax" = 0.2,</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "electrons_per_carboxylation" = 4.5,</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "electrons_per_oxygenation" = 5.25,</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "tpu_rate_max" = 13,</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "Rd" = 1.28,</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "Catm" = 372.59,</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "O2" = 210,</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "b0" = 0.008,</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "b1" = 10.6,</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "Gs_min" = 0.001,</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "windspeed_height" = 5,</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "beta_PSII" = 0.5,</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "leafwidth" = 0.1,</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "growth_respiration_fraction" = 0,</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "grc_stem" = 0.02828,</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "grc_root" = 0.0027,</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "mrc_leaf" = 0.00048836,</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "mrc_stem" = 0.00048836,</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "mrc_root" = 1e-05,</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "mrc_grain" = 1e-05,</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "retrans" = 0.9,</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "retrans_rhizome" = 1,</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "rateSeneLeaf" = 0.012198,</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "rateSeneStem" = 0.000117,</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "rateSeneRoot" = 0,</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "rateSeneRhizome" = 0,</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "alphaSeneLeaf" = 48.32,</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "alphaSeneStem" = 4.1937,</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "alphaSeneRoot" = 10,</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "alphaSeneRhizome" = 10,</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "betaSeneLeaf" = -29.5393,</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "betaSeneStem" = -3.3124,</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "betaSeneRoot" = -10,</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "betaSeneRhizome" = -10,</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "remobilization_fraction" = 0.6,</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "soil_depth1" = 0,</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "soil_depth2" = 2.5,</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "soil_depth3" = 10,</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "wsFun" = 2,</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "hydrDist" = 0,</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "rfl" = 0.2,</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "rsdf" = 0.44,</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "phi1" = 0.01,</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "phi2" = 1.5,</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "tbase" = 10,</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "km_leaf_litter" = 2,</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         "timestep" = 1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         alpha1                      = 0,</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         alphab1                     = 0,</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         alphaLeaf                   = 23.3677144900876,</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         alphaRhizome                = 0,</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         alphaRoot                   = 36.967,</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         alphaSeneLeaf               = 43.7855824917775,</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         alphaSeneRhizome            = 10,</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         alphaSeneRoot               = 10,</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         alphaSeneStem               = 10.8796343751991,</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         alphaShell                  = 11.545163924099,</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         alphaStem                   = 22.1267681013877,</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         atmospheric_pressure        = 101325,</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         atmospheric_scattering      = 0.3,</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         atmospheric_transmittance   = 0.6,</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         b0                          = 0.008,</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         b1                          = 10.6,</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         beta_PSII                   = 0.5,</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         betaLeaf                    = -18.1101308143176,</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         betaRhizome                 = -Inf,</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         betaRoot                    = -40.1915,</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         betaSeneLeaf                = -26.6770775076378,</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         betaSeneRhizome             = -10,</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         betaSeneRoot                = -10,</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         betaSeneStem                = -4.61049860554787,</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         betaShell                   = -8.4831815000548,</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         betaStem                    = -16.2339597898586,</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         Catm                        = 372.59,</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         chil                        = 0.81,</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         dry_biomass_per_carbon      = 30.026,</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         electrons_per_carboxylation = 4.5,</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         electrons_per_oxygenation   = 5.25,</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         emissivity_sky              = 1,</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         grc_grain                   = 0,</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         grc_leaf                    = 0,</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         grc_rhizome                 = 0,</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         grc_root                    = 0.00250052529027345,</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         grc_shell                   = 0,</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         grc_stem                    = 0.0190775428773556,</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         growth_respiration_fraction = 0,</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         Gs_min                      = 0.001,</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         Gstar_c                     = 19.02,</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         Gstar_Ea                    = 37830,</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         heightf                     = 6,</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         hydrDist                    = 0,</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         iSp                         = 3.5,</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         Jmax_at_25                  = 195,</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         Jmax_at_25_mature           = 195,</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         Jmax_c                      = 17.57,</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         Jmax_Ea                     = 43540,</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         k_diffuse                   = 0.7,</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         Kc_c                        = 38.05,</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         Kc_Ea                       = 79430,</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         km_leaf_litter              = 2,</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         Ko_c                        = 20.3,</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         Ko_Ea                       = 36380,</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         kpLN                        = 0,</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         kRhizome_emr                = 0,</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         kRhizome_emr_DVI            = 0,</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         lat                         = 40,</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         leaf_reflectance_nir        = 0.42,</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         leaf_reflectance_par        = 0.1,</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         leaf_transmittance_nir      = 0.42,</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         leaf_transmittance_par      = 0.05,</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         LeafN                       = 2,</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         LeafN_0                     = 2,</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         leafwidth                   = 0.1,</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         lnfun                       = 0,</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         longitude                   = -88,</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         maturity_group              = 3,</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         min_gbw_canopy              = 0.005,</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         mrc_grain                   = 0,</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         mrc_leaf                    = 0.000297139012738621,</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         mrc_rhizome                 = 0,</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         mrc_root                    = 1.00017330160141e-06,</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         mrc_shell                   = 0,</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         mrc_stem                    = 0.000297139012738621,</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         O2                          = 210,</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         par_energy_content          = 0.219,</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         par_energy_fraction         = 0.5,</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         phi1                        = 0.01,</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         phi2                        = 1.5,</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         phi_PSII_0                  = 0.352,</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         phi_PSII_1                  = 0.022,</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         phi_PSII_2                  = -0.00034,</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         rateSeneLeaf                = 0.00999312745523112,</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         rateSeneRhizome             = 0,</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         rateSeneRoot                = 0,</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         rateSeneStem                = 0.00215689869131893,</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         remobilization_fraction     = 0.6,</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         retrans                     = 0.9,</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         retrans_rhizome             = 1,</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         rfl                         = 0.2,</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         RL_at_25                    = 1.28,</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         RL_c                        = 18.72,</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         RL_Ea                       = 46390,</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         Rmax_emrV0                  = 0.199,</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         rsdf                        = 0.44,</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         rsec                        = 0.2,</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         sf_jmax                     = 0.2,</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         soil_air_entry              = -2.6,</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         soil_b_coefficient          = 5.2,</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         soil_bulk_density           = 1.35,</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         soil_clay_content           = 0.34,</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         soil_clod_size              = 0.04,</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         soil_depth1                 = 0,</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         soil_depth2                 = 2.5,</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         soil_depth3                 = 10,</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         soil_field_capacity         = 0.32,</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         soil_reflectance            = 0.2,</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         soil_sand_content           = 0.32,</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         soil_saturated_conductivity = 6.4e-05,</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         soil_saturation_capacity    = 0.52,</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         soil_silt_content           = 0.34,</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         soil_transmission           = 0.01,</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         soil_wilting_point          = 0.2,</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         sowing_fractional_doy       = 0,</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         Sp_thermal_time_decay       = 0,</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         specific_heat_of_air        = 1010,</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         tbase                       = 10,</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         Tbase_emr                   = 10,</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         theta_0                     = 0.76,</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         theta_1                     = 0.018,</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         theta_2                     = -0.00037,</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         timestep                    = 1,</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         Tmax_emrV0                  = 45,</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         Tmax_R0R1                   = 45,</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         Tmax_R1R7                   = 38.7,</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         Tmin_emrV0                  = 5,</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         Tmin_R0R1                   = 5,</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         Tmin_R1R7                   = 0,</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         Topt_emrV0                  = 31.5,</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         Topt_R0R1                   = 31.5,</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         Topt_R1R7                   = 21.5,</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         Tp_at_25                    = 13,</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         Tp_c                        = 19.77399,</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         Tp_Ha                       = 62990,</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         Tp_Hd                       = 182140,</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         Tp_S                        = 588,</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         TTemr_threshold             = 60,</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         Vcmax_at_25                 = 110,</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         Vcmax_c                     = 26.35,</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         Vcmax_Ea                    = 65330,</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         windspeed_height            = 5,</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         wsFun                       = 2</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     )</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> )</span>
 </code></pre></div>
@@ -345,7 +358,7 @@
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.2.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
 </div>
 
     </footer></div>

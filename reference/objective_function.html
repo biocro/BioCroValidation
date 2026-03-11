@@ -20,7 +20,7 @@ It is also possible to include "dependent" model arguments, whose values are
   determined from the "independent" model arguments that are varied during the
   parameterization procedure.
 For a detailed example of using objective_function, see the
-  "Parameterizing Soybean-BioCro" vignette/article.'><meta property="og:description" content='Given a base model definition, drivers to run the model, observed values of
+  "Parameterizing Soybean-BioCro" vignette.'><meta property="og:description" content='Given a base model definition, drivers to run the model, observed values of
   model outputs, and the names of model arguments to vary,
   objective_function creates an objective function that can be passed to
   a minimization algorithm in order to find optimal parameter values that
@@ -35,7 +35,7 @@ It is also possible to include "dependent" model arguments, whose values are
   determined from the "independent" model arguments that are varied during the
   parameterization procedure.
 For a detailed example of using objective_function, see the
-  "Parameterizing Soybean-BioCro" vignette/article.'></head><body>
+  "Parameterizing Soybean-BioCro" vignette.'></head><body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
     padding-top: 70px;
 
@@ -43,7 +43,7 @@ For a detailed example of using objective_function, see the
 
     <a class="navbar-brand me-2" href="../index.html">BioCroValidation</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -90,7 +90,7 @@ For a detailed example of using objective_function, see the
   determined from the "independent" model arguments that are varied during the
   parameterization procedure.</p>
 <p>For a detailed example of using <code>objective_function</code>, see the
-  "Parameterizing Soybean-BioCro" vignette/article.</p>
+  "Parameterizing Soybean-BioCro" vignette.</p>
     </div>
 
     <div class="section level2">
@@ -124,8 +124,8 @@ For a detailed example of using objective_function, see the
   <dt id="arg-data-driver-pairs">data_driver_pairs<a class="anchor" aria-label="anchor" href="#arg-data-driver-pairs"></a></dt>
 <dd><p>A list of named elements, where each element is a "data-driver pair." A
     data-driver pair is a list with three required elements: <code>data</code>,
-    <code>drivers</code>, and <code>weight</code>. Optionally, it may also have a
-    <code>data_stdev</code> element.</p>
+    <code>drivers</code>, and <code>weight</code>. Optionally, it may also have elements
+    named <code>data_stdev</code>, <code>initial_values</code>, and <code>parameters</code>.</p>
 <p>The <code>data</code> element must be a data frame with one column named
     <code>time</code>, whose values follow BioCro's definition of
     <code><a href="https://rdrr.io/pkg/BioCro/man/time_variable.html" class="external-link">time</a></code>; the other columns should represent observed
@@ -140,14 +140,20 @@ For a detailed example of using objective_function, see the
     column names as <code>data</code>, and the same time values; its other entries
     should represent the standard deviation associated with each entry in
     <code>data</code>. If <code>data_stdev</code> is not supplied, all standard deviations
-    will be set to 1.</p></dd>
+    will be set to 1.</p>
+<p>The optional <code>initial_values</code> and <code>parameters</code> elements must be
+    named lists of driver-specific initial values and parameters, respectively,
+    that will overwrite the default values specified in the
+    <code>base_model_definition</code>. When driver-specific <code>initial_values</code> are
+    provided, they must be provided for each of the data-driver pairs; the same
+    rule applies for driver-specific <code>parameters</code>.</p></dd>
 
 
   <dt id="arg-independent-args">independent_args<a class="anchor" aria-label="anchor" href="#arg-independent-args"></a></dt>
 <dd><p>A list of named numeric values. The names will determine the independent
     arguments to be varied during their optimization, and the values specify
-    "initial" or "test" values of each argument that will be used internally to
-    check that the objective function is properly defined and can be evaluated.</p></dd>
+    "test" values of each argument that will be used internally to check that
+    the objective function is properly defined and can be evaluated.</p></dd>
 
 
   <dt id="arg-quantity-weights">quantity_weights<a class="anchor" aria-label="anchor" href="#arg-quantity-weights"></a></dt>
@@ -193,7 +199,8 @@ For a detailed example of using objective_function, see the
 
   <dt id="arg-regularization-method">regularization_method<a class="anchor" aria-label="anchor" href="#arg-regularization-method"></a></dt>
 <dd><p>A string indicating the regularization method to be used when calculating
-    the regularization penalty term; see below for more details.</p></dd>
+    the regularization penalty term, or a function that calculates the penalty;
+    see below for more details.</p></dd>
 
 
   <dt id="arg-dependent-arg-function">dependent_arg_function<a class="anchor" aria-label="anchor" href="#arg-dependent-arg-function"></a></dt>
@@ -229,23 +236,27 @@ For a detailed example of using objective_function, see the
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
     <p><strong>Overview</strong></p>
 <p>When parameterizing a BioCro model, the general idea is to vary a subset of
-  the model's parameters to achieve the best agreement with a set of observed
-  data. The degree of agreement is expressed as an "error metric," which
-  includes terms derived from the agreement between the modeled and observed
-  values, as well as (optional) penalty terms. A function that calculates an
-  error metric when given a set of parameter values is called an "objective
-  function." Defining an objective function suitable for BioCro parameterization
-  can be complicated, but the <code>objective_function</code> function helps to
-  simplify the process of creating such a function. It is designed to
-  accommodate the following scenarios, which often occur in the context of
-  BioCro model parameterization:</p>
+  the model's <code>parameters</code> and/or <code>initial_values</code> to achieve the
+  best agreement with a set of observed data. The degree of agreement is
+  expressed as an "error metric," which includes terms derived from the
+  agreement between the modeled and observed values, as well as (optional)
+  penalty terms. A function that calculates an error metric when given a set of
+  argument values (<code>parameters</code> and/or <code>initial_values</code>) is called an
+  "objective function." Defining an objective function suitable for BioCro
+  parameterization can be complicated, but the <code>objective_function</code>
+  function helps to simplify the process of creating such a function. It is
+  designed to accommodate the following scenarios, which often occur in the
+  context of BioCro model parameterization:</p>
 <p></p><ul><li><p><strong>Multi-year or multi-location data:</strong> Often the model needs to
           be run several times with different drivers corresponding to multiple
           years or locations, and then the results from each individual
           simulation must be compared to associated sets of observed data. Here,
           this is handled through the <code>data_driver_pairs</code>, which allows the
           user to specify which drivers and data sets should be compared to each
-          other.</p></li>
+          other. Optionally, it is also possible to specify different initial
+          values or parameters for each set of drivers; for example, the
+          atmospheric CO2 concentration may need to change for different years,
+          or soil properties may need to change for different locations.</p></li>
 <li><p><strong>Complicated normalization:</strong> Care must be taken to ensure that
           certain years or output variables are not over-valued in the error
           metric; for example, one year may have more observations of leaf mass
@@ -315,7 +326,7 @@ For a detailed example of using objective_function, see the
           by retrieving the value of the \(Y_i\) variable at the closest time
           to \(t_i\) that is included in the model output. It is assumed that
           the model always outputs the same sequence of time values each time it
-          is run with a particular set of drivers, regardless of the input
+          is run with a particular set of drivers, regardless of the provided
           argument values.</p>
 <p>The quantity-based weight factors \(w_i^{quantity}\) are directly
           specified by the user via the <code>quantity_weights</code> input. For
@@ -354,7 +365,7 @@ For a detailed example of using objective_function, see the
 <p>The function \(f_{user}\) must accept a single data frame as an
           input and return a single numeric value as its output, but has no
           other requirements. It is specified via the
-          <code>extra_penalty_function</code> argument. When
+          <code>extra_penalty_function</code>. When
           <code>extra_penalty_function</code> is <code>NULL</code>, \(P_{user}\) is zero.</p></li>
 <li><p><strong>Regularization penalty term:</strong> The regularization penalty term
           \(P_{regularization}\) is calculated from the values of the
@@ -366,9 +377,10 @@ For a detailed example of using objective_function, see the
           <code>regularization_method</code>; the available methods are discussed
           below.</p></li>
 </ul><p><strong>Standard-deviation-based weight methods</strong></p>
-<p>The following methods are available for determining weight factors from values
-  of the standard deviation (\(\sigma\)), which can be (optionally) supplied
-  via the <code>data_stdev</code> elements of the <code>data_driver_pairs</code>:</p>
+<p>The following pre-set methods are available for determining weight factors
+  from values of the standard deviation (\(\sigma\)), which can be
+  (optionally) supplied via the <code>data_stdev</code> elements of the
+  <code>data_driver_pairs</code>:</p>
 <p></p><ul><li><p><code>'equal'</code>: For this method, \(w_i^{stdev}\) is always set to
           1. In other words, all variances are treated as being equal,
           regardless of any user-supplied values. This is usually the best
@@ -380,13 +392,13 @@ For a detailed example of using objective_function, see the
           ln \left( \frac{1}{\sigma_i + \epsilon} \right),$$
           where \(ln\) denotes a logarithm with base \(e\) and
           \(\epsilon\) is a small number included to prevent numerical errors
-          that would otherwise occur when \(\sigma = 0\). This method was
+          that would otherwise occur when \(\sigma_i = 0\). This method was
           used in the original Soybean-BioCro paper.</p>
-<p>The value of \(\epsilon\) is specified by the
-          <code>stdev_weight_param</code> input argument, which defaults to
-          <code>1e-5</code> when <code>stdev_weight_param</code> is <code>NULL</code> when using
-          this method. With the default value of \(\epsilon\),
-          \(w_i^{stdev} \approx 11.512\) when \(\sigma = 0\).</p>
+<p>The value of \(\epsilon\) is specified by <code>stdev_weight_param</code>,
+          which defaults to <code>1e-5</code> if <code>stdev_weight_param</code> is
+          <code>NULL</code> when using this method. With the default value of
+          \(\epsilon\), \(w_i^{stdev} \approx 11.512\) when
+          \(\sigma = 0\).</p>
 <p>Note: this method should be used with caution, because
           \(w_i^{stdev}\) is zero for \(\sigma_i = 1 - \epsilon\), and it
           becomes negative for larger values of \(\sigma_i\).</p></li>
@@ -394,15 +406,14 @@ For a detailed example of using objective_function, see the
 <p>$$w_i^{stdev} = \frac{1}{\sigma_i^2 + \epsilon},$$
           where \(\epsilon\) is a small number included to prevent numerical
           errors that would otherwise occur when \(\sigma_i = 0\).</p>
-<p>The value of \(\epsilon\) is specified by the
-          <code>stdev_weight_param</code> input argument, which defaults to
-          <code>1e-1</code> when <code>stdev_weight_param</code> is <code>NULL</code> when using
-          this method. With the default value of \(\epsilon\),
-          \(w_i^{stdev} = 10\) when \(\sigma_i = 0\).</p></li>
+<p>The value of \(\epsilon\) is specified by <code>stdev_weight_param</code>,
+          which defaults to <code>1e-1</code> if <code>stdev_weight_param</code> is
+          <code>NULL</code> when using this method. With the default value of
+          \(\epsilon\), \(w_i^{stdev} = 10\) when \(\sigma_i = 0\).</p></li>
 </ul><p>If any values of \(w_i^{stdev}\) are undefined, negative, or infinite, an
   error message will occur (see the "Input checks" section below).</p>
 <p><strong>Normalization methods</strong></p>
-<p>The following normalization methods are available:</p>
+<p>The following pre-set normalization methods are available:</p>
 <p></p><ul><li><p><code>'equal'</code>: For this method, \(N_i\) is always set to 1. In
           other words, no normalization is performed.</p></li>
 <li><p><code>'mean'</code>: For this method, when \(Y_i\) is named <code>vtype</code>
@@ -419,13 +430,20 @@ For a detailed example of using objective_function, see the
           are added.</p></li>
 <li><p><code>'max'</code>: For this method, when \(Y_i\) is named <code>vtype</code>
           and the observation is from a set called <code>vdata</code>, then</p>
-<p>$$N_i = \left( max_{vtype}^{vdata} \right)^2,$$
-          where \(max_{vtype}^{vdata}\) is the maximum observed value of
-          <code>vtype</code> across <code>vdata</code>. In this case, the observed and
+<p>$$N_i = \left( max_{vtype}^{vdata} \right)^2 + \epsilon,$$
+          where \(max_{vtype}^{vdata}\) is the maximum observed absolute value
+          of <code>vtype</code> across <code>vdata</code> and \(\epsilon\) is a small
+          number included to prevent numerical errors that would otherwise occur
+          when \(max_{vtype}^{vdata} = 0\). In this case, the observed and
           modeled values that appear in the equation for \(E_{agreement}\) are
-          essentially normalized by their maximum value, hence the name for this
-          method. This approach avoids over-representing variable types with
-          larger magnitude when determining \(E_{agreement}\).</p></li>
+          essentially normalized by their maximum magnitude, hence the name for
+          this method. This approach avoids over-representing variable types
+          with larger magnitude when determining \(E_{agreement}\).</p>
+<p>The value of \(\epsilon\) is specified by
+          <code>normalization_param</code>, which defaults to <code>1e-1</code> if
+          <code>normalization_param</code> is <code>NULL</code> when using this method.
+          With the default value of \(\epsilon\), \(N_i = 10\) when
+          \(max_{vtype}^{vdata} = 0\).</p></li>
 <li><p><code>'obs'</code>: For this method,</p>
 <p>$$N_i = \left( Y_{obs}^i \right)^2 + \epsilon,$$
           where \(\epsilon\) is a small number included to prevent numerical
@@ -435,34 +453,32 @@ For a detailed example of using objective_function, see the
           normalizing by the observed values, hence the name. This approach
           avoids over-representing time points where a particular quantity takes
           its largest values when determining \(E_{agreement}\).</p>
-<p>The value of \(\epsilon\) is specified by the
-          <code>normalization_param</code> input argument, which defaults to
-          <code>1e-1</code> when <code>normalization_param</code> is <code>NULL</code> when using
-          this method. With the default value of \(\epsilon\), \(N_i = 10\)
-          when \(Y_{obs}^i = 0\).</p></li>
+<p>The value of \(\epsilon\) is specified by
+          <code>normalization_param</code>, which defaults to <code>1e-1</code> if
+          <code>normalization_param</code> is <code>NULL</code> when using this method.
+          With the default value of \(\epsilon\), \(N_i = 10\) when
+          \(Y_{obs}^i = 0\).</p></li>
 <li><p><code>'mean_max'</code>: For this method, the "mean" and "max" methods are
           combined so that</p>
-<p>$$N_i = n_{vtype}^{vdrivers}%
-          \cdot n_{data} \cdot \left( max_{vtype}^{vdata} \right)^2.$$
+<p>$$N_i = n_{vtype}^{vdrivers} \cdot n_{data}%
+          \cdot \left[ \left( max_{vtype}^{vdata} \right)^2 + \epsilon \right].$$
           This approach avoids over-representing drivers with larger numbers of
           associated observations, and variable types with larger magnitudes.
-          This method is used for parameterizing Soybean-BioCro.</p></li>
+          This method is used for parameterizing Soybean-BioCro.</p>
+<p>The value \(\epsilon\) is specified by <code>normalization_param</code>,
+          using the same default value as in the <code>'max'</code> method.</p></li>
 <li><p><code>'mean_obs'</code>: For this method, the "mean" and "obs" methods are
           combined so that</p>
 <p>$$N_i = n_{vtype}^{vdrivers} \cdot n_{data}%
-          \cdot \left( \left( Y_{obs}^i \right)^2 + \epsilon \right)^2.$$
+          \cdot \left[ \left( Y_{obs}^i \right)^2 + \epsilon \right].$$
           This approach avoids over-representing drivers with larger numbers of
           associated observations, and time points with larger observed values.</p>
-<p>The value of \(\epsilon\) is specified by the
-          <code>normalization_param</code> input argument, which defaults to
-          <code>1e-1</code> when <code>normalization_param</code> is <code>NULL</code> when using
-          this method. With the default value of \(\epsilon\),
-          \(N_i = 10 \cdot n_{vtype}^{vdrivers} \cdot n_{data}\) when
-          \(Y_{obs}^i = 0\).</p></li>
+<p>The value \(\epsilon\) is specified by <code>normalization_param</code>,
+          using the same default value as in the <code>'obs'</code> method.</p></li>
 </ul><p>In most situations, it is recommended to use either <code>'mean_max'</code> or
   <code>'mean_obs'</code> depending on user preference or performance.</p>
 <p><strong>Regularization methods</strong></p>
-<p>The following regularization methods are available:</p>
+<p>The following pre-set regularization methods are available:</p>
 <p></p><ul><li><p><code>'none'</code>: For this method, \(P_{regularization}\) is always set
           to 0. In other words, no regularization is performed.</p></li>
 <li><p><code>'L1'</code> or <code>'lasso'</code>: For this method,
@@ -481,7 +497,10 @@ For a detailed example of using objective_function, see the
           where the sum runs over all \(j\) independent arguments, and
           \(X_j\) is the value of the \(j^{th}\) argument. See the "Value"
           section below for details of how to specify \(\lambda\).</p></li>
-</ul><p><strong>Input checks</strong></p>
+</ul><p>It is also possible to supply a function that accepts two input arguments
+  (<code>x</code> and <code>lambda</code>, as described in the "Value" section below) and
+  returns a numeric penalty value.</p>
+<p><strong>Input checks</strong></p>
 <p>Several checks are made to ensure that the objective function is properly
   defined. These checks include, but are not limited to, the following:</p>
 <p></p><ul><li><p>Ensuring that each set of drivers in <code>data_driver_pairs</code> defines
@@ -494,14 +513,14 @@ For a detailed example of using objective_function, see the
           <code>data_driver_pairs</code> matches a corresponding column in the model
           output, when accounting for the <code>data_definitions</code> and
           <code>post_process_function</code>.</p></li>
-<li><p>Ensuring that each independent and dependent argument name is either
-          a parameter or initial value of the model. Internally, argument names
-          are passed to <code><a href="https://rdrr.io/pkg/BioCro/man/partial_application.html" class="external-link">partial_run_biocro</a></code> via its
-          <code>arg_names</code> input. Note that argument names passed to
-          <code>partial_run_biocro</code> can technically include drivers, but it is
-          unlikely that the value of a driver would be varied during an
-          optimization, so the argument names are not allowed to include
-          columns in the drivers.</p></li>
+<li><p>Ensuring that each independent and dependent argument name is a member
+          of the model's <code>parameters</code> or <code>initial_values</code>. Internally,
+          argument names are passed to <code><a href="https://rdrr.io/pkg/BioCro/man/partial_application.html" class="external-link">partial_run_biocro</a></code>
+          via its <code>arg_names</code> input. Note that argument names passed to
+          <code>partial_run_biocro</code> can technically include members of the
+          <code>drivers</code>, but it is unlikely that the value of a driver would be
+          varied during an optimization, so the argument names are not allowed
+          to include columns in the <code>drivers</code>.</p></li>
 <li><p>Ensuring that the optional <code>dependent_arg_function</code>,
           <code>post_process_function</code>, and <code>extra_penalty_function</code>
           functions can be run without causing errors.</p></li>
@@ -522,27 +541,32 @@ For a detailed example of using objective_function, see the
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
     <p>A function <code>obj_fun</code> with signature
-  <code>obj_fun(x, lambda = 0, return_terms = FALSE, debug_mode = FALSE)</code>.</p>
+  <code>obj_fun(x, lambda = 0, return_terms = FALSE, debug_mode = 'minimal')</code>.</p>
 <p>Here, <code>x</code> is a numeric vector of values of the independent arguments (in
   the same order as in <code>independent_arg_names</code>), and <code>lambda</code> is the
   value of the regularization parameter.</p>
-<p>The <code>return_terms</code> argument determines the return value of
-  <code>obj_fun</code>. When <code>return_terms</code> is <code>FALSE</code>, <code>obj_fun</code>
-  returns values of the error metric \(E\). When <code>return_terms</code> is
-  <code>TRUE</code>, <code>obj_fun</code> returns a list including each individual term of
-  the total error metric.</p>
+<p>When <code>return_terms</code> is <code>FALSE</code>, <code>obj_fun</code> returns values of the
+  error metric \(E\). When <code>return_terms</code> is <code>TRUE</code>, <code>obj_fun</code>
+  returns a list including each individual term of the total error metric.</p>
 <p>During optimization, <code>return_terms</code> should always be <code>FALSE</code>.
   Setting it to <code>TRUE</code> can be useful for troubleshooting, or for
   diagnostics such as checking the quality of fit for each of the data-driver
   pairs.</p>
-<p>The <code>debug_mode</code> argument determines whether <code>obj_fun</code> is running in
-  debug mode. In debug mode, each time <code>obj_fun</code> is called, it will print
-  the values of <code>x</code> and the error metric to the R terminal. This can be
-  useful when troubleshooting a problem with an optimization, since it provides
-  a record of any problematic parameter combinations. When setting
-  <code>debug_mode</code> to <code>TRUE</code>, also consider using <code><a href="https://rdrr.io/r/base/sink.html" class="external-link">sink</a></code>
-  to write the outputs to a file instead of the R terminal. In that case, there
-  will still be a record even if R crashes.</p>
+<p>When <code>debug_mode</code> is <code>'minimal'</code> or <code>'everything'</code>,
+  <code>obj_fun</code> operates in "debug mode." In the "minimal" version, problematic
+  values of <code>x</code> will be printed to the terminal, along with an explanation
+  of the problem that was caused. In the "everything" version, the values of
+  <code>x</code> and the error metric will be printed to the terminal every time
+  <code>obj_fun</code> is called. When <code>debug_mode</code> is <code>'none'</code> (or any
+  other value not mentioned above), no debug printing will occur.</p>
+<p>Debug mode can be useful when troubleshooting a problem with an optimization,
+  since it provides a record of any problematic parameter combinations. Once a
+  problematic set of argument values is identified, it can be investigated
+  further by calling <code>obj_fun</code> again with <code>x</code> set to the problematic
+  values and <code>return_terms</code> set to <code>TRUE</code>.</p>
+<p>When setting <code>debug_mode</code> to <code>TRUE</code>, also consider using
+  <code><a href="https://rdrr.io/r/base/sink.html" class="external-link">sink</a></code> to write the outputs to a file instead of the R
+  terminal. In that case, there will still be a record even if R crashes.</p>
     </div>
 
     <div class="section level2">
@@ -583,18 +607,21 @@ For a detailed example of using objective_function, see the
 <span class="r-in"><span></span></span>
 <span class="r-in"><span>  <span class="co"># The data-driver pairs can now be created by associating each data set with</span></span></span>
 <span class="r-in"><span>  <span class="co"># its corresponding weather data. Here we will weight the 2005 data twice as</span></span></span>
-<span class="r-in"><span>  <span class="co"># heavily as the 2002 data.</span></span></span>
+<span class="r-in"><span>  <span class="co"># heavily as the 2002 data. Note that we also specify different atmospheric</span></span></span>
+<span class="r-in"><span>  <span class="co"># CO2 concentrations for each year.</span></span></span>
 <span class="r-in"><span>  <span class="va">data_driver_pairs</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span></span>
 <span class="r-in"><span>    ambient_2002 <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span></span>
 <span class="r-in"><span>      data       <span class="op">=</span> <span class="fu">process_table</span><span class="op">(</span><span class="va">soyface_biomass</span><span class="op">[[</span><span class="st">'ambient_2002'</span><span class="op">]</span><span class="op">]</span><span class="op">)</span>,</span></span>
 <span class="r-in"><span>      data_stdev <span class="op">=</span> <span class="fu">process_table</span><span class="op">(</span><span class="va">soyface_biomass</span><span class="op">[[</span><span class="st">'ambient_2002_std'</span><span class="op">]</span><span class="op">]</span><span class="op">)</span>,</span></span>
 <span class="r-in"><span>      drivers    <span class="op">=</span> <span class="fu">BioCro</span><span class="fu">::</span><span class="va"><a href="https://rdrr.io/pkg/BioCro/man/cmi_soybean_weather_data.html" class="external-link">soybean_weather</a></span><span class="op">[[</span><span class="st">'2002'</span><span class="op">]</span><span class="op">]</span>,</span></span>
+<span class="r-in"><span>      parameters <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>Catm <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/with.html" class="external-link">with</a></span><span class="op">(</span><span class="fu">BioCro</span><span class="fu">::</span><span class="va"><a href="https://rdrr.io/pkg/BioCro/man/catm_data.html" class="external-link">catm_data</a></span>, <span class="op">{</span><span class="va">Catm</span><span class="op">[</span><span class="va">year</span> <span class="op">==</span> <span class="st">'2002'</span><span class="op">]</span><span class="op">}</span><span class="op">)</span><span class="op">)</span>,</span></span>
 <span class="r-in"><span>      weight     <span class="op">=</span> <span class="fl">1</span></span></span>
 <span class="r-in"><span>    <span class="op">)</span>,</span></span>
 <span class="r-in"><span>    ambient_2005 <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span></span>
 <span class="r-in"><span>      data       <span class="op">=</span> <span class="fu">process_table</span><span class="op">(</span><span class="va">soyface_biomass</span><span class="op">[[</span><span class="st">'ambient_2005'</span><span class="op">]</span><span class="op">]</span><span class="op">)</span>,</span></span>
 <span class="r-in"><span>      data_stdev <span class="op">=</span> <span class="fu">process_table</span><span class="op">(</span><span class="va">soyface_biomass</span><span class="op">[[</span><span class="st">'ambient_2005_std'</span><span class="op">]</span><span class="op">]</span><span class="op">)</span>,</span></span>
 <span class="r-in"><span>      drivers    <span class="op">=</span> <span class="fu">BioCro</span><span class="fu">::</span><span class="va"><a href="https://rdrr.io/pkg/BioCro/man/cmi_soybean_weather_data.html" class="external-link">soybean_weather</a></span><span class="op">[[</span><span class="st">'2005'</span><span class="op">]</span><span class="op">]</span>,</span></span>
+<span class="r-in"><span>      parameters <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>Catm <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/with.html" class="external-link">with</a></span><span class="op">(</span><span class="fu">BioCro</span><span class="fu">::</span><span class="va"><a href="https://rdrr.io/pkg/BioCro/man/catm_data.html" class="external-link">catm_data</a></span>, <span class="op">{</span><span class="va">Catm</span><span class="op">[</span><span class="va">year</span> <span class="op">==</span> <span class="st">'2005'</span><span class="op">]</span><span class="op">}</span><span class="op">)</span><span class="op">)</span>,</span></span>
 <span class="r-in"><span>      weight     <span class="op">=</span> <span class="fl">2</span></span></span>
 <span class="r-in"><span>    <span class="op">)</span></span></span>
 <span class="r-in"><span>  <span class="op">)</span></span></span>
@@ -625,6 +652,8 @@ For a detailed example of using objective_function, see the
 <span class="r-in"><span>  <span class="co"># original Soybean-BioCro model.</span></span></span>
 <span class="r-in"><span>  <span class="va">independent_args</span> <span class="op">&lt;-</span> <span class="fu">BioCro</span><span class="fu">::</span><span class="va"><a href="https://rdrr.io/pkg/BioCro/man/soybean.html" class="external-link">soybean</a></span><span class="op">[[</span><span class="st">'parameters'</span><span class="op">]</span><span class="op">]</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">'alphaLeaf'</span>, <span class="st">'betaLeaf'</span><span class="op">)</span><span class="op">]</span></span></span>
 <span class="r-in"><span></span></span>
+<span class="r-in"><span>  <span class="va">initial_guess</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">as.numeric</a></span><span class="op">(</span><span class="va">independent_args</span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
 <span class="r-in"><span>  <span class="va">dependent_arg_function</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">ind_args</span><span class="op">)</span> <span class="op">{</span></span></span>
 <span class="r-in"><span>    <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>alphaStem <span class="op">=</span> <span class="va">ind_args</span><span class="op">[[</span><span class="st">'alphaLeaf'</span><span class="op">]</span><span class="op">]</span><span class="op">)</span></span></span>
 <span class="r-in"><span>  <span class="op">}</span></span></span>
@@ -651,6 +680,12 @@ For a detailed example of using objective_function, see the
 <span class="r-in"><span>    <span class="op">}</span></span></span>
 <span class="r-in"><span>  <span class="op">}</span></span></span>
 <span class="r-in"><span></span></span>
+<span class="r-in"><span>  <span class="co"># We want to use the regularization term to penalize deviations away from the</span></span></span>
+<span class="r-in"><span>  <span class="co"># initial guess, so we will define a custom L2 regularization function</span></span></span>
+<span class="r-in"><span>  <span class="va">regularization_function</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">x</span>, <span class="va">lambda</span><span class="op">)</span> <span class="op">{</span></span></span>
+<span class="r-in"><span>    <span class="va">lambda</span> <span class="op">*</span> <span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="op">(</span><span class="va">x</span> <span class="op">-</span> <span class="va">initial_guess</span><span class="op">)</span><span class="op">^</span><span class="fl">2</span><span class="op">)</span></span></span>
+<span class="r-in"><span>  <span class="op">}</span></span></span>
+<span class="r-in"><span></span></span>
 <span class="r-in"><span>  <span class="co"># Now we can finally create the objective function</span></span></span>
 <span class="r-in"><span>  <span class="va">obj_fun</span> <span class="op">&lt;-</span> <span class="fu">objective_function</span><span class="op">(</span></span></span>
 <span class="r-in"><span>    <span class="va">base_model_definition</span>,</span></span>
@@ -659,6 +694,7 @@ For a detailed example of using objective_function, see the
 <span class="r-in"><span>    <span class="va">quantity_weights</span>,</span></span>
 <span class="r-in"><span>    data_definitions <span class="op">=</span> <span class="va">data_definitions</span>,</span></span>
 <span class="r-in"><span>    stdev_weight_method <span class="op">=</span> <span class="st">'logarithm'</span>,</span></span>
+<span class="r-in"><span>    regularization_method <span class="op">=</span> <span class="va">regularization_function</span>,</span></span>
 <span class="r-in"><span>    dependent_arg_function <span class="op">=</span> <span class="va">dependent_arg_function</span>,</span></span>
 <span class="r-in"><span>    post_process_function <span class="op">=</span> <span class="va">post_process_function</span>,</span></span>
 <span class="r-in"><span>    extra_penalty_function <span class="op">=</span> <span class="va">extra_penalty_function</span></span></span>
@@ -667,31 +703,44 @@ For a detailed example of using objective_function, see the
 <span class="r-in"><span>  <span class="co"># This function could now be passed to an optimizer; here we will simply</span></span></span>
 <span class="r-in"><span>  <span class="co"># evaluate it for two sets of parameter values.</span></span></span>
 <span class="r-in"><span></span></span>
-<span class="r-in"><span>  <span class="co"># Try doubling each parameter value; in this case, the value of the</span></span></span>
-<span class="r-in"><span>  <span class="co"># objective function increases, indicating a lower degree of agreement between</span></span></span>
-<span class="r-in"><span>  <span class="co"># the model and the observed data. Here we will call `obj_fun` in debug mode,</span></span></span>
-<span class="r-in"><span>  <span class="co"># which will automatically print the value of the error metric.</span></span></span>
-<span class="r-in"><span>  <span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">'\nError metric calculated by doubling the initial argument values:\n'</span><span class="op">)</span></span></span>
-<span class="r-in"><span>  <span class="va">error_metric</span> <span class="op">&lt;-</span> <span class="fu">obj_fun</span><span class="op">(</span><span class="fl">2</span> <span class="op">*</span> <span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">as.numeric</a></span><span class="op">(</span><span class="va">independent_args</span><span class="op">)</span>, debug_mode <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></span>
+<span class="r-in"><span>  <span class="co"># Try doubling each parameter value and setting lambda to a nonzero value; in</span></span></span>
+<span class="r-in"><span>  <span class="co"># this case, the value of the objective function increases, indicating a lower</span></span></span>
+<span class="r-in"><span>  <span class="co"># degree of agreement between the model and the observed data. Here we will</span></span></span>
+<span class="r-in"><span>  <span class="co"># call `obj_fun` in debug mode, which will automatically print the value of</span></span></span>
+<span class="r-in"><span>  <span class="co"># the error metric.</span></span></span>
+<span class="r-in"><span>  <span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">'\nError metric calculated by doubling the original argument values:\n'</span><span class="op">)</span></span></span>
+<span class="r-in"><span>  <span class="va">error_metric</span> <span class="op">&lt;-</span> <span class="fu">obj_fun</span><span class="op">(</span><span class="fl">2</span> <span class="op">*</span> <span class="va">initial_guess</span>, <span class="fl">0.001</span>, debug_mode <span class="op">=</span> <span class="st">'everything'</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span>  <span class="co"># We can also see the values of each term that makes up the error metric;</span></span></span>
 <span class="r-in"><span>  <span class="co"># again, we will call `obj_fun` in debug mode for automatic printing.</span></span></span>
-<span class="r-in"><span>  <span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">'\nError metric terms calculated by doubling the initial argument values:\n'</span><span class="op">)</span></span></span>
+<span class="r-in"><span>  <span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">'\nError metric terms calculated by doubling the original argument values:\n'</span><span class="op">)</span></span></span>
 <span class="r-in"><span>  <span class="va">error_terms</span> <span class="op">&lt;-</span></span></span>
-<span class="r-in"><span>    <span class="fu">obj_fun</span><span class="op">(</span><span class="fl">2</span> <span class="op">*</span> <span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">as.numeric</a></span><span class="op">(</span><span class="va">independent_args</span><span class="op">)</span>, return_terms <span class="op">=</span> <span class="cn">TRUE</span>, debug_mode <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></span>
+<span class="r-in"><span>    <span class="fu">obj_fun</span><span class="op">(</span><span class="fl">2</span> <span class="op">*</span> <span class="va">initial_guess</span>, <span class="fl">0.001</span>, return_terms <span class="op">=</span> <span class="cn">TRUE</span>, debug_mode <span class="op">=</span> <span class="st">'everything'</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="op">}</span></span></span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> Loading required package: BioCro</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Driver-specific initial values:</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   None</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Driver-specific parameters:</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> List of 2</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  $ ambient_2002:List of 1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   ..$ Catm: num 373</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  $ ambient_2005:List of 1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   ..$ Catm: num 379</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> The independent arguments and their initial values:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> List of 2</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  $ alphaLeaf: num 23.9</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  $ alphaLeaf: num 23.4</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  $ betaLeaf : num -18.1</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> The dependent arguments and their initial values:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> List of 1</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  $ alphaStem: num 23.9</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  $ alphaStem: num 23.4</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> The full data definitions:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
@@ -699,6 +748,10 @@ For a detailed example of using objective_function, see the
 <span class="r-out co"><span class="r-pr">#&gt;</span>  $ Leaf_Mg_per_ha: chr "Leaf"</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  $ Stem_Mg_per_ha: chr "Stem"</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  $ Rep_Mg_per_ha : chr "Pod"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Normalization method: MEAN_MAX with eps = 0.1 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Standard-deviation-based weight method: LOGARITHM with eps = 1e-05 </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> The user-supplied data in long form:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
@@ -729,30 +782,30 @@ For a detailed example of using objective_function, see the
 <span class="r-out co"><span class="r-pr">#&gt;</span> 23 6192           Pod   6.5446506556   0.7434407011       2569          3288</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 24 6888           Pod   7.0089676285   0.1418286169       3265          3288</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>         norm      w_var</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1   52.28694  3.1984472</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2   52.28694  1.8086619</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3   52.28694  2.0115255</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 4   52.28694  1.4769342</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 5   52.28694  1.5970874</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 6   52.28694  2.5838191</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 7   52.28694  1.0654869</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 8   52.28694 11.5129255</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 9  224.43165  4.0692772</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 10 224.43165  1.9771808</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 11 224.43165  1.6943383</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 12 224.43165  0.8012803</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 13 224.43165  0.7908538</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 14 224.43165  1.2897800</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 15 224.43165  1.8901088</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 16 224.43165  1.9078489</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 17 786.01004 11.5129255</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 18 786.01004 11.5129255</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 19 786.01004  7.4887956</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 20 786.01004  3.4737681</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 21 786.01004  1.5213696</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 22 786.01004  0.5558948</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 23 786.01004  0.2964528</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 24 786.01004  1.9530654</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1   53.88694  3.1984472</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2   53.88694  1.8086619</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3   53.88694  2.0115255</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 4   53.88694  1.4769342</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 5   53.88694  1.5970874</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 6   53.88694  2.5838191</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 7   53.88694  1.0654869</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 8   53.88694 11.5129255</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 9  226.03165  4.0692772</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 10 226.03165  1.9771808</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 11 226.03165  1.6943383</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 12 226.03165  0.8012803</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 13 226.03165  0.7908538</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 14 226.03165  1.2897800</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 15 226.03165  1.8901088</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 16 226.03165  1.9078489</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 17 787.61004 11.5129255</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 18 787.61004 11.5129255</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 19 787.61004  7.4887956</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 20 787.61004  3.4737681</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 21 787.61004  1.5213696</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 22 787.61004  0.5558948</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 23 787.61004  0.2964528</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 24 787.61004  1.9530654</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> $ambient_2005</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>    time quantity_name quantity_value quantity_stdev time_index expected_npts</span>
@@ -781,30 +834,30 @@ For a detailed example of using objective_function, see the
 <span class="r-out co"><span class="r-pr">#&gt;</span> 23 6120           Pod     5.37107813     0.52004438       2593          2952</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 24 6456           Pod     6.37225313     0.63309086       2929          2952</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>        norm      w_var</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1   78.7166  3.4140824</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2   78.7166  1.9186276</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3   78.7166  1.0844600</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 4   78.7166  1.8826524</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 5   78.7166  2.1278960</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 6   78.7166  0.6678329</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 7   78.7166  2.7855322</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 8   78.7166 11.5129255</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 9  320.8003  4.2455301</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 10 320.8003  1.6152545</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 11 320.8003  0.5020373</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 12 320.8003  0.5800256</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 13 320.8003  1.1817071</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 14 320.8003  0.9699065</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 15 320.8003  1.5103441</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 16 320.8003  1.4136050</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 17 649.6898 11.5129255</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 18 649.6898 11.5129255</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 19 649.6898 11.5129255</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 20 649.6898  1.8061514</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 21 649.6898  0.8343466</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 22 649.6898  0.5302005</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 23 649.6898  0.6538219</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 24 649.6898  0.4571255</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1   80.3166  3.4140824</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2   80.3166  1.9186276</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3   80.3166  1.0844600</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 4   80.3166  1.8826524</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 5   80.3166  2.1278960</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 6   80.3166  0.6678329</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 7   80.3166  2.7855322</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 8   80.3166 11.5129255</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 9  322.4003  4.2455301</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 10 322.4003  1.6152545</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 11 322.4003  0.5020373</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 12 322.4003  0.5800256</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 13 322.4003  1.1817071</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 14 322.4003  0.9699065</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 15 322.4003  1.5103441</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 16 322.4003  1.4136050</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 17 651.2898 11.5129255</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 18 651.2898 11.5129255</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 19 651.2898 11.5129255</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 20 651.2898  1.8061514</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 21 651.2898  0.8343466</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 22 651.2898  0.5302005</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 23 651.2898  0.6538219</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 24 651.2898  0.4571255</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> The user-supplied quantity weights:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
@@ -819,51 +872,95 @@ For a detailed example of using objective_function, see the
 <span class="r-out co"><span class="r-pr">#&gt;</span>  $ ambient_2002: num 1</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  $ ambient_2005: num 2</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Regularization method: user-supplied function:</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> function (x, lambda) </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> {</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     lambda * sum((x - initial_guess)^2)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> }</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> &lt;environment: 0x555f3cc2dc38&gt;</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Dependent argument function: user-supplied function:</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> function (ind_args) </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> {</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     list(alphaStem = ind_args[["alphaLeaf"]])</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> }</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> &lt;environment: 0x555f3cc2dc38&gt;</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Post-processing function: user-supplied function:</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> function (sim_res) </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> {</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     within(sim_res, {</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         Pod = Grain + Shell</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     })</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> }</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> &lt;environment: 0x555f3cc2dc38&gt;</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Extra penalty function: user-supplied function:</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> function (sim_res) </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> {</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     max_leaf &lt;- max(sim_res[["Leaf"]], na.rm = TRUE)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     if (is.na(max_leaf) || max_leaf &gt; 4) {</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         1e+05</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     }</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     else {</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     }</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> }</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> &lt;environment: 0x555f3cc2dc38&gt;</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> The initial error metric terms:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> List of 2</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  $ terms_from_data_driver_pairs:List of 2</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   ..$ ambient_2002:List of 2</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   .. ..$ least_squares_terms:List of 3</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   .. .. ..$ Leaf: num 0.0454</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   .. .. ..$ Pod : num 0.00176</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   .. .. ..$ Stem: num 0.0374</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   .. .. ..$ Leaf: num 0.0908</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   .. .. ..$ Pod : num 0.0182</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   .. .. ..$ Stem: num 0.00474</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   .. ..$ extra_penalty      : num 0</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   ..$ ambient_2005:List of 2</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   .. ..$ least_squares_terms:List of 3</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   .. .. ..$ Leaf: num 0.0477</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   .. .. ..$ Pod : num 0.021</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   .. .. ..$ Stem: num 0.0354</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   .. .. ..$ Leaf: num 0.124</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   .. .. ..$ Pod : num 0.0261</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   .. .. ..$ Stem: num 0.0376</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   .. ..$ extra_penalty      : num 0</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  $ regularization_penalty      : num 0</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> The initial error metric value:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 0.1886707</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 0.3012756</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Error metric calculated by doubling the initial argument values:</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Error metric calculated by doubling the original argument values:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Time: 2025-05-23 21:36:13.287143    Independent argument values: 47.779, -36.1702</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Time: 2025-05-23 21:36:13.727492    Error metric: 1.63915459199451</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Time: 2026-03-11 23:03:09.565925      Independent argument values : 46.73542898017520030862215207889676, -36.22026162863519971324421931058168</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Error metric terms calculated by doubling the initial argument values:</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Time: 2026-03-11 23:03:09.972865      Error metric : 2.99754729469563185872971189382952</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Time: 2025-05-23 21:36:13.727646    Independent argument values: 47.779, -36.1702</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Time: 2025-05-23 21:36:14.09831     Error metric terms: List of 2</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Error metric terms calculated by doubling the original argument values:</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Time: 2026-03-11 23:03:09.973026      Independent argument values : 46.73542898017520030862215207889676, -36.22026162863519971324421931058168</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Time: 2026-03-11 23:03:10.367931      Error metric terms : </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> List of 2</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  $ terms_from_data_driver_pairs:List of 2</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   ..$ ambient_2002:List of 2</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   .. ..$ least_squares_terms:List of 3</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   .. .. ..$ Leaf: num 0.141</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   .. .. ..$ Leaf: num 0.122</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   .. .. ..$ Pod : num 0.154</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   .. .. ..$ Stem: num 0.247</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   .. .. ..$ Stem: num 0.39</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   .. ..$ extra_penalty      : num 0</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   ..$ ambient_2005:List of 2</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   .. ..$ least_squares_terms:List of 3</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   .. .. ..$ Leaf: num 0.172</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   .. .. ..$ Leaf: num 0.139</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   .. .. ..$ Pod : num 0.179</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   .. .. ..$ Stem: num 0.746</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   .. .. ..$ Stem: num 1.14</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   .. ..$ extra_penalty      : num 0</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  $ regularization_penalty      : num 0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  $ regularization_penalty      : num 0.874</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 </code></pre></div>
     </div>
@@ -876,7 +973,7 @@ For a detailed example of using objective_function, see the
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.2.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
 </div>
 
     </footer></div>

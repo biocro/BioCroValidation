@@ -26,7 +26,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">BioCroValidation</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -66,7 +66,7 @@
       <h1>Parameterizing Soybean-BioCro</h1>
             
       
-      <small class="dont-index">Source: <a href="https://github.com/BioCro/BioCroValidation/blob/v0.2.0/vignettes/parameterizing_soybean_biocro.Rmd" class="external-link"><code>vignettes/parameterizing_soybean_biocro.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/BioCro/BioCroValidation/blob/main/vignettes/parameterizing_soybean_biocro.Rmd" class="external-link"><code>vignettes/parameterizing_soybean_biocro.Rmd</code></a></small>
       <div class="d-none name"><code>parameterizing_soybean_biocro.Rmd</code></div>
     </div>
 
@@ -209,8 +209,9 @@ standard deviations:</p>
 <p>The <code>BioCro</code> R package includes weather data for the years
 in the <code>soyface_biomass</code> data set. So now we are ready to
 define the data-driver pairs, which includes the weather, the observed
-biomass, the standard deviation of the observed biomass, and the weight
-to assign to each year:</p>
+biomass, the standard deviation of the observed biomass, the atmospheric
+CO2 concentration to use for each year, and the weight to assign to each
+year:</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Define the data-driver pairs</span></span>
 <span><span class="va">data_driver_pairs</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
@@ -218,12 +219,14 @@ to assign to each year:</p>
 <span>    data       <span class="op">=</span> <span class="fu">process_table</span><span class="op">(</span><span class="va">soyface_biomass</span><span class="op">[[</span><span class="st">'ambient_2002'</span><span class="op">]</span><span class="op">]</span>,     <span class="st">'biomass'</span><span class="op">)</span>,</span>
 <span>    data_stdev <span class="op">=</span> <span class="fu">process_table</span><span class="op">(</span><span class="va">soyface_biomass</span><span class="op">[[</span><span class="st">'ambient_2002_std'</span><span class="op">]</span><span class="op">]</span>, <span class="st">'stdev'</span><span class="op">)</span>,</span>
 <span>    drivers    <span class="op">=</span> <span class="fu">BioCro</span><span class="fu">::</span><span class="va"><a href="https://rdrr.io/pkg/BioCro/man/cmi_soybean_weather_data.html" class="external-link">soybean_weather</a></span><span class="op">[[</span><span class="st">'2002'</span><span class="op">]</span><span class="op">]</span>,</span>
+<span>    parameters <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>Catm <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/with.html" class="external-link">with</a></span><span class="op">(</span><span class="fu">BioCro</span><span class="fu">::</span><span class="va"><a href="https://rdrr.io/pkg/BioCro/man/catm_data.html" class="external-link">catm_data</a></span>, <span class="op">{</span><span class="va">Catm</span><span class="op">[</span><span class="va">year</span> <span class="op">==</span> <span class="st">'2002'</span><span class="op">]</span><span class="op">}</span><span class="op">)</span><span class="op">)</span>,</span>
 <span>    weight     <span class="op">=</span> <span class="fl">1</span></span>
 <span>  <span class="op">)</span>,</span>
 <span>  ambient_2005 <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
 <span>    data       <span class="op">=</span> <span class="fu">process_table</span><span class="op">(</span><span class="va">soyface_biomass</span><span class="op">[[</span><span class="st">'ambient_2005'</span><span class="op">]</span><span class="op">]</span>,     <span class="st">'biomass'</span><span class="op">)</span>,</span>
 <span>    data_stdev <span class="op">=</span> <span class="fu">process_table</span><span class="op">(</span><span class="va">soyface_biomass</span><span class="op">[[</span><span class="st">'ambient_2005_std'</span><span class="op">]</span><span class="op">]</span>, <span class="st">'stdev'</span><span class="op">)</span>,</span>
 <span>    drivers    <span class="op">=</span> <span class="fu">BioCro</span><span class="fu">::</span><span class="va"><a href="https://rdrr.io/pkg/BioCro/man/cmi_soybean_weather_data.html" class="external-link">soybean_weather</a></span><span class="op">[[</span><span class="st">'2005'</span><span class="op">]</span><span class="op">]</span>,</span>
+<span>    parameters <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>Catm <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/with.html" class="external-link">with</a></span><span class="op">(</span><span class="fu">BioCro</span><span class="fu">::</span><span class="va"><a href="https://rdrr.io/pkg/BioCro/man/catm_data.html" class="external-link">catm_data</a></span>, <span class="op">{</span><span class="va">Catm</span><span class="op">[</span><span class="va">year</span> <span class="op">==</span> <span class="st">'2005'</span><span class="op">]</span><span class="op">}</span><span class="op">)</span><span class="op">)</span>,</span>
 <span>    weight     <span class="op">=</span> <span class="fl">1</span></span>
 <span>  <span class="op">)</span></span>
 <span><span class="op">)</span></span></code></pre></div>
@@ -457,30 +460,42 @@ the full list of observed values and their corresponding weights.</p>
 <span>  extra_penalty_function <span class="op">=</span> <span class="va">extra_penalty_function</span></span>
 <span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Driver-specific initial values:</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt;   None</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Driver-specific parameters:</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; List of 2</span></span>
+<span><span class="co">#&gt;  $ ambient_2002:List of 1</span></span>
+<span><span class="co">#&gt;   ..$ Catm: num 373</span></span>
+<span><span class="co">#&gt;  $ ambient_2005:List of 1</span></span>
+<span><span class="co">#&gt;   ..$ Catm: num 379</span></span>
+<span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; The independent arguments and their initial values:</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; List of 16</span></span>
-<span><span class="co">#&gt;  $ alphaLeaf    : num 23.9</span></span>
+<span><span class="co">#&gt;  $ alphaLeaf    : num 23.4</span></span>
 <span><span class="co">#&gt;  $ betaLeaf     : num -18.1</span></span>
-<span><span class="co">#&gt;  $ alphaStem    : num 24.8</span></span>
-<span><span class="co">#&gt;  $ betaStem     : num -18.5</span></span>
-<span><span class="co">#&gt;  $ alphaShell   : num 13.6</span></span>
-<span><span class="co">#&gt;  $ betaShell    : num -9.98</span></span>
-<span><span class="co">#&gt;  $ alphaSeneLeaf: num 48.3</span></span>
-<span><span class="co">#&gt;  $ betaSeneLeaf : num -29.5</span></span>
-<span><span class="co">#&gt;  $ rateSeneLeaf : num 0.0122</span></span>
-<span><span class="co">#&gt;  $ alphaSeneStem: num 4.19</span></span>
-<span><span class="co">#&gt;  $ betaSeneStem : num -3.31</span></span>
-<span><span class="co">#&gt;  $ rateSeneStem : num 0.000117</span></span>
-<span><span class="co">#&gt;  $ grc_stem     : num 0.0283</span></span>
-<span><span class="co">#&gt;  $ grc_root     : num 0.0027</span></span>
-<span><span class="co">#&gt;  $ mrc_leaf     : num 0.000488</span></span>
-<span><span class="co">#&gt;  $ mrc_root     : num 1e-05</span></span>
+<span><span class="co">#&gt;  $ alphaStem    : num 22.1</span></span>
+<span><span class="co">#&gt;  $ betaStem     : num -16.2</span></span>
+<span><span class="co">#&gt;  $ alphaShell   : num 11.5</span></span>
+<span><span class="co">#&gt;  $ betaShell    : num -8.48</span></span>
+<span><span class="co">#&gt;  $ alphaSeneLeaf: num 43.8</span></span>
+<span><span class="co">#&gt;  $ betaSeneLeaf : num -26.7</span></span>
+<span><span class="co">#&gt;  $ rateSeneLeaf : num 0.00999</span></span>
+<span><span class="co">#&gt;  $ alphaSeneStem: num 10.9</span></span>
+<span><span class="co">#&gt;  $ betaSeneStem : num -4.61</span></span>
+<span><span class="co">#&gt;  $ rateSeneStem : num 0.00216</span></span>
+<span><span class="co">#&gt;  $ grc_stem     : num 0.0191</span></span>
+<span><span class="co">#&gt;  $ grc_root     : num 0.0025</span></span>
+<span><span class="co">#&gt;  $ mrc_leaf     : num 0.000297</span></span>
+<span><span class="co">#&gt;  $ mrc_root     : num 1e-06</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; The dependent arguments and their initial values:</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; List of 1</span></span>
-<span><span class="co">#&gt;  $ mrc_stem: num 0.000488</span></span>
+<span><span class="co">#&gt;  $ mrc_stem: num 0.000297</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; The full data definitions:</span></span>
 <span><span class="co">#&gt; </span></span>
@@ -491,6 +506,10 @@ the full list of observed values and their corresponding weights.</p>
 <span><span class="co">#&gt;  $ CumLitter_Mg_per_ha: chr "TotalLitter"</span></span>
 <span><span class="co">#&gt;  $ Shell_Mg_per_ha    : chr "Shell"</span></span>
 <span><span class="co">#&gt;  $ Root_Mg_per_ha     : chr "Root"</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Normalization method: MEAN_MAX with eps = 0.1 </span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Standard-deviation-based weight method: LOGARITHM with eps = 1e-05 </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; The user-supplied data in long form:</span></span>
 <span><span class="co">#&gt; </span></span>
@@ -538,47 +557,47 @@ the full list of observed values and their corresponding weights.</p>
 <span><span class="co">#&gt; 40 6888         Shell   1.5955818021   0.1827578015       3265          3288</span></span>
 <span><span class="co">#&gt; 45 5520          Root   1.1981988188   0.3678694412       1897          3288</span></span>
 <span><span class="co">#&gt;          norm      w_var</span></span>
-<span><span class="co">#&gt; 1   52.286943  3.1984472</span></span>
-<span><span class="co">#&gt; 2   52.286943  1.8086619</span></span>
-<span><span class="co">#&gt; 3   52.286943  2.0115255</span></span>
-<span><span class="co">#&gt; 4   52.286943  1.4769342</span></span>
-<span><span class="co">#&gt; 5   52.286943  1.5970874</span></span>
-<span><span class="co">#&gt; 6   52.286943  2.5838191</span></span>
-<span><span class="co">#&gt; 7   52.286943  1.0654869</span></span>
-<span><span class="co">#&gt; 8   52.286943 11.5129255</span></span>
-<span><span class="co">#&gt; 9  224.431645  4.0692772</span></span>
-<span><span class="co">#&gt; 10 224.431645  1.9771808</span></span>
-<span><span class="co">#&gt; 11 224.431645  1.6943383</span></span>
-<span><span class="co">#&gt; 12 224.431645  0.8012803</span></span>
-<span><span class="co">#&gt; 13 224.431645  0.7908538</span></span>
-<span><span class="co">#&gt; 14 224.431645  1.2897800</span></span>
-<span><span class="co">#&gt; 15 224.431645  1.8901088</span></span>
-<span><span class="co">#&gt; 16 224.431645  1.9078489</span></span>
-<span><span class="co">#&gt; 17 468.875938 11.5129255</span></span>
-<span><span class="co">#&gt; 18 468.875938 11.5129255</span></span>
-<span><span class="co">#&gt; 19 468.875938 11.5129255</span></span>
-<span><span class="co">#&gt; 20 468.875938 11.5129255</span></span>
-<span><span class="co">#&gt; 21 468.875938 11.5129255</span></span>
-<span><span class="co">#&gt; 22 468.875938  1.0049352</span></span>
-<span><span class="co">#&gt; 23 468.875938  0.6646928</span></span>
-<span><span class="co">#&gt; 24 468.875938  2.1604709</span></span>
-<span><span class="co">#&gt; 25 106.764827 11.5129255</span></span>
-<span><span class="co">#&gt; 26 106.764827 11.5129255</span></span>
-<span><span class="co">#&gt; 27 106.764827 11.5129255</span></span>
-<span><span class="co">#&gt; 28 106.764827 11.5129255</span></span>
-<span><span class="co">#&gt; 29 106.764827  3.0872287</span></span>
-<span><span class="co">#&gt; 30 106.764827  2.6930715</span></span>
-<span><span class="co">#&gt; 31 106.764827  3.4400717</span></span>
-<span><span class="co">#&gt; 32 106.764827  1.3173673</span></span>
-<span><span class="co">#&gt; 33  46.118035 11.5129255</span></span>
-<span><span class="co">#&gt; 34  46.118035 11.5129255</span></span>
-<span><span class="co">#&gt; 35  46.118035  7.4887956</span></span>
-<span><span class="co">#&gt; 36  46.118035  3.4737681</span></span>
-<span><span class="co">#&gt; 37  46.118035  1.5213696</span></span>
-<span><span class="co">#&gt; 38  46.118035  0.3850459</span></span>
-<span><span class="co">#&gt; 39  46.118035  0.1008429</span></span>
-<span><span class="co">#&gt; 40  46.118035  1.6995388</span></span>
-<span><span class="co">#&gt; 45   2.871361  1.0000000</span></span>
+<span><span class="co">#&gt; 1   53.886943  3.1984472</span></span>
+<span><span class="co">#&gt; 2   53.886943  1.8086619</span></span>
+<span><span class="co">#&gt; 3   53.886943  2.0115255</span></span>
+<span><span class="co">#&gt; 4   53.886943  1.4769342</span></span>
+<span><span class="co">#&gt; 5   53.886943  1.5970874</span></span>
+<span><span class="co">#&gt; 6   53.886943  2.5838191</span></span>
+<span><span class="co">#&gt; 7   53.886943  1.0654869</span></span>
+<span><span class="co">#&gt; 8   53.886943 11.5129255</span></span>
+<span><span class="co">#&gt; 9  226.031645  4.0692772</span></span>
+<span><span class="co">#&gt; 10 226.031645  1.9771808</span></span>
+<span><span class="co">#&gt; 11 226.031645  1.6943383</span></span>
+<span><span class="co">#&gt; 12 226.031645  0.8012803</span></span>
+<span><span class="co">#&gt; 13 226.031645  0.7908538</span></span>
+<span><span class="co">#&gt; 14 226.031645  1.2897800</span></span>
+<span><span class="co">#&gt; 15 226.031645  1.8901088</span></span>
+<span><span class="co">#&gt; 16 226.031645  1.9078489</span></span>
+<span><span class="co">#&gt; 17 470.475938 11.5129255</span></span>
+<span><span class="co">#&gt; 18 470.475938 11.5129255</span></span>
+<span><span class="co">#&gt; 19 470.475938 11.5129255</span></span>
+<span><span class="co">#&gt; 20 470.475938 11.5129255</span></span>
+<span><span class="co">#&gt; 21 470.475938 11.5129255</span></span>
+<span><span class="co">#&gt; 22 470.475938  1.0049352</span></span>
+<span><span class="co">#&gt; 23 470.475938  0.6646928</span></span>
+<span><span class="co">#&gt; 24 470.475938  2.1604709</span></span>
+<span><span class="co">#&gt; 25 108.364827 11.5129255</span></span>
+<span><span class="co">#&gt; 26 108.364827 11.5129255</span></span>
+<span><span class="co">#&gt; 27 108.364827 11.5129255</span></span>
+<span><span class="co">#&gt; 28 108.364827 11.5129255</span></span>
+<span><span class="co">#&gt; 29 108.364827  3.0872287</span></span>
+<span><span class="co">#&gt; 30 108.364827  2.6930715</span></span>
+<span><span class="co">#&gt; 31 108.364827  3.4400717</span></span>
+<span><span class="co">#&gt; 32 108.364827  1.3173673</span></span>
+<span><span class="co">#&gt; 33  47.718035 11.5129255</span></span>
+<span><span class="co">#&gt; 34  47.718035 11.5129255</span></span>
+<span><span class="co">#&gt; 35  47.718035  7.4887956</span></span>
+<span><span class="co">#&gt; 36  47.718035  3.4737681</span></span>
+<span><span class="co">#&gt; 37  47.718035  1.5213696</span></span>
+<span><span class="co">#&gt; 38  47.718035  0.3850459</span></span>
+<span><span class="co">#&gt; 39  47.718035  0.1008429</span></span>
+<span><span class="co">#&gt; 40  47.718035  1.6995388</span></span>
+<span><span class="co">#&gt; 45   3.071361  1.0000000</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $ambient_2005</span></span>
 <span><span class="co">#&gt;    time quantity_name quantity_value quantity_stdev time_index expected_npts</span></span>
@@ -624,47 +643,47 @@ the full list of observed values and their corresponding weights.</p>
 <span><span class="co">#&gt; 40 6456         Shell     1.40660625     0.81122149       2929          2952</span></span>
 <span><span class="co">#&gt; 45 5448          Root     1.51805325     0.36786944       1921          2952</span></span>
 <span><span class="co">#&gt;          norm      w_var</span></span>
-<span><span class="co">#&gt; 1   78.716598  3.4140824</span></span>
-<span><span class="co">#&gt; 2   78.716598  1.9186276</span></span>
-<span><span class="co">#&gt; 3   78.716598  1.0844600</span></span>
-<span><span class="co">#&gt; 4   78.716598  1.8826524</span></span>
-<span><span class="co">#&gt; 5   78.716598  2.1278960</span></span>
-<span><span class="co">#&gt; 6   78.716598  0.6678329</span></span>
-<span><span class="co">#&gt; 7   78.716598  2.7855322</span></span>
-<span><span class="co">#&gt; 8   78.716598 11.5129255</span></span>
-<span><span class="co">#&gt; 9  320.800339  4.2455301</span></span>
-<span><span class="co">#&gt; 10 320.800339  1.6152545</span></span>
-<span><span class="co">#&gt; 11 320.800339  0.5020373</span></span>
-<span><span class="co">#&gt; 12 320.800339  0.5800256</span></span>
-<span><span class="co">#&gt; 13 320.800339  1.1817071</span></span>
-<span><span class="co">#&gt; 14 320.800339  0.9699065</span></span>
-<span><span class="co">#&gt; 15 320.800339  1.5103441</span></span>
-<span><span class="co">#&gt; 16 320.800339  1.4136050</span></span>
-<span><span class="co">#&gt; 17 394.522382 11.5129255</span></span>
-<span><span class="co">#&gt; 18 394.522382 11.5129255</span></span>
-<span><span class="co">#&gt; 19 394.522382 11.5129255</span></span>
-<span><span class="co">#&gt; 20 394.522382 11.5129255</span></span>
-<span><span class="co">#&gt; 21 394.522382 11.5129255</span></span>
-<span><span class="co">#&gt; 22 394.522382  1.0737496</span></span>
-<span><span class="co">#&gt; 23 394.522382  0.9188772</span></span>
-<span><span class="co">#&gt; 24 394.522382  0.6787827</span></span>
-<span><span class="co">#&gt; 25  21.102539 11.5129255</span></span>
-<span><span class="co">#&gt; 26  21.102539 11.5129255</span></span>
-<span><span class="co">#&gt; 27  21.102539 11.5129255</span></span>
-<span><span class="co">#&gt; 28  21.102539  2.7532810</span></span>
-<span><span class="co">#&gt; 29  21.102539  2.8778272</span></span>
-<span><span class="co">#&gt; 30  21.102539  2.6124734</span></span>
-<span><span class="co">#&gt; 31  21.102539  1.5409076</span></span>
-<span><span class="co">#&gt; 32  21.102539  1.4012965</span></span>
-<span><span class="co">#&gt; 33 100.824693 11.5129255</span></span>
-<span><span class="co">#&gt; 34 100.824693 11.5129255</span></span>
-<span><span class="co">#&gt; 35 100.824693 11.5129255</span></span>
-<span><span class="co">#&gt; 36 100.824693  1.8061514</span></span>
-<span><span class="co">#&gt; 37 100.824693  0.8343466</span></span>
-<span><span class="co">#&gt; 38 100.824693  0.3849194</span></span>
-<span><span class="co">#&gt; 39 100.824693  0.4224204</span></span>
-<span><span class="co">#&gt; 40 100.824693  0.2092018</span></span>
-<span><span class="co">#&gt; 45   4.608971  1.0000000</span></span>
+<span><span class="co">#&gt; 1   80.316598  3.4140824</span></span>
+<span><span class="co">#&gt; 2   80.316598  1.9186276</span></span>
+<span><span class="co">#&gt; 3   80.316598  1.0844600</span></span>
+<span><span class="co">#&gt; 4   80.316598  1.8826524</span></span>
+<span><span class="co">#&gt; 5   80.316598  2.1278960</span></span>
+<span><span class="co">#&gt; 6   80.316598  0.6678329</span></span>
+<span><span class="co">#&gt; 7   80.316598  2.7855322</span></span>
+<span><span class="co">#&gt; 8   80.316598 11.5129255</span></span>
+<span><span class="co">#&gt; 9  322.400339  4.2455301</span></span>
+<span><span class="co">#&gt; 10 322.400339  1.6152545</span></span>
+<span><span class="co">#&gt; 11 322.400339  0.5020373</span></span>
+<span><span class="co">#&gt; 12 322.400339  0.5800256</span></span>
+<span><span class="co">#&gt; 13 322.400339  1.1817071</span></span>
+<span><span class="co">#&gt; 14 322.400339  0.9699065</span></span>
+<span><span class="co">#&gt; 15 322.400339  1.5103441</span></span>
+<span><span class="co">#&gt; 16 322.400339  1.4136050</span></span>
+<span><span class="co">#&gt; 17 396.122382 11.5129255</span></span>
+<span><span class="co">#&gt; 18 396.122382 11.5129255</span></span>
+<span><span class="co">#&gt; 19 396.122382 11.5129255</span></span>
+<span><span class="co">#&gt; 20 396.122382 11.5129255</span></span>
+<span><span class="co">#&gt; 21 396.122382 11.5129255</span></span>
+<span><span class="co">#&gt; 22 396.122382  1.0737496</span></span>
+<span><span class="co">#&gt; 23 396.122382  0.9188772</span></span>
+<span><span class="co">#&gt; 24 396.122382  0.6787827</span></span>
+<span><span class="co">#&gt; 25  22.702539 11.5129255</span></span>
+<span><span class="co">#&gt; 26  22.702539 11.5129255</span></span>
+<span><span class="co">#&gt; 27  22.702539 11.5129255</span></span>
+<span><span class="co">#&gt; 28  22.702539  2.7532810</span></span>
+<span><span class="co">#&gt; 29  22.702539  2.8778272</span></span>
+<span><span class="co">#&gt; 30  22.702539  2.6124734</span></span>
+<span><span class="co">#&gt; 31  22.702539  1.5409076</span></span>
+<span><span class="co">#&gt; 32  22.702539  1.4012965</span></span>
+<span><span class="co">#&gt; 33 102.424693 11.5129255</span></span>
+<span><span class="co">#&gt; 34 102.424693 11.5129255</span></span>
+<span><span class="co">#&gt; 35 102.424693 11.5129255</span></span>
+<span><span class="co">#&gt; 36 102.424693  1.8061514</span></span>
+<span><span class="co">#&gt; 37 102.424693  0.8343466</span></span>
+<span><span class="co">#&gt; 38 102.424693  0.3849194</span></span>
+<span><span class="co">#&gt; 39 102.424693  0.4224204</span></span>
+<span><span class="co">#&gt; 40 102.424693  0.2092018</span></span>
+<span><span class="co">#&gt; 45   4.808971  1.0000000</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; The user-supplied quantity weights:</span></span>
 <span><span class="co">#&gt; </span></span>
@@ -682,33 +701,81 @@ the full list of observed values and their corresponding weights.</p>
 <span><span class="co">#&gt;  $ ambient_2002: num 1</span></span>
 <span><span class="co">#&gt;  $ ambient_2005: num 1</span></span>
 <span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Regularization method: NONE</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Dependent argument function: user-supplied function:</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; function (ind_args) </span></span>
+<span><span class="co">#&gt; {</span></span>
+<span><span class="co">#&gt;     list(mrc_stem = ind_args[["mrc_leaf"]])</span></span>
+<span><span class="co">#&gt; }</span></span>
+<span><span class="co">#&gt; &lt;bytecode: 0x565251785a78&gt;</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Post-processing function: user-supplied function:</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; function (sim_res) </span></span>
+<span><span class="co">#&gt; {</span></span>
+<span><span class="co">#&gt;     within(sim_res, {</span></span>
+<span><span class="co">#&gt;         TotalLitter = LeafLitter + StemLitter</span></span>
+<span><span class="co">#&gt;     })</span></span>
+<span><span class="co">#&gt; }</span></span>
+<span><span class="co">#&gt; &lt;bytecode: 0x565250327100&gt;</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Extra penalty function: user-supplied function:</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; function (sim_res) </span></span>
+<span><span class="co">#&gt; {</span></span>
+<span><span class="co">#&gt;     PENALTY &lt;- 9999</span></span>
+<span><span class="co">#&gt;     k_thresh &lt;- 0.01</span></span>
+<span><span class="co">#&gt;     hpd &lt;- 24</span></span>
+<span><span class="co">#&gt;     time &lt;- sim_res[["time"]]</span></span>
+<span><span class="co">#&gt;     time_grain &lt;- time[sim_res[["kGrain"]] &gt; k_thresh][1]</span></span>
+<span><span class="co">#&gt;     time_leaf &lt;- time[sim_res[["kLeaf"]] &gt; k_thresh][1]</span></span>
+<span><span class="co">#&gt;     time_shell &lt;- time[sim_res[["kShell"]] &gt; k_thresh][1]</span></span>
+<span><span class="co">#&gt;     time_stem &lt;- time[sim_res[["kStem"]] &gt; k_thresh][1]</span></span>
+<span><span class="co">#&gt;     if (is.na(time_grain) | is.na(time_leaf) | is.na(time_shell) | </span></span>
+<span><span class="co">#&gt;         is.na(time_stem)) {</span></span>
+<span><span class="co">#&gt;         return(PENALTY)</span></span>
+<span><span class="co">#&gt;     }</span></span>
+<span><span class="co">#&gt;     else if (abs(time_leaf - time_stem) &gt; 5 * hpd) {</span></span>
+<span><span class="co">#&gt;         return(PENALTY)</span></span>
+<span><span class="co">#&gt;     }</span></span>
+<span><span class="co">#&gt;     else if (time_leaf - time[1] &gt; 20 * hpd | time_leaf - time[1] &lt; </span></span>
+<span><span class="co">#&gt;         10 * hpd) {</span></span>
+<span><span class="co">#&gt;         return(PENALTY)</span></span>
+<span><span class="co">#&gt;     }</span></span>
+<span><span class="co">#&gt;     else {</span></span>
+<span><span class="co">#&gt;         return(0)</span></span>
+<span><span class="co">#&gt;     }</span></span>
+<span><span class="co">#&gt; }</span></span>
+<span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; The initial error metric terms:</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; List of 2</span></span>
 <span><span class="co">#&gt;  $ terms_from_data_driver_pairs:List of 2</span></span>
 <span><span class="co">#&gt;   ..$ ambient_2002:List of 2</span></span>
 <span><span class="co">#&gt;   .. ..$ least_squares_terms:List of 6</span></span>
-<span><span class="co">#&gt;   .. .. ..$ Grain      : num 0.00371</span></span>
-<span><span class="co">#&gt;   .. .. ..$ Leaf       : num 0.0214</span></span>
-<span><span class="co">#&gt;   .. .. ..$ Root       : num 0.00353</span></span>
-<span><span class="co">#&gt;   .. .. ..$ Shell      : num 0.0115</span></span>
-<span><span class="co">#&gt;   .. .. ..$ Stem       : num 0.0119</span></span>
-<span><span class="co">#&gt;   .. .. ..$ TotalLitter: num 0.00264</span></span>
+<span><span class="co">#&gt;   .. .. ..$ Grain      : num 0.00399</span></span>
+<span><span class="co">#&gt;   .. .. ..$ Leaf       : num 0.0161</span></span>
+<span><span class="co">#&gt;   .. .. ..$ Root       : num 0.00161</span></span>
+<span><span class="co">#&gt;   .. .. ..$ Shell      : num 0.0107</span></span>
+<span><span class="co">#&gt;   .. .. ..$ Stem       : num 0.00458</span></span>
+<span><span class="co">#&gt;   .. .. ..$ TotalLitter: num 0.00199</span></span>
 <span><span class="co">#&gt;   .. ..$ extra_penalty      : num 0</span></span>
 <span><span class="co">#&gt;   ..$ ambient_2005:List of 2</span></span>
 <span><span class="co">#&gt;   .. ..$ least_squares_terms:List of 6</span></span>
-<span><span class="co">#&gt;   .. .. ..$ Grain      : num 0.00744</span></span>
-<span><span class="co">#&gt;   .. .. ..$ Leaf       : num 0.00742</span></span>
-<span><span class="co">#&gt;   .. .. ..$ Root       : num 0.0053</span></span>
-<span><span class="co">#&gt;   .. .. ..$ Shell      : num 0.0118</span></span>
-<span><span class="co">#&gt;   .. .. ..$ Stem       : num 0.00345</span></span>
-<span><span class="co">#&gt;   .. .. ..$ TotalLitter: num 0.000304</span></span>
+<span><span class="co">#&gt;   .. .. ..$ Grain      : num 0.00773</span></span>
+<span><span class="co">#&gt;   .. .. ..$ Leaf       : num 0.0085</span></span>
+<span><span class="co">#&gt;   .. .. ..$ Root       : num 0.00236</span></span>
+<span><span class="co">#&gt;   .. .. ..$ Shell      : num 0.0133</span></span>
+<span><span class="co">#&gt;   .. .. ..$ Stem       : num 0.0072</span></span>
+<span><span class="co">#&gt;   .. .. ..$ TotalLitter: num 0.00106</span></span>
 <span><span class="co">#&gt;   .. ..$ extra_penalty      : num 0</span></span>
 <span><span class="co">#&gt;  $ regularization_penalty      : num 0</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; The initial error metric value:</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; [1] 0.09029496</span></span></code></pre></div>
+<span><span class="co">#&gt; [1] 0.07914579</span></span></code></pre></div>
 </div>
 </div>
 <div class="section level2">
@@ -724,7 +791,7 @@ Soybean-BioCro values:</p>
 <div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Evaluate the error function with default Soybean-BioCro parameters</span></span>
 <span><span class="va">default_error</span> <span class="op">&lt;-</span> <span class="fu">obj_fun</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">as.numeric</a></span><span class="op">(</span><span class="va">independent_args</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<p>This evaluates to 0.090295. This is a low value for a Soybean-BioCro
+<p>This evaluates to 0.0791458. This is a low value for a Soybean-BioCro
 parameterization, indicating that good agreement has already been
 found.</p>
 <p>Here, as an example, we will intentionally change each parameter
@@ -760,7 +827,7 @@ a substantial change in the value of the error metric:</p>
 <div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Evaluate the error function with default Soybean-BioCro parameters</span></span>
 <span><span class="va">initial_error</span> <span class="op">&lt;-</span> <span class="fu">obj_fun</span><span class="op">(</span><span class="va">initial_guess</span><span class="op">)</span></span></code></pre></div>
-<p>This evaluates to 0.1847518, which is about 51 percent larger than
+<p>This evaluates to 0.1693466, which is about 53 percent larger than
 with the default parameter values.</p>
 </div>
 <div class="section level3">
@@ -822,7 +889,10 @@ information about this function, see its help page by typing
 <span>    grc_root      <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.0025</span>, <span class="fl">0.075</span><span class="op">)</span></span>
 <span>  <span class="op">)</span>,</span>
 <span>  <span class="va">initial_guess</span></span>
-<span><span class="op">)</span></span></code></pre></div>
+<span><span class="op">)</span></span>
+<span><span class="co">#&gt; Warning in check_initial_ind_arg_values(independent_args, lbounds, ubounds, :</span></span>
+<span><span class="co">#&gt; The initial values for the following arguments lie on the bounds, which can be</span></span>
+<span><span class="co">#&gt; problematic for some optimizers: mrc_root</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="running-the-optimizer">Running the Optimizer<a class="anchor" aria-label="anchor" href="#running-the-optimizer"></a>
@@ -847,13 +917,13 @@ loose tolerance; a more realistic example would probably use
 <span>    tol <span class="op">=</span> <span class="fl">1e-2</span>,</span>
 <span>    restarts.max <span class="op">=</span> <span class="fl">10</span></span>
 <span>  <span class="op">)</span>,</span>
-<span>  debug_mode <span class="op">=</span> <span class="cn">FALSE</span> <span class="co"># Passed to obj_fun; set to TRUE to enable debug mode</span></span>
+<span>  debug_mode <span class="op">=</span> <span class="st">'minimal'</span> <span class="co"># Passed to obj_fun</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 <p>When this document was generated, running the optimizer required the
 following amount of time:</p>
 <pre><code><span><span class="co">#&gt;    user  system elapsed </span></span>
-<span><span class="co">#&gt;  82.471   0.298  82.778</span></span></code></pre>
-<p>The total time was about 1.38 minutes. For a real parameterization
+<span><span class="co">#&gt;  84.169   0.536  84.713</span></span></code></pre>
+<p>The total time was about 1.41 minutes. For a real parameterization
 problem, it can be many times longer, and may even need days to run on a
 personal laptop computer.</p>
 <p>The optimizer also reports how many times the objective function was
@@ -861,14 +931,14 @@ called, among other details:</p>
 <div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/str.html" class="external-link">str</a></span><span class="op">(</span><span class="va">optim_res</span><span class="op">)</span></span>
 <span><span class="co">#&gt; List of 6</span></span>
-<span><span class="co">#&gt;  $ par        : num [1:16] 23.9 -18.2 24.8 -18.4 13.5 ...</span></span>
-<span><span class="co">#&gt;  $ value      : num 0.0921</span></span>
-<span><span class="co">#&gt;  $ feval      : num 207</span></span>
-<span><span class="co">#&gt;  $ restarts   : num 5</span></span>
+<span><span class="co">#&gt;  $ par        : num [1:16] 23.1 -18 22.1 -16.3 11.7 ...</span></span>
+<span><span class="co">#&gt;  $ value      : num 0.0846</span></span>
+<span><span class="co">#&gt;  $ feval      : num 213</span></span>
+<span><span class="co">#&gt;  $ restarts   : num 6</span></span>
 <span><span class="co">#&gt;  $ convergence: num 0</span></span>
 <span><span class="co">#&gt;  $ message    : chr "Successful convergence"</span></span></code></pre></div>
-<p>The value of <code>feval</code> is 207, so on average, each call of
-the objective function required approximately 0.4 seconds.</p>
+<p>The value of <code>feval</code> is 213, so on average, each call of
+the objective function required approximately 0.398 seconds.</p>
 </div>
 <div class="section level3">
 <h3 id="comparing-parameter-values">Comparing Parameter Values<a class="anchor" aria-label="anchor" href="#comparing-parameter-values"></a>
@@ -894,48 +964,48 @@ parameters than the initial guess was.</p>
 <span></span>
 <span><span class="co"># View results</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">ind_arg_table</span><span class="op">)</span></span>
-<span><span class="co">#&gt;         arg_name     defaults initial_guess     optimized improved</span></span>
-<span><span class="co">#&gt; 1      alphaLeaf  23.88950000  2.352036e+01  2.386565e+01     TRUE</span></span>
-<span><span class="co">#&gt; 2       betaLeaf -18.08510000 -1.817357e+01 -1.817064e+01     TRUE</span></span>
-<span><span class="co">#&gt; 3      alphaStem  24.82480000  2.493331e+01  2.479432e+01     TRUE</span></span>
-<span><span class="co">#&gt; 4       betaStem -18.52140000 -1.861281e+01 -1.844565e+01     TRUE</span></span>
-<span><span class="co">#&gt; 5     alphaShell  13.59550000  1.379177e+01  1.347693e+01     TRUE</span></span>
-<span><span class="co">#&gt; 6      betaShell  -9.98090000 -1.003692e+01 -1.000498e+01     TRUE</span></span>
-<span><span class="co">#&gt; 7  alphaSeneLeaf  48.32000000  4.737195e+01  4.986793e+01    FALSE</span></span>
-<span><span class="co">#&gt; 8   betaSeneLeaf -29.53930000 -2.922329e+01 -3.023728e+01    FALSE</span></span>
-<span><span class="co">#&gt; 9   rateSeneLeaf   0.01219800  1.227904e-02  1.244641e-02    FALSE</span></span>
-<span><span class="co">#&gt; 10 alphaSeneStem   4.19370000  4.196091e+00  3.889660e+00    FALSE</span></span>
-<span><span class="co">#&gt; 11  betaSeneStem  -3.31240000 -3.338050e+00 -3.387799e+00    FALSE</span></span>
-<span><span class="co">#&gt; 12  rateSeneStem   0.00011700  1.172105e-04  1.274687e-04    FALSE</span></span>
-<span><span class="co">#&gt; 13      grc_stem   0.02828000  2.803423e-02  2.844730e-02     TRUE</span></span>
-<span><span class="co">#&gt; 14      grc_root   0.00270000  2.745731e-03  2.763255e-03    FALSE</span></span>
-<span><span class="co">#&gt; 15      mrc_leaf   0.00048836  4.843030e-04  5.059738e-04    FALSE</span></span>
-<span><span class="co">#&gt; 16      mrc_root   0.00001000  1.013492e-05  1.072817e-05    FALSE</span></span>
+<span><span class="co">#&gt;         arg_name      defaults initial_guess     optimized improved</span></span>
+<span><span class="co">#&gt; 1      alphaLeaf  2.336771e+01  2.300664e+01  2.313261e+01     TRUE</span></span>
+<span><span class="co">#&gt; 2       betaLeaf -1.811013e+01 -1.819873e+01 -1.803507e+01     TRUE</span></span>
+<span><span class="co">#&gt; 3      alphaStem  2.212677e+01  2.222348e+01  2.212825e+01     TRUE</span></span>
+<span><span class="co">#&gt; 4       betaStem -1.623396e+01 -1.631408e+01 -1.630942e+01     TRUE</span></span>
+<span><span class="co">#&gt; 5     alphaShell  1.154516e+01  1.171184e+01  1.174041e+01    FALSE</span></span>
+<span><span class="co">#&gt; 6      betaShell -8.483182e+00 -8.530793e+00 -8.623054e+00    FALSE</span></span>
+<span><span class="co">#&gt; 7  alphaSeneLeaf  4.378558e+01  4.292650e+01  4.323630e+01     TRUE</span></span>
+<span><span class="co">#&gt; 8   betaSeneLeaf -2.667708e+01 -2.639169e+01 -2.620157e+01    FALSE</span></span>
+<span><span class="co">#&gt; 9   rateSeneLeaf  9.993127e-03  1.005952e-02  1.004241e-02     TRUE</span></span>
+<span><span class="co">#&gt; 10 alphaSeneStem  1.087963e+01  1.088584e+01  1.121641e+01    FALSE</span></span>
+<span><span class="co">#&gt; 11  betaSeneStem -4.610499e+00 -4.646201e+00 -4.482413e+00    FALSE</span></span>
+<span><span class="co">#&gt; 12  rateSeneStem  2.156899e-03  2.160779e-03  4.893131e-03    FALSE</span></span>
+<span><span class="co">#&gt; 13      grc_stem  1.907754e-02  1.891175e-02  2.780576e-02    FALSE</span></span>
+<span><span class="co">#&gt; 14      grc_root  2.500525e-03  2.542878e-03  2.544986e-03    FALSE</span></span>
+<span><span class="co">#&gt; 15      mrc_leaf  2.971390e-04  2.946706e-04  2.842385e-04    FALSE</span></span>
+<span><span class="co">#&gt; 16      mrc_root  1.000173e-06  1.013667e-06  1.014087e-06    FALSE</span></span>
 <span><span class="co">#&gt;    optimized_diff initial_diff</span></span>
-<span><span class="co">#&gt; 1    2.385246e-02 3.691373e-01</span></span>
-<span><span class="co">#&gt; 2    8.554244e-02 8.847188e-02</span></span>
-<span><span class="co">#&gt; 3    3.048061e-02 1.085089e-01</span></span>
-<span><span class="co">#&gt; 4    7.574948e-02 9.140640e-02</span></span>
-<span><span class="co">#&gt; 5    1.185710e-01 1.962730e-01</span></span>
-<span><span class="co">#&gt; 6    2.408361e-02 5.601704e-02</span></span>
-<span><span class="co">#&gt; 7    1.547928e+00 9.480466e-01</span></span>
-<span><span class="co">#&gt; 8    6.979834e-01 3.160108e-01</span></span>
-<span><span class="co">#&gt; 9    2.484111e-04 8.103559e-05</span></span>
-<span><span class="co">#&gt; 10   3.040402e-01 2.390600e-03</span></span>
-<span><span class="co">#&gt; 11   7.539867e-02 2.565007e-02</span></span>
-<span><span class="co">#&gt; 12   1.046873e-05 2.104822e-07</span></span>
-<span><span class="co">#&gt; 13   1.673041e-04 2.457718e-04</span></span>
-<span><span class="co">#&gt; 14   6.325510e-05 4.573082e-05</span></span>
-<span><span class="co">#&gt; 15   1.761377e-05 4.056985e-06</span></span>
-<span><span class="co">#&gt; 16   7.281688e-07 1.349183e-07</span></span></code></pre></div>
+<span><span class="co">#&gt; 1    2.351061e-01 3.610747e-01</span></span>
+<span><span class="co">#&gt; 2    7.506421e-02 8.859433e-02</span></span>
+<span><span class="co">#&gt; 3    1.481907e-03 9.671587e-02</span></span>
+<span><span class="co">#&gt; 4    7.545746e-02 8.011748e-02</span></span>
+<span><span class="co">#&gt; 5    1.952510e-01 1.666731e-01</span></span>
+<span><span class="co">#&gt; 6    1.398727e-01 4.761121e-02</span></span>
+<span><span class="co">#&gt; 7    5.492863e-01 8.590806e-01</span></span>
+<span><span class="co">#&gt; 8    4.755047e-01 2.853908e-01</span></span>
+<span><span class="co">#&gt; 9    4.928179e-05 6.638785e-05</span></span>
+<span><span class="co">#&gt; 10   3.367742e-01 6.201888e-03</span></span>
+<span><span class="co">#&gt; 11   1.280857e-01 3.570210e-02</span></span>
+<span><span class="co">#&gt; 12   2.736232e-03 3.880247e-06</span></span>
+<span><span class="co">#&gt; 13   8.728214e-03 1.657964e-04</span></span>
+<span><span class="co">#&gt; 14   4.446047e-05 4.235225e-05</span></span>
+<span><span class="co">#&gt; 15   1.290047e-05 2.468443e-06</span></span>
+<span><span class="co">#&gt; 16   1.391354e-08 1.349416e-08</span></span></code></pre></div>
 <p>In this table, when the <code>improved</code> column is
 <code>TRUE</code>, this means that the optimized parameter value is
 closer to the default value than the initial guess was; in other words,
 it means that the optimizer truly improved on the initial guess. In this
-example, 7 out of 16 parameter estimates were improved (44 percent).</p>
+example, 6 out of 16 parameter estimates were improved (38 percent).</p>
 <p>We can also compare the error metric to its original value. As shown
-above, it is now 0.0920539, which is only 1.9 percent larger than with
-the default parameter values.</p>
+above, it is now 0.0846026, which is 6.4 percent larger than with the
+default parameter values.</p>
 <p>The optimized parameter values could likely be improved by using a
 more stringent tolerance for the optimizer, but this would require more
 time to run.</p>
@@ -972,13 +1042,13 @@ be accomplished using the <code>update_model</code> function from
 parameters, such as the “dependent” argument <code>mrc_stem</code>:</p>
 <div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fu">BioCro</span><span class="fu">::</span><span class="va"><a href="https://rdrr.io/pkg/BioCro/man/soybean.html" class="external-link">soybean</a></span><span class="op">$</span><span class="va">parameters</span><span class="op">$</span><span class="va">mrc_stem</span><span class="op">)</span></span>
-<span><span class="co">#&gt; [1] 0.00048836</span></span>
+<span><span class="co">#&gt; [1] 0.000297139</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">soybean_perturbed</span><span class="op">$</span><span class="va">parameters</span><span class="op">$</span><span class="va">mrc_stem</span><span class="op">)</span></span>
-<span><span class="co">#&gt; [1] 0.000484303</span></span>
+<span><span class="co">#&gt; [1] 0.0002946706</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">soybean_reparam</span><span class="op">$</span><span class="va">parameters</span><span class="op">$</span><span class="va">mrc_stem</span><span class="op">)</span></span>
-<span><span class="co">#&gt; [1] 0.0005059738</span></span></code></pre></div>
+<span><span class="co">#&gt; [1] 0.0002842385</span></span></code></pre></div>
 <p>Now we can run each version of the model for a single year and
 visually compare their outputs:</p>
 <div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
@@ -1011,7 +1081,7 @@ visually compare their outputs:</p>
 <span>  xlab <span class="op">=</span> <span class="st">'Day of year (2005)'</span>,</span>
 <span>  ylab <span class="op">=</span> <span class="st">'Biomass (Mg / ha)'</span></span>
 <span><span class="op">)</span></span></code></pre></div>
-<p><img src="parameterizing_soybean_biocro_files/figure-html/comparison_plots-1.png" width="720" style="display: block; margin: auto;"></p>
+<p><img src="parameterizing_soybean_biocro_files/figure-html/comparison_plots-1.png" class="r-plt" alt="" width="720" style="display: block; margin: auto;"></p>
 <p>Here we can see that while the simulated values for some tissues do
 not differ much between the models, there are large differences in other
 tissues; for these cases, the default and re-optimized versions are
@@ -1048,196 +1118,205 @@ model:</p>
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/writeLines.html" class="external-link">writeLines</a></span><span class="op">(</span><span class="va">r_cmd_string</span><span class="op">)</span></span>
 <span><span class="co">#&gt; soybean_reparam &lt;- list(</span></span>
 <span><span class="co">#&gt;     direct_modules = list(</span></span>
-<span><span class="co">#&gt;         "BioCro:format_time",</span></span>
-<span><span class="co">#&gt;         "BioCro:stomata_water_stress_linear",</span></span>
-<span><span class="co">#&gt;         "BioCro:sla_linear",</span></span>
+<span><span class="co">#&gt;         "BioCro:maintenance_respiration_calculator",</span></span>
+<span><span class="co">#&gt;         "BioCro:senescence_coefficient_logistic",</span></span>
+<span><span class="co">#&gt;         "BioCro:stefan_boltzmann_longwave",</span></span>
+<span><span class="co">#&gt;         partitioning_coefficients = "BioCro:partitioning_coefficient_logistic",</span></span>
+<span><span class="co">#&gt;         leaf_water_stress = "BioCro:leaf_water_stress_exponential",</span></span>
+<span><span class="co">#&gt;         specific_leaf_area = "BioCro:sla_linear",</span></span>
 <span><span class="co">#&gt;         "BioCro:parameter_calculator",</span></span>
-<span><span class="co">#&gt;         "BioCro:soybean_development_rate_calculator",</span></span>
-<span><span class="co">#&gt;         "BioCro:leaf_water_stress_exponential",</span></span>
-<span><span class="co">#&gt;         "BioCro:partitioning_coefficient_logistic",</span></span>
-<span><span class="co">#&gt;         "BioCro:soil_evaporation",</span></span>
-<span><span class="co">#&gt;         "BioCro:solar_position_michalsky",</span></span>
-<span><span class="co">#&gt;         "BioCro:shortwave_atmospheric_scattering",</span></span>
-<span><span class="co">#&gt;         "BioCro:incident_shortwave_from_ground_par",</span></span>
 <span><span class="co">#&gt;         "BioCro:height_from_lai",</span></span>
 <span><span class="co">#&gt;         "BioCro:canopy_gbw_thornley",</span></span>
-<span><span class="co">#&gt;         "BioCro:stefan_boltzmann_longwave",</span></span>
+<span><span class="co">#&gt;         "BioCro:soil_evaporation",</span></span>
+<span><span class="co">#&gt;         stomata_water_stress = "BioCro:stomata_water_stress_linear",</span></span>
+<span><span class="co">#&gt;         "BioCro:format_time",</span></span>
+<span><span class="co">#&gt;         "BioCro:soybean_development_rate_calculator",</span></span>
+<span><span class="co">#&gt;         solar_coordinates = "BioCro:solar_position_michalsky",</span></span>
+<span><span class="co">#&gt;         "BioCro:shortwave_atmospheric_scattering",</span></span>
+<span><span class="co">#&gt;         "BioCro:incident_shortwave_from_ground_par",</span></span>
 <span><span class="co">#&gt;         "BioCro:ten_layer_canopy_properties",</span></span>
-<span><span class="co">#&gt;         "BioCro:ten_layer_c3_canopy",</span></span>
+<span><span class="co">#&gt;         canopy_photosynthesis = "BioCro:ten_layer_c3_canopy",</span></span>
 <span><span class="co">#&gt;         "BioCro:ten_layer_canopy_integrator",</span></span>
-<span><span class="co">#&gt;         "BioCro:no_leaf_resp_neg_assim_partitioning_growth_calculator",</span></span>
-<span><span class="co">#&gt;         "BioCro:senescence_coefficient_logistic",</span></span>
-<span><span class="co">#&gt;         "BioCro:carbon_assimilation_to_biomass"</span></span>
+<span><span class="co">#&gt;         "BioCro:carbon_assimilation_to_biomass",</span></span>
+<span><span class="co">#&gt;         partitioning_growth_calculator = "BioCro:partitioning_growth_calculator"</span></span>
 <span><span class="co">#&gt;     ),</span></span>
 <span><span class="co">#&gt;     differential_modules = list(</span></span>
-<span><span class="co">#&gt;         "BioCro:senescence_logistic",</span></span>
+<span><span class="co">#&gt;         senescence = "BioCro:senescence_logistic",</span></span>
 <span><span class="co">#&gt;         "BioCro:maintenance_respiration",</span></span>
 <span><span class="co">#&gt;         "BioCro:partitioning_growth",</span></span>
-<span><span class="co">#&gt;         "BioCro:two_layer_soil_profile",</span></span>
+<span><span class="co">#&gt;         soil_profile = "BioCro:two_layer_soil_profile",</span></span>
 <span><span class="co">#&gt;         "BioCro:development_index",</span></span>
-<span><span class="co">#&gt;         "BioCro:thermal_time_linear"</span></span>
+<span><span class="co">#&gt;         thermal_time = "BioCro:thermal_time_linear"</span></span>
 <span><span class="co">#&gt;     ),</span></span>
 <span><span class="co">#&gt;     ode_solver = list(</span></span>
-<span><span class="co">#&gt;         type = "boost_rkck54",</span></span>
-<span><span class="co">#&gt;         output_step_size = 1.000000,</span></span>
+<span><span class="co">#&gt;         type                   = "boost_rkck54",</span></span>
+<span><span class="co">#&gt;         output_step_size       = 1.000000,</span></span>
 <span><span class="co">#&gt;         adaptive_rel_error_tol = 1.000000e-04,</span></span>
 <span><span class="co">#&gt;         adaptive_abs_error_tol = 1.000000e-04,</span></span>
-<span><span class="co">#&gt;         adaptive_max_steps = 200</span></span>
+<span><span class="co">#&gt;         adaptive_max_steps     = 200</span></span>
 <span><span class="co">#&gt;     ),</span></span>
 <span><span class="co">#&gt;     initial_values = list(</span></span>
-<span><span class="co">#&gt;         "Leaf" = 0.06312,</span></span>
-<span><span class="co">#&gt;         "Stem" = 0.00789,</span></span>
-<span><span class="co">#&gt;         "Root" = 0.00789,</span></span>
-<span><span class="co">#&gt;         "Grain" = 1e-05,</span></span>
-<span><span class="co">#&gt;         "Shell" = 1e-05,</span></span>
-<span><span class="co">#&gt;         "LeafLitter" = 0,</span></span>
-<span><span class="co">#&gt;         "RootLitter" = 0,</span></span>
-<span><span class="co">#&gt;         "StemLitter" = 0,</span></span>
-<span><span class="co">#&gt;         "soil_water_content" = 0.32,</span></span>
-<span><span class="co">#&gt;         "cws1" = 0.32,</span></span>
-<span><span class="co">#&gt;         "cws2" = 0.32,</span></span>
-<span><span class="co">#&gt;         "DVI" = -1,</span></span>
-<span><span class="co">#&gt;         "TTc" = 0,</span></span>
-<span><span class="co">#&gt;         "Rhizome" = 1e-07,</span></span>
-<span><span class="co">#&gt;         "RhizomeLitter" = 0</span></span>
+<span><span class="co">#&gt;         cws1                        = 0.32,</span></span>
+<span><span class="co">#&gt;         cws2                        = 0.32,</span></span>
+<span><span class="co">#&gt;         DVI                         = -1,</span></span>
+<span><span class="co">#&gt;         Grain                       = 1e-05,</span></span>
+<span><span class="co">#&gt;         Leaf                        = 0.06312,</span></span>
+<span><span class="co">#&gt;         LeafLitter                  = 0,</span></span>
+<span><span class="co">#&gt;         Rhizome                     = 1e-07,</span></span>
+<span><span class="co">#&gt;         RhizomeLitter               = 0,</span></span>
+<span><span class="co">#&gt;         Root                        = 0.00789,</span></span>
+<span><span class="co">#&gt;         RootLitter                  = 0,</span></span>
+<span><span class="co">#&gt;         Shell                       = 1e-05,</span></span>
+<span><span class="co">#&gt;         soil_water_content          = 0.32,</span></span>
+<span><span class="co">#&gt;         Stem                        = 0.00789,</span></span>
+<span><span class="co">#&gt;         StemLitter                  = 0,</span></span>
+<span><span class="co">#&gt;         TTc                         = 0</span></span>
 <span><span class="co">#&gt;     ),</span></span>
 <span><span class="co">#&gt;     parameters = list(</span></span>
-<span><span class="co">#&gt;         "soil_air_entry" = -2.6,</span></span>
-<span><span class="co">#&gt;         "soil_b_coefficient" = 5.2,</span></span>
-<span><span class="co">#&gt;         "soil_bulk_density" = 1.35,</span></span>
-<span><span class="co">#&gt;         "soil_clay_content" = 0.34,</span></span>
-<span><span class="co">#&gt;         "soil_field_capacity" = 0.32,</span></span>
-<span><span class="co">#&gt;         "soil_sand_content" = 0.32,</span></span>
-<span><span class="co">#&gt;         "soil_saturated_conductivity" = 6.4e-05,</span></span>
-<span><span class="co">#&gt;         "soil_saturation_capacity" = 0.52,</span></span>
-<span><span class="co">#&gt;         "soil_silt_content" = 0.34,</span></span>
-<span><span class="co">#&gt;         "soil_wilting_point" = 0.2,</span></span>
-<span><span class="co">#&gt;         "iSp" = 3.5,</span></span>
-<span><span class="co">#&gt;         "Sp_thermal_time_decay" = 0,</span></span>
-<span><span class="co">#&gt;         "LeafN" = 2,</span></span>
-<span><span class="co">#&gt;         "LeafN_0" = 2,</span></span>
-<span><span class="co">#&gt;         "vmax_n_intercept" = 0,</span></span>
-<span><span class="co">#&gt;         "vmax1" = 110,</span></span>
-<span><span class="co">#&gt;         "alphab1" = 0,</span></span>
-<span><span class="co">#&gt;         "alpha1" = 0,</span></span>
-<span><span class="co">#&gt;         "maturity_group" = 3,</span></span>
-<span><span class="co">#&gt;         "Tbase_emr" = 10,</span></span>
-<span><span class="co">#&gt;         "TTemr_threshold" = 60,</span></span>
-<span><span class="co">#&gt;         "Rmax_emrV0" = 0.199,</span></span>
-<span><span class="co">#&gt;         "Tmin_emrV0" = 5,</span></span>
-<span><span class="co">#&gt;         "Topt_emrV0" = 31.5,</span></span>
-<span><span class="co">#&gt;         "Tmax_emrV0" = 45,</span></span>
-<span><span class="co">#&gt;         "Tmin_R0R1" = 5,</span></span>
-<span><span class="co">#&gt;         "Topt_R0R1" = 31.5,</span></span>
-<span><span class="co">#&gt;         "Tmax_R0R1" = 45,</span></span>
-<span><span class="co">#&gt;         "Tmin_R1R7" = 0,</span></span>
-<span><span class="co">#&gt;         "Topt_R1R7" = 21.5,</span></span>
-<span><span class="co">#&gt;         "Tmax_R1R7" = 38.7,</span></span>
-<span><span class="co">#&gt;         "sowing_fractional_doy" = 0,</span></span>
-<span><span class="co">#&gt;         "alphaLeaf" = 23.8656475358454,</span></span>
-<span><span class="co">#&gt;         "alphaStem" = 24.7943193862222,</span></span>
-<span><span class="co">#&gt;         "betaLeaf" = -18.1706424424747,</span></span>
-<span><span class="co">#&gt;         "betaStem" = -18.4456505196764,</span></span>
-<span><span class="co">#&gt;         "alphaRoot" = 36.967,</span></span>
-<span><span class="co">#&gt;         "betaRoot" = -40.1915,</span></span>
-<span><span class="co">#&gt;         "alphaShell" = 13.4769290411408,</span></span>
-<span><span class="co">#&gt;         "betaShell" = -10.0049836091908,</span></span>
-<span><span class="co">#&gt;         "kRhizome_emr" = 0,</span></span>
-<span><span class="co">#&gt;         "rsec" = 0.2,</span></span>
-<span><span class="co">#&gt;         "soil_clod_size" = 0.04,</span></span>
-<span><span class="co">#&gt;         "soil_reflectance" = 0.2,</span></span>
-<span><span class="co">#&gt;         "soil_transmission" = 0.01,</span></span>
-<span><span class="co">#&gt;         "specific_heat_of_air" = 1010,</span></span>
-<span><span class="co">#&gt;         "lat" = 40,</span></span>
-<span><span class="co">#&gt;         "longitude" = -88,</span></span>
-<span><span class="co">#&gt;         "atmospheric_pressure" = 101325,</span></span>
-<span><span class="co">#&gt;         "atmospheric_transmittance" = 0.6,</span></span>
-<span><span class="co">#&gt;         "atmospheric_scattering" = 0.3,</span></span>
-<span><span class="co">#&gt;         "par_energy_fraction" = 0.5,</span></span>
-<span><span class="co">#&gt;         "par_energy_content" = 0.219,</span></span>
-<span><span class="co">#&gt;         "heightf" = 6,</span></span>
-<span><span class="co">#&gt;         "min_gbw_canopy" = 0.005,</span></span>
-<span><span class="co">#&gt;         "dry_biomass_per_carbon" = 30.026,</span></span>
-<span><span class="co">#&gt;         "emissivity_sky" = 1,</span></span>
-<span><span class="co">#&gt;         "chil" = 0.81,</span></span>
-<span><span class="co">#&gt;         "k_diffuse" = 0.7,</span></span>
-<span><span class="co">#&gt;         "kpLN" = 0,</span></span>
-<span><span class="co">#&gt;         "leaf_reflectance_nir" = 0.42,</span></span>
-<span><span class="co">#&gt;         "leaf_reflectance_par" = 0.1,</span></span>
-<span><span class="co">#&gt;         "leaf_transmittance_nir" = 0.42,</span></span>
-<span><span class="co">#&gt;         "leaf_transmittance_par" = 0.05,</span></span>
-<span><span class="co">#&gt;         "lnfun" = 0,</span></span>
-<span><span class="co">#&gt;         "Gstar_c" = 19.02,</span></span>
-<span><span class="co">#&gt;         "Gstar_Ea" = 37830,</span></span>
-<span><span class="co">#&gt;         "Jmax_c" = 17.57,</span></span>
-<span><span class="co">#&gt;         "Jmax_Ea" = 43540,</span></span>
-<span><span class="co">#&gt;         "Kc_c" = 38.05,</span></span>
-<span><span class="co">#&gt;         "Kc_Ea" = 79430,</span></span>
-<span><span class="co">#&gt;         "Ko_c" = 20.3,</span></span>
-<span><span class="co">#&gt;         "Ko_Ea" = 36380,</span></span>
-<span><span class="co">#&gt;         "phi_PSII_0" = 0.352,</span></span>
-<span><span class="co">#&gt;         "phi_PSII_1" = 0.022,</span></span>
-<span><span class="co">#&gt;         "phi_PSII_2" = -0.00034,</span></span>
-<span><span class="co">#&gt;         "Rd_c" = 18.72,</span></span>
-<span><span class="co">#&gt;         "Rd_Ea" = 46390,</span></span>
-<span><span class="co">#&gt;         "theta_0" = 0.76,</span></span>
-<span><span class="co">#&gt;         "theta_1" = 0.018,</span></span>
-<span><span class="co">#&gt;         "theta_2" = -0.00037,</span></span>
-<span><span class="co">#&gt;         "Tp_c" = 19.77399,</span></span>
-<span><span class="co">#&gt;         "Tp_Ha" = 62990,</span></span>
-<span><span class="co">#&gt;         "Tp_Hd" = 182140,</span></span>
-<span><span class="co">#&gt;         "Tp_S" = 588,</span></span>
-<span><span class="co">#&gt;         "Vcmax_c" = 26.35,</span></span>
-<span><span class="co">#&gt;         "Vcmax_Ea" = 65330,</span></span>
-<span><span class="co">#&gt;         "jmax" = 195,</span></span>
-<span><span class="co">#&gt;         "jmax_mature" = 195,</span></span>
-<span><span class="co">#&gt;         "sf_jmax" = 0.2,</span></span>
-<span><span class="co">#&gt;         "electrons_per_carboxylation" = 4.5,</span></span>
-<span><span class="co">#&gt;         "electrons_per_oxygenation" = 5.25,</span></span>
-<span><span class="co">#&gt;         "tpu_rate_max" = 13,</span></span>
-<span><span class="co">#&gt;         "Rd" = 1.28,</span></span>
-<span><span class="co">#&gt;         "Catm" = 372.59,</span></span>
-<span><span class="co">#&gt;         "O2" = 210,</span></span>
-<span><span class="co">#&gt;         "b0" = 0.008,</span></span>
-<span><span class="co">#&gt;         "b1" = 10.6,</span></span>
-<span><span class="co">#&gt;         "Gs_min" = 0.001,</span></span>
-<span><span class="co">#&gt;         "windspeed_height" = 5,</span></span>
-<span><span class="co">#&gt;         "beta_PSII" = 0.5,</span></span>
-<span><span class="co">#&gt;         "leafwidth" = 0.1,</span></span>
-<span><span class="co">#&gt;         "growth_respiration_fraction" = 0,</span></span>
-<span><span class="co">#&gt;         "grc_stem" = 0.0284473040567858,</span></span>
-<span><span class="co">#&gt;         "grc_root" = 0.00276325510436536,</span></span>
-<span><span class="co">#&gt;         "mrc_leaf" = 0.000505973771827042,</span></span>
-<span><span class="co">#&gt;         "mrc_stem" = 0.000505973771827042,</span></span>
-<span><span class="co">#&gt;         "mrc_root" = 1.07281688473608e-05,</span></span>
-<span><span class="co">#&gt;         "mrc_grain" = 1e-05,</span></span>
-<span><span class="co">#&gt;         "retrans" = 0.9,</span></span>
-<span><span class="co">#&gt;         "retrans_rhizome" = 1,</span></span>
-<span><span class="co">#&gt;         "rateSeneLeaf" = 0.0124464110871913,</span></span>
-<span><span class="co">#&gt;         "rateSeneStem" = 0.000127468732965756,</span></span>
-<span><span class="co">#&gt;         "rateSeneRoot" = 0,</span></span>
-<span><span class="co">#&gt;         "rateSeneRhizome" = 0,</span></span>
-<span><span class="co">#&gt;         "alphaSeneLeaf" = 49.8679276606362,</span></span>
-<span><span class="co">#&gt;         "alphaSeneStem" = 3.88965982514793,</span></span>
-<span><span class="co">#&gt;         "alphaSeneRoot" = 10,</span></span>
-<span><span class="co">#&gt;         "alphaSeneRhizome" = 10,</span></span>
-<span><span class="co">#&gt;         "betaSeneLeaf" = -30.2372834250869,</span></span>
-<span><span class="co">#&gt;         "betaSeneStem" = -3.3877986715034,</span></span>
-<span><span class="co">#&gt;         "betaSeneRoot" = -10,</span></span>
-<span><span class="co">#&gt;         "betaSeneRhizome" = -10,</span></span>
-<span><span class="co">#&gt;         "remobilization_fraction" = 0.6,</span></span>
-<span><span class="co">#&gt;         "soil_depth1" = 0,</span></span>
-<span><span class="co">#&gt;         "soil_depth2" = 2.5,</span></span>
-<span><span class="co">#&gt;         "soil_depth3" = 10,</span></span>
-<span><span class="co">#&gt;         "wsFun" = 2,</span></span>
-<span><span class="co">#&gt;         "hydrDist" = 0,</span></span>
-<span><span class="co">#&gt;         "rfl" = 0.2,</span></span>
-<span><span class="co">#&gt;         "rsdf" = 0.44,</span></span>
-<span><span class="co">#&gt;         "phi1" = 0.01,</span></span>
-<span><span class="co">#&gt;         "phi2" = 1.5,</span></span>
-<span><span class="co">#&gt;         "tbase" = 10,</span></span>
-<span><span class="co">#&gt;         "km_leaf_litter" = 2,</span></span>
-<span><span class="co">#&gt;         "timestep" = 1</span></span>
+<span><span class="co">#&gt;         alpha1                      = 0,</span></span>
+<span><span class="co">#&gt;         alphab1                     = 0,</span></span>
+<span><span class="co">#&gt;         alphaLeaf                   = 23.1326083727177,</span></span>
+<span><span class="co">#&gt;         alphaRhizome                = 0,</span></span>
+<span><span class="co">#&gt;         alphaRoot                   = 36.967,</span></span>
+<span><span class="co">#&gt;         alphaSeneLeaf               = 43.2362961922686,</span></span>
+<span><span class="co">#&gt;         alphaSeneRhizome            = 10,</span></span>
+<span><span class="co">#&gt;         alphaSeneRoot               = 10,</span></span>
+<span><span class="co">#&gt;         alphaSeneStem               = 11.2164085577141,</span></span>
+<span><span class="co">#&gt;         alphaShell                  = 11.7404148749835,</span></span>
+<span><span class="co">#&gt;         alphaStem                   = 22.1282500087717,</span></span>
+<span><span class="co">#&gt;         atmospheric_pressure        = 101325,</span></span>
+<span><span class="co">#&gt;         atmospheric_scattering      = 0.3,</span></span>
+<span><span class="co">#&gt;         atmospheric_transmittance   = 0.6,</span></span>
+<span><span class="co">#&gt;         b0                          = 0.008,</span></span>
+<span><span class="co">#&gt;         b1                          = 10.6,</span></span>
+<span><span class="co">#&gt;         beta_PSII                   = 0.5,</span></span>
+<span><span class="co">#&gt;         betaLeaf                    = -18.0350666073991,</span></span>
+<span><span class="co">#&gt;         betaRhizome                 = -Inf,</span></span>
+<span><span class="co">#&gt;         betaRoot                    = -40.1915,</span></span>
+<span><span class="co">#&gt;         betaSeneLeaf                = -26.2015727728056,</span></span>
+<span><span class="co">#&gt;         betaSeneRhizome             = -10,</span></span>
+<span><span class="co">#&gt;         betaSeneRoot                = -10,</span></span>
+<span><span class="co">#&gt;         betaSeneStem                = -4.48241292986486,</span></span>
+<span><span class="co">#&gt;         betaShell                   = -8.62305416198468,</span></span>
+<span><span class="co">#&gt;         betaStem                    = -16.3094172457739,</span></span>
+<span><span class="co">#&gt;         Catm                        = 372.59,</span></span>
+<span><span class="co">#&gt;         chil                        = 0.81,</span></span>
+<span><span class="co">#&gt;         dry_biomass_per_carbon      = 30.026,</span></span>
+<span><span class="co">#&gt;         electrons_per_carboxylation = 4.5,</span></span>
+<span><span class="co">#&gt;         electrons_per_oxygenation   = 5.25,</span></span>
+<span><span class="co">#&gt;         emissivity_sky              = 1,</span></span>
+<span><span class="co">#&gt;         grc_grain                   = 0,</span></span>
+<span><span class="co">#&gt;         grc_leaf                    = 0,</span></span>
+<span><span class="co">#&gt;         grc_rhizome                 = 0,</span></span>
+<span><span class="co">#&gt;         grc_root                    = 0.0025449857652663,</span></span>
+<span><span class="co">#&gt;         grc_shell                   = 0,</span></span>
+<span><span class="co">#&gt;         grc_stem                    = 0.0278057569564519,</span></span>
+<span><span class="co">#&gt;         growth_respiration_fraction = 0,</span></span>
+<span><span class="co">#&gt;         Gs_min                      = 0.001,</span></span>
+<span><span class="co">#&gt;         Gstar_c                     = 19.02,</span></span>
+<span><span class="co">#&gt;         Gstar_Ea                    = 37830,</span></span>
+<span><span class="co">#&gt;         heightf                     = 6,</span></span>
+<span><span class="co">#&gt;         hydrDist                    = 0,</span></span>
+<span><span class="co">#&gt;         iSp                         = 3.5,</span></span>
+<span><span class="co">#&gt;         Jmax_at_25                  = 195,</span></span>
+<span><span class="co">#&gt;         Jmax_at_25_mature           = 195,</span></span>
+<span><span class="co">#&gt;         Jmax_c                      = 17.57,</span></span>
+<span><span class="co">#&gt;         Jmax_Ea                     = 43540,</span></span>
+<span><span class="co">#&gt;         k_diffuse                   = 0.7,</span></span>
+<span><span class="co">#&gt;         Kc_c                        = 38.05,</span></span>
+<span><span class="co">#&gt;         Kc_Ea                       = 79430,</span></span>
+<span><span class="co">#&gt;         km_leaf_litter              = 2,</span></span>
+<span><span class="co">#&gt;         Ko_c                        = 20.3,</span></span>
+<span><span class="co">#&gt;         Ko_Ea                       = 36380,</span></span>
+<span><span class="co">#&gt;         kpLN                        = 0,</span></span>
+<span><span class="co">#&gt;         kRhizome_emr                = 0,</span></span>
+<span><span class="co">#&gt;         kRhizome_emr_DVI            = 0,</span></span>
+<span><span class="co">#&gt;         lat                         = 40,</span></span>
+<span><span class="co">#&gt;         leaf_reflectance_nir        = 0.42,</span></span>
+<span><span class="co">#&gt;         leaf_reflectance_par        = 0.1,</span></span>
+<span><span class="co">#&gt;         leaf_transmittance_nir      = 0.42,</span></span>
+<span><span class="co">#&gt;         leaf_transmittance_par      = 0.05,</span></span>
+<span><span class="co">#&gt;         LeafN                       = 2,</span></span>
+<span><span class="co">#&gt;         LeafN_0                     = 2,</span></span>
+<span><span class="co">#&gt;         leafwidth                   = 0.1,</span></span>
+<span><span class="co">#&gt;         lnfun                       = 0,</span></span>
+<span><span class="co">#&gt;         longitude                   = -88,</span></span>
+<span><span class="co">#&gt;         maturity_group              = 3,</span></span>
+<span><span class="co">#&gt;         min_gbw_canopy              = 0.005,</span></span>
+<span><span class="co">#&gt;         mrc_grain                   = 0,</span></span>
+<span><span class="co">#&gt;         mrc_leaf                    = 0.000284238541126516,</span></span>
+<span><span class="co">#&gt;         mrc_rhizome                 = 0,</span></span>
+<span><span class="co">#&gt;         mrc_root                    = 1.01408683993827e-06,</span></span>
+<span><span class="co">#&gt;         mrc_shell                   = 0,</span></span>
+<span><span class="co">#&gt;         mrc_stem                    = 0.000284238541126516,</span></span>
+<span><span class="co">#&gt;         O2                          = 210,</span></span>
+<span><span class="co">#&gt;         par_energy_content          = 0.219,</span></span>
+<span><span class="co">#&gt;         par_energy_fraction         = 0.5,</span></span>
+<span><span class="co">#&gt;         phi_PSII_0                  = 0.352,</span></span>
+<span><span class="co">#&gt;         phi_PSII_1                  = 0.022,</span></span>
+<span><span class="co">#&gt;         phi_PSII_2                  = -0.00034,</span></span>
+<span><span class="co">#&gt;         phi1                        = 0.01,</span></span>
+<span><span class="co">#&gt;         phi2                        = 1.5,</span></span>
+<span><span class="co">#&gt;         rateSeneLeaf                = 0.0100424092444427,</span></span>
+<span><span class="co">#&gt;         rateSeneRhizome             = 0,</span></span>
+<span><span class="co">#&gt;         rateSeneRoot                = 0,</span></span>
+<span><span class="co">#&gt;         rateSeneStem                = 0.00489313070012892,</span></span>
+<span><span class="co">#&gt;         remobilization_fraction     = 0.6,</span></span>
+<span><span class="co">#&gt;         retrans                     = 0.9,</span></span>
+<span><span class="co">#&gt;         retrans_rhizome             = 1,</span></span>
+<span><span class="co">#&gt;         rfl                         = 0.2,</span></span>
+<span><span class="co">#&gt;         RL_at_25                    = 1.28,</span></span>
+<span><span class="co">#&gt;         RL_c                        = 18.72,</span></span>
+<span><span class="co">#&gt;         RL_Ea                       = 46390,</span></span>
+<span><span class="co">#&gt;         Rmax_emrV0                  = 0.199,</span></span>
+<span><span class="co">#&gt;         rsdf                        = 0.44,</span></span>
+<span><span class="co">#&gt;         rsec                        = 0.2,</span></span>
+<span><span class="co">#&gt;         sf_jmax                     = 0.2,</span></span>
+<span><span class="co">#&gt;         soil_air_entry              = -2.6,</span></span>
+<span><span class="co">#&gt;         soil_b_coefficient          = 5.2,</span></span>
+<span><span class="co">#&gt;         soil_bulk_density           = 1.35,</span></span>
+<span><span class="co">#&gt;         soil_clay_content           = 0.34,</span></span>
+<span><span class="co">#&gt;         soil_clod_size              = 0.04,</span></span>
+<span><span class="co">#&gt;         soil_depth1                 = 0,</span></span>
+<span><span class="co">#&gt;         soil_depth2                 = 2.5,</span></span>
+<span><span class="co">#&gt;         soil_depth3                 = 10,</span></span>
+<span><span class="co">#&gt;         soil_field_capacity         = 0.32,</span></span>
+<span><span class="co">#&gt;         soil_reflectance            = 0.2,</span></span>
+<span><span class="co">#&gt;         soil_sand_content           = 0.32,</span></span>
+<span><span class="co">#&gt;         soil_saturated_conductivity = 6.4e-05,</span></span>
+<span><span class="co">#&gt;         soil_saturation_capacity    = 0.52,</span></span>
+<span><span class="co">#&gt;         soil_silt_content           = 0.34,</span></span>
+<span><span class="co">#&gt;         soil_transmission           = 0.01,</span></span>
+<span><span class="co">#&gt;         soil_wilting_point          = 0.2,</span></span>
+<span><span class="co">#&gt;         sowing_fractional_doy       = 0,</span></span>
+<span><span class="co">#&gt;         Sp_thermal_time_decay       = 0,</span></span>
+<span><span class="co">#&gt;         specific_heat_of_air        = 1010,</span></span>
+<span><span class="co">#&gt;         tbase                       = 10,</span></span>
+<span><span class="co">#&gt;         Tbase_emr                   = 10,</span></span>
+<span><span class="co">#&gt;         theta_0                     = 0.76,</span></span>
+<span><span class="co">#&gt;         theta_1                     = 0.018,</span></span>
+<span><span class="co">#&gt;         theta_2                     = -0.00037,</span></span>
+<span><span class="co">#&gt;         timestep                    = 1,</span></span>
+<span><span class="co">#&gt;         Tmax_emrV0                  = 45,</span></span>
+<span><span class="co">#&gt;         Tmax_R0R1                   = 45,</span></span>
+<span><span class="co">#&gt;         Tmax_R1R7                   = 38.7,</span></span>
+<span><span class="co">#&gt;         Tmin_emrV0                  = 5,</span></span>
+<span><span class="co">#&gt;         Tmin_R0R1                   = 5,</span></span>
+<span><span class="co">#&gt;         Tmin_R1R7                   = 0,</span></span>
+<span><span class="co">#&gt;         Topt_emrV0                  = 31.5,</span></span>
+<span><span class="co">#&gt;         Topt_R0R1                   = 31.5,</span></span>
+<span><span class="co">#&gt;         Topt_R1R7                   = 21.5,</span></span>
+<span><span class="co">#&gt;         Tp_at_25                    = 13,</span></span>
+<span><span class="co">#&gt;         Tp_c                        = 19.77399,</span></span>
+<span><span class="co">#&gt;         Tp_Ha                       = 62990,</span></span>
+<span><span class="co">#&gt;         Tp_Hd                       = 182140,</span></span>
+<span><span class="co">#&gt;         Tp_S                        = 588,</span></span>
+<span><span class="co">#&gt;         TTemr_threshold             = 60,</span></span>
+<span><span class="co">#&gt;         Vcmax_at_25                 = 110,</span></span>
+<span><span class="co">#&gt;         Vcmax_c                     = 26.35,</span></span>
+<span><span class="co">#&gt;         Vcmax_Ea                    = 65330,</span></span>
+<span><span class="co">#&gt;         windspeed_height            = 5,</span></span>
+<span><span class="co">#&gt;         wsFun                       = 2</span></span>
 <span><span class="co">#&gt;     )</span></span>
 <span><span class="co">#&gt; )</span></span></code></pre></div>
 <p>It can also be written to a text file:</p>
@@ -1316,12 +1395,14 @@ model:</p>
 <span>    data       <span class="op">=</span> <span class="fu">process_table</span><span class="op">(</span><span class="va">soyface_biomass</span><span class="op">[[</span><span class="st">'ambient_2002'</span><span class="op">]</span><span class="op">]</span>,     <span class="st">'biomass'</span><span class="op">)</span>,</span>
 <span>    data_stdev <span class="op">=</span> <span class="fu">process_table</span><span class="op">(</span><span class="va">soyface_biomass</span><span class="op">[[</span><span class="st">'ambient_2002_std'</span><span class="op">]</span><span class="op">]</span>, <span class="st">'stdev'</span><span class="op">)</span>,</span>
 <span>    drivers    <span class="op">=</span> <span class="fu">BioCro</span><span class="fu">::</span><span class="va"><a href="https://rdrr.io/pkg/BioCro/man/cmi_soybean_weather_data.html" class="external-link">soybean_weather</a></span><span class="op">[[</span><span class="st">'2002'</span><span class="op">]</span><span class="op">]</span>,</span>
+<span>    parameters <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>Catm <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/with.html" class="external-link">with</a></span><span class="op">(</span><span class="fu">BioCro</span><span class="fu">::</span><span class="va"><a href="https://rdrr.io/pkg/BioCro/man/catm_data.html" class="external-link">catm_data</a></span>, <span class="op">{</span><span class="va">Catm</span><span class="op">[</span><span class="va">year</span> <span class="op">==</span> <span class="st">'2002'</span><span class="op">]</span><span class="op">}</span><span class="op">)</span><span class="op">)</span>,</span>
 <span>    weight     <span class="op">=</span> <span class="fl">1</span></span>
 <span>  <span class="op">)</span>,</span>
 <span>  ambient_2005 <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
 <span>    data       <span class="op">=</span> <span class="fu">process_table</span><span class="op">(</span><span class="va">soyface_biomass</span><span class="op">[[</span><span class="st">'ambient_2005'</span><span class="op">]</span><span class="op">]</span>,     <span class="st">'biomass'</span><span class="op">)</span>,</span>
 <span>    data_stdev <span class="op">=</span> <span class="fu">process_table</span><span class="op">(</span><span class="va">soyface_biomass</span><span class="op">[[</span><span class="st">'ambient_2005_std'</span><span class="op">]</span><span class="op">]</span>, <span class="st">'stdev'</span><span class="op">)</span>,</span>
 <span>    drivers    <span class="op">=</span> <span class="fu">BioCro</span><span class="fu">::</span><span class="va"><a href="https://rdrr.io/pkg/BioCro/man/cmi_soybean_weather_data.html" class="external-link">soybean_weather</a></span><span class="op">[[</span><span class="st">'2005'</span><span class="op">]</span><span class="op">]</span>,</span>
+<span>    parameters <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>Catm <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/with.html" class="external-link">with</a></span><span class="op">(</span><span class="fu">BioCro</span><span class="fu">::</span><span class="va"><a href="https://rdrr.io/pkg/BioCro/man/catm_data.html" class="external-link">catm_data</a></span>, <span class="op">{</span><span class="va">Catm</span><span class="op">[</span><span class="va">year</span> <span class="op">==</span> <span class="st">'2005'</span><span class="op">]</span><span class="op">}</span><span class="op">)</span><span class="op">)</span>,</span>
 <span>    weight     <span class="op">=</span> <span class="fl">1</span></span>
 <span>  <span class="op">)</span></span>
 <span><span class="op">)</span></span>
@@ -1496,7 +1577,7 @@ model:</p>
 <span>    tol <span class="op">=</span> <span class="fl">1e-2</span>,</span>
 <span>    restarts.max <span class="op">=</span> <span class="fl">10</span></span>
 <span>  <span class="op">)</span>,</span>
-<span>  debug_mode <span class="op">=</span> <span class="cn">FALSE</span> <span class="co"># Passed to obj_fun; set to TRUE to enable debug mode</span></span>
+<span>  debug_mode <span class="op">=</span> <span class="st">'minimal'</span> <span class="co"># Passed to obj_fun</span></span>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="co">###</span></span>
@@ -1617,7 +1698,7 @@ Journal of Agronomy</em> 120 (October): 126130. <a href="https://doi.org/10.1016
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.2.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
 </div>
 
     </footer>

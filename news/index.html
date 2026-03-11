@@ -13,7 +13,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">BioCroValidation</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -40,9 +40,19 @@
   <main id="main" class="col-md-9"><div class="page-header">
 
       <h1>Changelog</h1>
-      <small>Source: <a href="https://github.com/BioCro/BioCroValidation/blob/v0.2.0/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
+      <small>Source: <a href="https://github.com/BioCro/BioCroValidation/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.3.0" id="changes-in-biocrovalidation-version-030-2026-03-11">Changes in BioCroValidation Version 0.3.0 (2026-03-11)<a class="anchor" aria-label="anchor" href="#changes-in-biocrovalidation-version-030-2026-03-11"></a></h2>
+<ul><li><p>Fixed typos in the help page for <code>objective_function</code>, and in the <code>add_norm</code> function (defined in <code>R/objective_function_helpers.R</code>)</p></li>
+<li><p>Allowed user-supplied regularization functions</p></li>
+<li><p>Allowed driver-specific initial values and parameters</p></li>
+<li><p>Errors that occur while running simulations are now caught so they do not prevent an optimization from finishing</p></li>
+<li><p>More options for <code>debug_mode</code> are now available; the default setting (<code>minimal</code>) only prints info to the terminal when an issue with a simulation occurs</p></li>
+<li><p>Improved formatting of output from <code>write_module</code>, so that initial value and parameter lists are alphabetized, equals signs are aligned, and module names are preserved</p></li>
+<li><p>Fixed a bug where calling <code>objective_function</code> with <code>dependent_arg_function = NULL</code> and <code>verbose_mode = TRUE</code> caused an error</p></li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.2.0" id="changes-in-biocrovalidation-version-020-2025-05-23">Changes in BioCroValidation Version 0.2.0 (2025-05-23)<a class="anchor" aria-label="anchor" href="#changes-in-biocrovalidation-version-020-2025-05-23"></a></h2>
 <ul><li><p>Added 2002 and 2005 SoyFACE biomass and standard deviation data.</p></li>
@@ -63,7 +73,7 @@
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.2.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
 </div>
 
     </footer></div>

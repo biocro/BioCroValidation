@@ -1,0 +1,58 @@
+## BioCroValidation
+
+**BioCroValidation** is a collection of tools for helping to validate
+BioCro crop growth models.
+
+This package is a work in progress. As development proceeds, functions
+are subject to modification or removal without notice.
+
+### Installing the R Package
+
+The easiest way to install `BioCroValidation` is to type the following
+from within an R terminal:
+
+    remotes::install_github('BioCro/BioCroValidation')
+
+Note that this method requires the `remotes` package, which can be
+installed from within R by typing `install.packages('remotes')`.
+
+### Usage
+
+The best way to learn about using `BioCroValidation` is to visit the
+[BioCroValidation
+website](https://biocro.org/BioCroValidation/index.html) and click the
+“Get Started” link in the top menu bar. The website includes
+documentation for all the functions and data sets included in the
+package, as well as articles that describe its general features and
+several important use cases.
+
+### License
+
+The `BioCroValidation` R package and its documentation are licensed
+under the MIT license.
+
+# Package index
+
+## All functions
+
+- [`BioCroValidation`](https://biocro.github.io/BioCroValidation/reference/BioCroValidation.md)
+  : The BioCroValidation R package
+- [`bounds_table()`](https://biocro.github.io/BioCroValidation/reference/bounds_table.md)
+  : Create a table of lower and upper bounds
+- [`objective_function()`](https://biocro.github.io/BioCroValidation/reference/objective_function.md)
+  : Generate an objective function for BioCro model validation
+- [`soyface_biomass`](https://biocro.github.io/BioCroValidation/reference/soyface_biomass.md)
+  : SoyFACE Soybean Biomass Data
+- [`update_model()`](https://biocro.github.io/BioCroValidation/reference/update_model.md)
+  : Update a BioCro model definition
+- [`write_model()`](https://biocro.github.io/BioCroValidation/reference/write_model.md)
+  : Generate a BioCro model definition
+
+# Articles
+
+### All vignettes
+
+- [Getting Started With
+  BioCroValidation](https://biocro.github.io/BioCroValidation/articles/BioCroValidation.md):
+- [Parameterizing
+  Soybean-BioCro](https://biocro.github.io/BioCroValidation/articles/parameterizing_soybean_biocro.md):
