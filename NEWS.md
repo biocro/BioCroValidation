@@ -33,7 +33,7 @@ In the case of a hotfix, a short section headed by the new release number should
 be directly added to this file to describe the related changes.
 -->
 
-# UNRELEASED
+# Changes in BioCroValidation Version 0.3.0 (2026-03-11)
 
 - Fixed typos in the help page for `objective_function`, and in the `add_norm`
   function (defined in `R/objective_function_helpers.R`)
