@@ -9,7 +9,7 @@ Authors@R: c(
     person("BioCroValidation authors", role = "cph")
     )
 Depends:
-    R (>= 3.6.0)
+    R (>= 4.1.0)
 Imports:
     BioCro (>= 3.2.0)
 Suggests:
@@ -18,7 +18,7 @@ Suggests:
     lattice,
     knitr,
     rmarkdown,
-    testthat (>= 3.0.0)
+    testthat (>= 3.2.0)
 VignetteBuilder: knitr
 License: MIT + file LICENSE
 Encoding: UTF-8
