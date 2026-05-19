@@ -42,6 +42,8 @@ be directly added to this file to describe the related changes.
 
 - LAI values were added to the `soyface_biomass` data set.
 
+- A new data set was added (`soyface_precip`).
+
 # Changes in BioCroValidation Version 0.3.0 (2026-03-11)
 
 - Fixed typos in the help page for `objective_function`, and in the `add_norm`

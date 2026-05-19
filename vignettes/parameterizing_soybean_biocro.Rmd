@@ -158,10 +158,36 @@ process_table <- function(data_table, type) {
 }
 ```
 
-## The Data-Driver Pairs
+## The Drivers
 
 The `BioCro` R package includes weather data for the years in the
-`soyface_biomass` data set. So now we are ready to define the data-driver pairs,
+`soyface_biomass` data set. However, for one of the years (2005), we would like
+to use a different set of precipitation measurements. These are available in the
+`soyface_precipitation` data set.
+
+```{r drivers}
+# Helping function to replace precipitation values
+replace_precip <- function(df_orig, df_new) {
+  # Make sure df_new does not extend outside the time range of df_orig
+  df_new_to_keep <- df_new$doy >= df_orig$doy[1] & df_new$doy <= tail(df_orig$doy, 1)
+  df_new <- df_new[df_new_to_keep, ]
+
+  # Overwrite precip in the common time range and return
+  df_orig_to_overwrite <- df_orig$doy >= df_new$doy[1] & df_orig$doy <= tail(df_new$doy, 1)
+  df_orig$precip[df_orig_to_overwrite] <- df_new$precip
+  df_orig
+}
+
+# For 2002, we can just use the default weather data
+drivers_2002 <- soybean_weather[['2002']]
+
+# For 2005, we overwrite the precipitation values
+drivers_2005 <- replace_precip(soybean_weather[['2005']], soyface_precip[['2005']])
+```
+
+## The Data-Driver Pairs
+
+So now we are ready to define the data-driver pairs,
 which includes the weather, the observed biomass, the standard deviation of the
 observed biomass, the atmospheric CO2 concentration to use for each year, and
 the weight to assign to each year:
@@ -172,14 +198,14 @@ data_driver_pairs <- list(
   ambient_2002 = list(
     data       = process_table(soyface_biomass[['ambient_2002']],     'biomass'),
     data_stdev = process_table(soyface_biomass[['ambient_2002_std']], 'stdev'),
-    drivers    = BioCro::soybean_weather[['2002']],
+    drivers    = drivers_2002,
     parameters = list(Catm = with(BioCro::catm_data, {Catm[year == '2002']})),
     weight     = 1
   ),
   ambient_2005 = list(
     data       = process_table(soyface_biomass[['ambient_2005']],     'biomass'),
     data_stdev = process_table(soyface_biomass[['ambient_2005_std']], 'stdev'),
-    drivers    = BioCro::soybean_weather[['2005']],
+    drivers    = drivers_2005,
     parameters = list(Catm = with(BioCro::catm_data, {Catm[year == '2005']})),
     weight     = 1
   )
@@ -791,6 +817,8 @@ writeLines(r_cmd_string, './soybean_reparam.R')
 <<base_model_definition>>
 
 <<process_tables>>
+
+<<drivers>>
 
 <<data_driver_pairs>>
 
