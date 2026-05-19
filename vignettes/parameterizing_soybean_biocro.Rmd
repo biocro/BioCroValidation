@@ -336,12 +336,14 @@ perspective.
 
 To prevent these unreasonable parameters from being chosen, "extra penalties"
 can be added to the error metric. These penalties can be specified using an
-`extra_penalty_function`, which must take the result from a BioCro simulation
-as its input and return a numeric error penalty value, which generally should be
-zero (when no issues are found) or a large positive number (if an issue has been
-found).
+`extra_penalty_function`, which must take two inputs: the first is the result
+of a BioCro simulation for a single year (typically called `sim_res`) and the
+second is the observed data for that year in long form (typically called
+`long_form_data`). The extra penalty function must return a numeric error
+penalty value, which generally should be zero (when no issues are found) or a
+large positive number (if an issue has been found).
 
-For Soybean-BioCro parameterization, three common issues are that:
+For Soybean-BioCro parameterization, four common issues are that:
 
 1. Carbon is never partitioned to one or more key tissues.
 
@@ -349,12 +351,14 @@ For Soybean-BioCro parameterization, three common issues are that:
 
 3. Carbon partitioning to the leaves begins too early or too late.
 
+4. Carbon partitioning to the seed begins too early.
+
 The function below will return a large value when any of these situations
 occurs, and will otherwise return a value of zero.
 
 ```{r extra_penalty_function}
 # Define an extra penalty function
-extra_penalty_function <- function(sim_res) {
+extra_penalty_function <- function(sim_res, long_form_data) {
   # Set the penalty value
   PENALTY <- 9999
 
@@ -369,6 +373,10 @@ extra_penalty_function <- function(sim_res) {
   time_shell <- time[sim_res[['kShell']] > k_thresh][1]
   time_stem  <- time[sim_res[['kStem']]  > k_thresh][1]
 
+  # Get the latest time when the observed seed mass is zero
+  seed_obs      <- long_form_data[long_form_data[['quantity_name']] == 'Grain', ]
+  last_seedless <- max(seed_obs[seed_obs[['quantity_value']] < 0.1, 'time'])
+
   # Return a penalty if necessary
   if (is.na(time_grain) | is.na(time_leaf) | is.na(time_shell) | is.na(time_stem)) {
     # One or more tissues is not growing
@@ -379,6 +387,10 @@ extra_penalty_function <- function(sim_res) {
   } else if (time_leaf - time[1] > 20 * hpd | time_leaf - time[1] < 10 * hpd) {
     # The start of leaf growth is too late (more than 20 days after sowing) or
     # too early (fewer than 10 days after sowing)
+    return(PENALTY)
+  } else if (time_grain < last_seedless - 14 * hpd) {
+    # Seeds have started growing too early (more than 2 weeks before the last
+    # seedless day in the observations)
     return(PENALTY)
   } else {
     # No problems were detected

@@ -578,6 +578,23 @@ test_that('Bad variance methods are detected', {
     )
 })
 
+test_that('Bad optional functions are detected', {
+    # Wrong number of input arguments
+    expect_error(
+        objective_function(
+            model,
+            ddps,
+            independent_args,
+            quantity_weights,
+            data_definitions = data_definitions,
+            post_process_function = post_process_function,
+            extra_penalty_function = function(x) {NA},
+            verbose_startup = verbose_startup
+        ),
+        'The extra_penalty_function function must accept 2 input argument(s)'
+    )
+})
+
 test_that('Bad return values are detected', {
     # A penalty evaluates to NA
     expect_error(
@@ -588,7 +605,7 @@ test_that('Bad return values are detected', {
             quantity_weights,
             data_definitions = data_definitions,
             post_process_function = post_process_function,
-            extra_penalty_function = function(x) {NA},
+            extra_penalty_function = function(x, y) {NA},
             verbose_startup = verbose_startup
         ),
         'The objective function did not return a finite value when using the initial argument values; instead, it returned: NA'

@@ -33,6 +33,13 @@ In the case of a hotfix, a short section headed by the new release number should
 be directly added to this file to describe the related changes.
 -->
 
+# UNRELEASED
+
+- The extra penalty function must now accept two input arguments, typically
+  called `sim_res` and `long_form_data`. The inclusion of the observed data in
+  long form enables additional types of penalty checks that were not possible
+  previously.
+
 # Changes in BioCroValidation Version 0.3.0 (2026-03-11)
 
 - Fixed typos in the help page for `objective_function`, and in the `add_norm`
