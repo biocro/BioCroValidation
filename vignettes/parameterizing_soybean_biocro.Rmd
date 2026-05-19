@@ -225,7 +225,8 @@ data_definitions <- list(
   Root_Mg_per_ha      = 'Root',
   Seed_Mg_per_ha      = 'Grain',
   Shell_Mg_per_ha     = 'Shell',
-  Stem_Mg_per_ha      = 'Stem'
+  Stem_Mg_per_ha      = 'Stem',
+  LAI                 = 'lai'
 )
 ```
 
@@ -324,7 +325,8 @@ quantity_weights <- list(
   Root        = 0.1,
   Shell       = 0.5,
   Stem        = 1.0,
-  TotalLitter = 0.1
+  TotalLitter = 0.1,
+  lai         = 1.0
 )
 ```
 

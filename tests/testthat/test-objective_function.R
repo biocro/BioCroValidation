@@ -33,7 +33,8 @@ independent_args <- with(BioCro::soybean[['parameters']], {
 data_definitions <- list(
     Leaf_Mg_per_ha = 'Leaf',
     Stem_Mg_per_ha = 'Stem',
-    Rep_Mg_per_ha = 'Pod'
+    Rep_Mg_per_ha = 'Pod',
+    LAI = 'lai'
 )
 
 dependent_arg_function <- function(x) {
@@ -47,7 +48,8 @@ post_process_function <- function(x) {
 quantity_weights <- list(
     Leaf = 0.5,
     Stem = c(0.5, 0.25),
-    Pod = 1
+    Pod = 1,
+    lai = 1
 )
 
 verbose_startup <- FALSE
@@ -505,7 +507,7 @@ test_that('Out-of-range times are detected', {
             verbose_startup = verbose_startup
         ),
         'Some observed times were missing from runner outputs:
-ambient_2002: 104272, 104512, 104848, 105184, 105520, 105880, 106192, 106888 (min_time = 3624, max_time = 6911)',
+ambient_2002: 104272, 104512, 104848, 105184, 105520, 105880, 106192, 106888, 104248, 104392, 104560, 104728, 104896, 105040, 105280, 105448, 105592, 105712, 105928, 106096, 106216, 106408 (min_time = 3624, max_time = 6911)',
         fixed = TRUE
     )
 })
@@ -591,7 +593,8 @@ test_that('Bad optional functions are detected', {
             extra_penalty_function = function(x) {NA},
             verbose_startup = verbose_startup
         ),
-        'The extra_penalty_function function must accept 2 input argument(s)'
+        'The extra_penalty_function function must accept 2 input argument(s)',
+        fixed = TRUE
     )
 })
 

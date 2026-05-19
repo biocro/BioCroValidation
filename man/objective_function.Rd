@@ -629,6 +629,7 @@ if (require(BioCro)) {
       Seed_Mg_per_ha      = NULL
       Litter_Mg_per_ha    = NULL
       CumLitter_Mg_per_ha = NULL
+      LAI                 = NULL
     })
   }
 

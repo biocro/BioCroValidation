@@ -24,8 +24,9 @@
     \item \code{Seed_Mg_per_ha}: Seed biomass per area expressed in Mg / ha
     \item \code{Litter_Mg_per_ha}: Mass of leaf litter accumulated between
           harvests, expressed in Mg / ha
-    \item \code{CumLitter_Mg_per_ha}: Cumulative leaf litter biomass per aear
+    \item \code{CumLitter_Mg_per_ha}: Cumulative leaf litter biomass per area
           expressed in Mg / ha
+    \item \code{LAI}: Leaf area index (dimensionless)
   }
 
   The elements named \code{ambient_2002} and \code{ambient_2005} represent mean
@@ -38,7 +39,7 @@
 }
 
 \source{
-  The leaf, stem, and pod data was obtained from several files in from the
+  The leaf, stem, and pod mass data was obtained from several files in from the
   \href{https://github.com/cropsinsilico/soybean-biocro}{Soybean-BioCro GitHub repository}:
   \itemize{
     \item \code{Data/SoyFACE_data/2002_ambient_biomass.csv}
@@ -54,6 +55,16 @@
   between harvests. The seed mass was estimated as a fraction of the total pod
   mass, using proportionality factors determined from unpublished data collected
   in Champaign, Illinois during 2021-2022.
+
+  The LAI values for 2002 were obtained by digitizing the ambient points in
+  Figure 1b of Dermody \emph{et al.} 2005
+  (\doi{10.1111/j.1469-8137.2005.01565.x}). The standard deviation was estimated
+  as ten percent of LAI, i.e., a coefficient of variance of 0.1 was assumed.
+
+  The LAI values for 2005 was obtained from the supplemental information of Grey
+  \emph{et al.} 2016 (\doi{10.1038/nplants.2016.132}), which is available at
+  \doi{10.5061/dryad.g0v62}. Mean values and standard deviations were calculated
+  across all rings for the ambient CO2 treatment.
 
   These data tables have not been published previously, but were used to
   parameterize Soybean-BioCro as used in He \emph{et al.} 2024
