@@ -158,10 +158,36 @@ process_table <- function(data_table, type) {
 }
 ```
 
-## The Data-Driver Pairs
+## The Drivers
 
 The `BioCro` R package includes weather data for the years in the
-`soyface_biomass` data set. So now we are ready to define the data-driver pairs,
+`soyface_biomass` data set. However, for one of the years (2005), we would like
+to use a different set of precipitation measurements. These are available in the
+`soyface_precipitation` data set.
+
+```{r drivers}
+# Helping function to replace precipitation values
+replace_precip <- function(df_orig, df_new) {
+  # Make sure df_new does not extend outside the time range of df_orig
+  df_new_to_keep <- df_new$doy >= df_orig$doy[1] & df_new$doy <= tail(df_orig$doy, 1)
+  df_new <- df_new[df_new_to_keep, ]
+
+  # Overwrite precip in the common time range and return
+  df_orig_to_overwrite <- df_orig$doy >= df_new$doy[1] & df_orig$doy <= tail(df_new$doy, 1)
+  df_orig$precip[df_orig_to_overwrite] <- df_new$precip
+  df_orig
+}
+
+# For 2002, we can just use the default weather data
+drivers_2002 <- soybean_weather[['2002']]
+
+# For 2005, we overwrite the precipitation values
+drivers_2005 <- replace_precip(soybean_weather[['2005']], soyface_precip[['2005']])
+```
+
+## The Data-Driver Pairs
+
+So now we are ready to define the data-driver pairs,
 which includes the weather, the observed biomass, the standard deviation of the
 observed biomass, the atmospheric CO2 concentration to use for each year, and
 the weight to assign to each year:
@@ -172,14 +198,14 @@ data_driver_pairs <- list(
   ambient_2002 = list(
     data       = process_table(soyface_biomass[['ambient_2002']],     'biomass'),
     data_stdev = process_table(soyface_biomass[['ambient_2002_std']], 'stdev'),
-    drivers    = BioCro::soybean_weather[['2002']],
+    drivers    = drivers_2002,
     parameters = list(Catm = with(BioCro::catm_data, {Catm[year == '2002']})),
     weight     = 1
   ),
   ambient_2005 = list(
     data       = process_table(soyface_biomass[['ambient_2005']],     'biomass'),
     data_stdev = process_table(soyface_biomass[['ambient_2005_std']], 'stdev'),
-    drivers    = BioCro::soybean_weather[['2005']],
+    drivers    = drivers_2005,
     parameters = list(Catm = with(BioCro::catm_data, {Catm[year == '2005']})),
     weight     = 1
   )
@@ -225,7 +251,8 @@ data_definitions <- list(
   Root_Mg_per_ha      = 'Root',
   Seed_Mg_per_ha      = 'Grain',
   Shell_Mg_per_ha     = 'Shell',
-  Stem_Mg_per_ha      = 'Stem'
+  Stem_Mg_per_ha      = 'Stem',
+  LAI                 = 'lai'
 )
 ```
 
@@ -324,7 +351,8 @@ quantity_weights <- list(
   Root        = 0.1,
   Shell       = 0.5,
   Stem        = 1.0,
-  TotalLitter = 0.1
+  TotalLitter = 0.1,
+  lai         = 1.0
 )
 ```
 
@@ -336,12 +364,14 @@ perspective.
 
 To prevent these unreasonable parameters from being chosen, "extra penalties"
 can be added to the error metric. These penalties can be specified using an
-`extra_penalty_function`, which must take the result from a BioCro simulation
-as its input and return a numeric error penalty value, which generally should be
-zero (when no issues are found) or a large positive number (if an issue has been
-found).
+`extra_penalty_function`, which must take two inputs: the first is the result
+of a BioCro simulation for a single year (typically called `sim_res`) and the
+second is the observed data for that year in long form (typically called
+`long_form_data`). The extra penalty function must return a numeric error
+penalty value, which generally should be zero (when no issues are found) or a
+large positive number (if an issue has been found).
 
-For Soybean-BioCro parameterization, three common issues are that:
+For Soybean-BioCro parameterization, four common issues are that:
 
 1. Carbon is never partitioned to one or more key tissues.
 
@@ -349,12 +379,14 @@ For Soybean-BioCro parameterization, three common issues are that:
 
 3. Carbon partitioning to the leaves begins too early or too late.
 
+4. Carbon partitioning to the seed begins too early.
+
 The function below will return a large value when any of these situations
 occurs, and will otherwise return a value of zero.
 
 ```{r extra_penalty_function}
 # Define an extra penalty function
-extra_penalty_function <- function(sim_res) {
+extra_penalty_function <- function(sim_res, long_form_data) {
   # Set the penalty value
   PENALTY <- 9999
 
@@ -369,6 +401,10 @@ extra_penalty_function <- function(sim_res) {
   time_shell <- time[sim_res[['kShell']] > k_thresh][1]
   time_stem  <- time[sim_res[['kStem']]  > k_thresh][1]
 
+  # Get the latest time when the observed seed mass is zero
+  seed_obs      <- long_form_data[long_form_data[['quantity_name']] == 'Grain', ]
+  last_seedless <- max(seed_obs[seed_obs[['quantity_value']] < 0.1, 'time'])
+
   # Return a penalty if necessary
   if (is.na(time_grain) | is.na(time_leaf) | is.na(time_shell) | is.na(time_stem)) {
     # One or more tissues is not growing
@@ -379,6 +415,10 @@ extra_penalty_function <- function(sim_res) {
   } else if (time_leaf - time[1] > 20 * hpd | time_leaf - time[1] < 10 * hpd) {
     # The start of leaf growth is too late (more than 20 days after sowing) or
     # too early (fewer than 10 days after sowing)
+    return(PENALTY)
+  } else if (time_grain < last_seedless - 14 * hpd) {
+    # Seeds have started growing too early (more than 2 weeks before the last
+    # seedless day in the observations)
     return(PENALTY)
   } else {
     # No problems were detected
@@ -777,6 +817,8 @@ writeLines(r_cmd_string, './soybean_reparam.R')
 <<base_model_definition>>
 
 <<process_tables>>
+
+<<drivers>>
 
 <<data_driver_pairs>>
 

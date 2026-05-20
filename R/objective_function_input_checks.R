@@ -285,6 +285,43 @@ check_data_driver_pairs <- function(base_model_definition, data_driver_pairs, ve
     return(invisible(NULL))
 }
 
+# Helping function for checking the optional functions
+check_optional_functions <- function(
+    regularization_method,
+    dependent_arg_function,
+    post_process_function,
+    extra_penalty_function
+)
+{
+    # Internal helping function
+    func_arg_msg <- function(func, name, expected_num_args) {
+        if (!is.null(func) && is.function(func) && length(formals(func)) != expected_num_args) {
+            paste('  The', name, 'function must accept', expected_num_args, 'input argument(s)')
+        } else {
+            character(0)
+        }
+    }
+
+    # Check number of arguments
+    bad_arg <- character()
+    bad_arg <- append(bad_arg, func_arg_msg(regularization_method,  'regularization_method',  2))
+    bad_arg <- append(bad_arg, func_arg_msg(dependent_arg_function, 'dependent_arg_function', 1))
+    bad_arg <- append(bad_arg, func_arg_msg(post_process_function,  'post_process_function',  1))
+    bad_arg <- append(bad_arg, func_arg_msg(extra_penalty_function, 'extra_penalty_function', 2))
+
+    # Send message
+    if (length(bad_arg) > 0) {
+        msg <- append(
+            'Some optional functions have the wrong number of input arguments:',
+            bad_arg
+        )
+
+        stop(paste(msg, collapse = '\n'))
+    }
+
+    return(invisible(NULL))
+}
+
 # Helping function for checking the independent arguments
 check_args_to_vary <- function(
     independent_args,

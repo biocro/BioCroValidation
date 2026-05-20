@@ -458,7 +458,7 @@ error_from_res <- function(
     penalty <- if (is.null(extra_penalty_function)) {
         0.0
     } else {
-        extra_penalty_function(simulation_result)
+        extra_penalty_function(simulation_result, long_form_data_table)
     }
 
     # Calculate the error terms

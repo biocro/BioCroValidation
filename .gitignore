@@ -40,3 +40,6 @@ vignettes/*.pdf
 
 # pkgdown documentation
 docs
+
+# from scripts
+inst/extdata/soyface_precip.rdata
