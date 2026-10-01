@@ -25,6 +25,14 @@ objective_function <- function(
         verbose_startup
     )
 
+    # Check the optional functions
+    check_optional_functions(
+        regularization_method,
+        dependent_arg_function,
+        post_process_function,
+        extra_penalty_function
+    )
+
     # Check the arguments to be varied
     check_args_to_vary(
         independent_args,

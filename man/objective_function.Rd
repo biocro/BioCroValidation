@@ -155,8 +155,10 @@
   }
 
   \item{extra_penalty_function}{
-    A function whose input argument is a data frame representing the output from
-    \code{\link[BioCro]{run_biocro}}, and which returns a numeric penalty to be
+    A function with two input arguments. The first is a data frame representing
+    the output from \code{\link[BioCro]{run_biocro}} for a particular year, and
+    the second is a data frame representing the observed data for that year in
+    long form. The extra penalty function should return a numeric penalty to be
     added to the least-squares term when calculating the error metric. If the
     \code{extra_penalty_function} is \code{NULL}, no extra penalties will be
     added.
@@ -323,11 +325,11 @@
           where the sum runs over all \eqn{k} sets of drivers and \eqn{M_k} is
           the model output when it is run with the \eqn{k^{th}} set of drivers.
 
-          The function \eqn{f_{user}} must accept a single data frame as an
-          input and return a single numeric value as its output, but has no
-          other requirements. It is specified via the
-          \code{extra_penalty_function}. When
-          \code{extra_penalty_function} is \code{NULL}, \eqn{P_{user}} is zero.
+          The function \eqn{f_{user}} must accept two data frames as its inputs
+          and return a single numeric value as its output, but has no other
+          requirements. It is specified via the \code{extra_penalty_function}.
+          When \code{extra_penalty_function} is \code{NULL}, \eqn{P_{user}} is
+          zero.
 
     \item \strong{Regularization penalty term:} The regularization penalty term
           \eqn{P_{regularization}} is calculated from the values of the
@@ -627,6 +629,7 @@ if (require(BioCro)) {
       Seed_Mg_per_ha      = NULL
       Litter_Mg_per_ha    = NULL
       CumLitter_Mg_per_ha = NULL
+      LAI                 = NULL
     })
   }
 
@@ -694,8 +697,10 @@ if (require(BioCro)) {
   )
 
   # We want to prevent the optimizer from choosing parameters that produce
-  # unreasonably high leaf mass
-  extra_penalty_function <- function(sim_res) {
+  # unreasonably high leaf mass. Note that even though we do not use the
+  # long form data to calculate the error penalty in this example, it must be
+  # included as an input argument to the penalty function.
+  extra_penalty_function <- function(sim_res, long_form_data) {
     max_leaf <- max(sim_res[['Leaf']], na.rm = TRUE)
 
     if (is.na(max_leaf) || max_leaf > 4) {
