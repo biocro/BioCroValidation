@@ -61,10 +61,10 @@
   (\doi{10.1111/j.1469-8137.2005.01565.x}). The standard deviation was estimated
   as ten percent of LAI, i.e., a coefficient of variance of 0.1 was assumed.
 
-  The LAI values for 2005 was obtained from the supplemental information of Grey
-  \emph{et al.} 2016 (\doi{10.1038/nplants.2016.132}), which is available at
-  \doi{10.5061/dryad.g0v62}. Mean values and standard deviations were calculated
-  across all rings for the ambient CO2 treatment.
+  The LAI values for 2004-2006 were obtained from the supplemental information
+  of Grey \emph{et al.} 2016 (\doi{10.1038/nplants.2016.132}), which is
+  available at \doi{10.5061/dryad.g0v62}. Mean values and standard deviations
+  were calculated across all rings for the ambient and elevated CO2 treatments.
 
   These data tables have not been published previously, but were used to
   parameterize Soybean-BioCro as used in He \emph{et al.} 2024
