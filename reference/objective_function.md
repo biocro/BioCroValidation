@@ -888,7 +888,7 @@ if (require(BioCro)) {
 #> {
 #>     lambda * sum((x - initial_guess)^2)
 #> }
-#> <environment: 0x55a6427ec2c0>
+#> <environment: 0x55dcfb5513a0>
 #> 
 #> Dependent argument function: user-supplied function:
 #> 
@@ -896,7 +896,7 @@ if (require(BioCro)) {
 #> {
 #>     list(alphaStem = ind_args[["alphaLeaf"]])
 #> }
-#> <environment: 0x55a6427ec2c0>
+#> <environment: 0x55dcfb5513a0>
 #> 
 #> Post-processing function: user-supplied function:
 #> 
@@ -906,7 +906,7 @@ if (require(BioCro)) {
 #>         Pod = Grain + Shell
 #>     })
 #> }
-#> <environment: 0x55a6427ec2c0>
+#> <environment: 0x55dcfb5513a0>
 #> 
 #> Extra penalty function: user-supplied function:
 #> 
@@ -920,7 +920,7 @@ if (require(BioCro)) {
 #>         0
 #>     }
 #> }
-#> <environment: 0x55a6427ec2c0>
+#> <environment: 0x55dcfb5513a0>
 #> 
 #> The initial error metric terms:
 #> 
@@ -946,15 +946,15 @@ if (require(BioCro)) {
 #> 
 #> Error metric calculated by doubling the original argument values:
 #> 
-#> Time: 2026-10-01 23:15:26.999028      Independent argument values : 46.73542898017520030862215207889676, -36.22026162863519971324421931058168
+#> Time: 2026-10-01 23:23:21.598406      Independent argument values : 46.73542898017520030862215207889676, -36.22026162863519971324421931058168
 #> 
-#> Time: 2026-10-01 23:15:28.033945      Error metric : 2.85522394461770367968256323365495
+#> Time: 2026-10-01 23:23:22.822762      Error metric : 2.85522394461770367968256323365495
 #> 
 #> Error metric terms calculated by doubling the original argument values:
 #> 
-#> Time: 2026-10-01 23:15:28.034103      Independent argument values : 46.73542898017520030862215207889676, -36.22026162863519971324421931058168
+#> Time: 2026-10-01 23:23:22.822925      Independent argument values : 46.73542898017520030862215207889676, -36.22026162863519971324421931058168
 #> 
-#> Time: 2026-10-01 23:15:28.997256      Error metric terms : 
+#> Time: 2026-10-01 23:23:23.983506      Error metric terms : 
 #> 
 #> List of 2
 #>  $ terms_from_data_driver_pairs:List of 2

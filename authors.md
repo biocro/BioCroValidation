@@ -10,7 +10,7 @@
 ## Citation
 
 Source:
-[`DESCRIPTION`](https://github.com/BioCro/BioCroValidation/blob/main/DESCRIPTION)
+[`DESCRIPTION`](https://github.com/BioCro/BioCroValidation/blob/v0.4.0/DESCRIPTION)
 
 Lochocki E (2026). *BioCroValidation: Tools for Validating BioCro
 Models*. R package version 0.4.0,
