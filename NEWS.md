@@ -33,7 +33,7 @@ In the case of a hotfix, a short section headed by the new release number should
 be directly added to this file to describe the related changes.
 -->
 
-# UNRELEASED
+# Changes in BioCroValidation Version 0.4.0 (2026-10-01)
 
 - The extra penalty function must now accept two input arguments, typically
   called `sim_res` and `long_form_data`. The inclusion of the observed data in
