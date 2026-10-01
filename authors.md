@@ -10,16 +10,16 @@
 ## Citation
 
 Source:
-[`DESCRIPTION`](https://github.com/BioCro/BioCroValidation/blob/v0.3.0/DESCRIPTION)
+[`DESCRIPTION`](https://github.com/BioCro/BioCroValidation/blob/main/DESCRIPTION)
 
 Lochocki E (2026). *BioCroValidation: Tools for Validating BioCro
-Models*. R package version 0.3.0,
+Models*. R package version 0.4.0,
 <https://github.com/BioCro/BioCroValidation>.
 
     @Manual{,
       title = {BioCroValidation: Tools for Validating BioCro Models},
       author = {Edward B. Lochocki},
       year = {2026},
-      note = {R package version 0.3.0},
+      note = {R package version 0.4.0},
       url = {https://github.com/BioCro/BioCroValidation},
     }

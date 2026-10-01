@@ -54,6 +54,7 @@ The easiest way to install `BioCroValidation` is to type the following
 from within an R terminal:
 
 ``` r
+
 remotes::install_github('biocro/BioCroValidation')
 ```
 

@@ -22,6 +22,7 @@ In the commands below, we will use functions from several libraries, so
 we will load them now:
 
 ``` r
+
 # Load required libraries
 library(BioCroValidation)
 library(BioCro)
@@ -50,6 +51,7 @@ does not seem to cause any substantial errors when running
 Soybean-BioCro.
 
 ``` r
+
 # Specify the base model definition
 base_model_definition            <- soybean
 base_model_definition$ode_solver <- default_ode_solvers[['homemade_euler']]
@@ -102,6 +104,7 @@ depending on whether the table represents biomass values or standard
 deviations:
 
 ``` r
+
 # Define a helping function for processing data tables
 process_table <- function(data_table, type) {
   # Define new `time` column
@@ -145,29 +148,56 @@ process_table <- function(data_table, type) {
 }
 ```
 
-### The Data-Driver Pairs
+### The Drivers
 
 The `BioCro` R package includes weather data for the years in the
-`soyface_biomass` data set. So now we are ready to define the
-data-driver pairs, which includes the weather, the observed biomass, the
-standard deviation of the observed biomass, the atmospheric CO2
-concentration to use for each year, and the weight to assign to each
-year:
+`soyface_biomass` data set. However, for one of the years (2005), we
+would like to use a different set of precipitation measurements. These
+are available in the `soyface_precipitation` data set.
 
 ``` r
+
+# Helping function to replace precipitation values
+replace_precip <- function(df_orig, df_new) {
+  # Make sure df_new does not extend outside the time range of df_orig
+  df_new_to_keep <- df_new$doy >= df_orig$doy[1] & df_new$doy <= tail(df_orig$doy, 1)
+  df_new <- df_new[df_new_to_keep, ]
+
+  # Overwrite precip in the common time range and return
+  df_orig_to_overwrite <- df_orig$doy >= df_new$doy[1] & df_orig$doy <= tail(df_new$doy, 1)
+  df_orig$precip[df_orig_to_overwrite] <- df_new$precip
+  df_orig
+}
+
+# For 2002, we can just use the default weather data
+drivers_2002 <- soybean_weather[['2002']]
+
+# For 2005, we overwrite the precipitation values
+drivers_2005 <- replace_precip(soybean_weather[['2005']], soyface_precip[['2005']])
+```
+
+### The Data-Driver Pairs
+
+So now we are ready to define the data-driver pairs, which includes the
+weather, the observed biomass, the standard deviation of the observed
+biomass, the atmospheric CO2 concentration to use for each year, and the
+weight to assign to each year:
+
+``` r
+
 # Define the data-driver pairs
 data_driver_pairs <- list(
   ambient_2002 = list(
     data       = process_table(soyface_biomass[['ambient_2002']],     'biomass'),
     data_stdev = process_table(soyface_biomass[['ambient_2002_std']], 'stdev'),
-    drivers    = BioCro::soybean_weather[['2002']],
+    drivers    = drivers_2002,
     parameters = list(Catm = with(BioCro::catm_data, {Catm[year == '2002']})),
     weight     = 1
   ),
   ambient_2005 = list(
     data       = process_table(soyface_biomass[['ambient_2005']],     'biomass'),
     data_stdev = process_table(soyface_biomass[['ambient_2005_std']], 'stdev'),
-    drivers    = BioCro::soybean_weather[['2005']],
+    drivers    = drivers_2005,
     parameters = list(Catm = with(BioCro::catm_data, {Catm[year == '2005']})),
     weight     = 1
   )
@@ -187,6 +217,7 @@ simulation result and can be used to add new columns. Here we define
 such a function, which adds a new column for the total litter:
 
 ``` r
+
 # Define the post-processing function
 post_process_function <- function(sim_res) {
   # Calculate the total litter as the sum of leaf and stem litter
@@ -204,6 +235,7 @@ handle this mismatch, we can provide a set of “data definitions” that
 specify which columns should be compared:
 
 ``` r
+
 # Define the data definition list, where the element names are columns in the
 # observed data tables, and the element values are the corresponding column
 # names in the model outputs
@@ -214,7 +246,8 @@ data_definitions <- list(
   Root_Mg_per_ha      = 'Root',
   Seed_Mg_per_ha      = 'Grain',
   Shell_Mg_per_ha     = 'Shell',
-  Stem_Mg_per_ha      = 'Stem'
+  Stem_Mg_per_ha      = 'Stem',
+  LAI                 = 'lai'
 )
 ```
 
@@ -258,6 +291,7 @@ initial guess for that argument. Here we will use the default
 Soybean-BioCro values as our initial guesses:
 
 ``` r
+
 # Define a list of independent arguments and their initial values
 independent_arg_names <- c(
   # Partitioning for leaf, stem, and shell
@@ -293,6 +327,7 @@ list of independent arguments as its input, and returns a list of
 dependent arguments as its output:
 
 ``` r
+
 # Define a function that sets `mrc_stem` to the value of `mrc_leaf`
 dependent_arg_function <- function(ind_args) {
   list(mrc_stem = ind_args[['mrc_leaf']])
@@ -308,6 +343,7 @@ where the name of each element is an output from the simulation, and its
 value is the weight.
 
 ``` r
+
 # Specify the quantity weights; there is no systematic way to determine these,
 # but the following weights have worked well in the past for Soybean-BioCro
 quantity_weights <- list(
@@ -316,7 +352,8 @@ quantity_weights <- list(
   Root        = 0.1,
   Shell       = 0.5,
   Stem        = 1.0,
-  TotalLitter = 0.1
+  TotalLitter = 0.1,
+  lai         = 1.0
 )
 ```
 
@@ -328,12 +365,15 @@ a biological perspective.
 
 To prevent these unreasonable parameters from being chosen, “extra
 penalties” can be added to the error metric. These penalties can be
-specified using an `extra_penalty_function`, which must take the result
-from a BioCro simulation as its input and return a numeric error penalty
-value, which generally should be zero (when no issues are found) or a
-large positive number (if an issue has been found).
+specified using an `extra_penalty_function`, which must take two inputs:
+the first is the result of a BioCro simulation for a single year
+(typically called `sim_res`) and the second is the observed data for
+that year in long form (typically called `long_form_data`). The extra
+penalty function must return a numeric error penalty value, which
+generally should be zero (when no issues are found) or a large positive
+number (if an issue has been found).
 
-For Soybean-BioCro parameterization, three common issues are that:
+For Soybean-BioCro parameterization, four common issues are that:
 
 1.  Carbon is never partitioned to one or more key tissues.
 
@@ -341,12 +381,15 @@ For Soybean-BioCro parameterization, three common issues are that:
 
 3.  Carbon partitioning to the leaves begins too early or too late.
 
+4.  Carbon partitioning to the seed begins too early.
+
 The function below will return a large value when any of these
 situations occurs, and will otherwise return a value of zero.
 
 ``` r
+
 # Define an extra penalty function
-extra_penalty_function <- function(sim_res) {
+extra_penalty_function <- function(sim_res, long_form_data) {
   # Set the penalty value
   PENALTY <- 9999
 
@@ -361,6 +404,10 @@ extra_penalty_function <- function(sim_res) {
   time_shell <- time[sim_res[['kShell']] > k_thresh][1]
   time_stem  <- time[sim_res[['kStem']]  > k_thresh][1]
 
+  # Get the latest time when the observed seed mass is zero
+  seed_obs      <- long_form_data[long_form_data[['quantity_name']] == 'Grain', ]
+  last_seedless <- max(seed_obs[seed_obs[['quantity_value']] < 0.1, 'time'])
+
   # Return a penalty if necessary
   if (is.na(time_grain) | is.na(time_leaf) | is.na(time_shell) | is.na(time_stem)) {
     # One or more tissues is not growing
@@ -371,6 +418,10 @@ extra_penalty_function <- function(sim_res) {
   } else if (time_leaf - time[1] > 20 * hpd | time_leaf - time[1] < 10 * hpd) {
     # The start of leaf growth is too late (more than 20 days after sowing) or
     # too early (fewer than 10 days after sowing)
+    return(PENALTY)
+  } else if (time_grain < last_seedless - 14 * hpd) {
+    # Seeds have started growing too early (more than 2 weeks before the last
+    # seedless day in the observations)
     return(PENALTY)
   } else {
     # No problems were detected
@@ -400,6 +451,7 @@ information is printed out when the function is created, such as the
 full list of observed values and their corresponding weights.
 
 ``` r
+
 # Create the objective function
 obj_fun <- objective_function(
   base_model_definition,
@@ -455,11 +507,12 @@ obj_fun <- objective_function(
 #> 
 #> The full data definitions:
 #> 
-#> List of 6
+#> List of 7
 #>  $ Leaf_Mg_per_ha     : chr "Leaf"
 #>  $ Stem_Mg_per_ha     : chr "Stem"
 #>  $ Seed_Mg_per_ha     : chr "Grain"
 #>  $ CumLitter_Mg_per_ha: chr "TotalLitter"
+#>  $ LAI                : chr "lai"
 #>  $ Shell_Mg_per_ha    : chr "Shell"
 #>  $ Root_Mg_per_ha     : chr "Root"
 #> 
@@ -470,186 +523,247 @@ obj_fun <- objective_function(
 #> The user-supplied data in long form:
 #> 
 #> $ambient_2002
-#>    time quantity_name quantity_value quantity_stdev time_index expected_npts
-#> 1  4272          Leaf   0.1802843394   0.0408155501        649          3288
-#> 2  4512          Leaf   0.5544619422   0.1638632739        889          3288
-#> 3  4848          Leaf   1.3265529308   0.1337744335       1225          3288
-#> 4  5184          Leaf   1.6979440069   0.2283266576       1561          3288
-#> 5  5520          Leaf   1.8077427820   0.2024754215       1897          3288
-#> 6  5880          Leaf   1.5788136482   0.0754751654       2257          3288
-#> 7  6192          Leaf   0.9475377733   0.3445500325       2569          3288
-#> 8  6888          Leaf   0.0000000000   0.0000000000       3265          3288
-#> 9  4272          Stem   0.0852449694   0.0170797372        649          3288
-#> 10 4512          Stem   0.4188538932   0.1384490248        889          3288
-#> 11 4848          Stem   1.7110673664   0.1837107594       1225          3288
-#> 12 5184          Stem   2.8928258965   0.4487440652       1561          3288
-#> 13 5520          Stem   3.6859142604   0.4534474707       1897          3288
-#> 14 5880          Stem   3.7452607171   0.2753213561       2257          3288
-#> 15 6192          Stem   3.6184015745   0.1510453777       2569          3288
-#> 16 6888          Stem   2.3057012247   0.1483892609       3265          3288
-#> 17 4272         Grain   0.0000000000   0.0000000000        649          3288
-#> 18 4512         Grain   0.0000000000   0.0000000000        889          3288
-#> 19 4848         Grain   0.0000000000   0.0000000000       1225          3288
-#> 20 5184         Grain   0.0000000000   0.0000000000       1561          3288
-#> 21 5520         Grain   0.0000000000   0.0000000000       1897          3288
-#> 22 5880         Grain   2.4803149604   0.3660583625       2257          3288
-#> 23 6192         Grain   4.8468941378   0.5144215602       2569          3288
-#> 24 6888         Grain   5.4133858263   0.1152608235       3265          3288
-#> 25 4272   TotalLitter   0.0000000000   0.0000000000        649          3288
-#> 26 4512   TotalLitter   0.0000000000   0.0000000000        889          3288
-#> 27 4848   TotalLitter   0.0000000000   0.0000000000       1225          3288
-#> 28 5184   TotalLitter   0.0000000000   0.0000000000       1561          3288
-#> 29 5520   TotalLitter   0.3818897637   0.0456182275       1897          3288
-#> 30 5880   TotalLitter   0.6633127734   0.0676627660       2257          3288
-#> 31 6192   TotalLitter   0.9786377952   0.0320523860       2569          3288
-#> 32 6888   TotalLitter   2.5831766621   0.2678295161       3265          3288
-#> 33 4272         Shell   0.0000000000   0.0000000000        649          3288
-#> 34 4512         Shell   0.0000000000   0.0000000000        889          3288
-#> 35 4848         Shell   0.0003171479   0.0005493162       1225          3288
-#> 36 5184         Shell   0.0793963255   0.0309899985       1561          3288
-#> 37 5520         Shell   1.5545713035   0.2184025435       1897          3288
-#> 38 5880         Shell   1.4956986001   0.6804094230       2257          3288
-#> 39 6192         Shell   1.6977565178   0.9040650516       2569          3288
-#> 40 6888         Shell   1.5955818021   0.1827578015       3265          3288
-#> 45 5520          Root   1.1981988188   0.3678694412       1897          3288
-#>          norm      w_var
-#> 1   53.886943  3.1984472
-#> 2   53.886943  1.8086619
-#> 3   53.886943  2.0115255
-#> 4   53.886943  1.4769342
-#> 5   53.886943  1.5970874
-#> 6   53.886943  2.5838191
-#> 7   53.886943  1.0654869
-#> 8   53.886943 11.5129255
-#> 9  226.031645  4.0692772
-#> 10 226.031645  1.9771808
-#> 11 226.031645  1.6943383
-#> 12 226.031645  0.8012803
-#> 13 226.031645  0.7908538
-#> 14 226.031645  1.2897800
-#> 15 226.031645  1.8901088
-#> 16 226.031645  1.9078489
-#> 17 470.475938 11.5129255
-#> 18 470.475938 11.5129255
-#> 19 470.475938 11.5129255
-#> 20 470.475938 11.5129255
-#> 21 470.475938 11.5129255
-#> 22 470.475938  1.0049352
-#> 23 470.475938  0.6646928
-#> 24 470.475938  2.1604709
-#> 25 108.364827 11.5129255
-#> 26 108.364827 11.5129255
-#> 27 108.364827 11.5129255
-#> 28 108.364827 11.5129255
-#> 29 108.364827  3.0872287
-#> 30 108.364827  2.6930715
-#> 31 108.364827  3.4400717
-#> 32 108.364827  1.3173673
-#> 33  47.718035 11.5129255
-#> 34  47.718035 11.5129255
-#> 35  47.718035  7.4887956
-#> 36  47.718035  3.4737681
-#> 37  47.718035  1.5213696
-#> 38  47.718035  0.3850459
-#> 39  47.718035  0.1008429
-#> 40  47.718035  1.6995388
-#> 45   3.071361  1.0000000
+#>     time quantity_name quantity_value quantity_stdev time_index expected_npts
+#> 1   4272          Leaf   0.1802843394   0.0408155501        649          3288
+#> 2   4512          Leaf   0.5544619422   0.1638632739        889          3288
+#> 3   4848          Leaf   1.3265529308   0.1337744335       1225          3288
+#> 4   5184          Leaf   1.6979440069   0.2283266576       1561          3288
+#> 5   5520          Leaf   1.8077427820   0.2024754215       1897          3288
+#> 6   5880          Leaf   1.5788136482   0.0754751654       2257          3288
+#> 7   6192          Leaf   0.9475377733   0.3445500325       2569          3288
+#> 8   6888          Leaf   0.0000000000   0.0000000000       3265          3288
+#> 23  4272          Stem   0.0852449694   0.0170797372        649          3288
+#> 24  4512          Stem   0.4188538932   0.1384490248        889          3288
+#> 25  4848          Stem   1.7110673664   0.1837107594       1225          3288
+#> 26  5184          Stem   2.8928258965   0.4487440652       1561          3288
+#> 27  5520          Stem   3.6859142604   0.4534474707       1897          3288
+#> 28  5880          Stem   3.7452607171   0.2753213561       2257          3288
+#> 29  6192          Stem   3.6184015745   0.1510453777       2569          3288
+#> 30  6888          Stem   2.3057012247   0.1483892609       3265          3288
+#> 45  4272         Grain   0.0000000000   0.0000000000        649          3288
+#> 46  4512         Grain   0.0000000000   0.0000000000        889          3288
+#> 47  4848         Grain   0.0000000000   0.0000000000       1225          3288
+#> 48  5184         Grain   0.0000000000   0.0000000000       1561          3288
+#> 49  5520         Grain   0.0000000000   0.0000000000       1897          3288
+#> 50  5880         Grain   2.4803149604   0.3660583625       2257          3288
+#> 51  6192         Grain   4.8468941378   0.5144215602       2569          3288
+#> 52  6888         Grain   5.4133858263   0.1152608235       3265          3288
+#> 67  4272   TotalLitter   0.0000000000   0.0000000000        649          3288
+#> 68  4512   TotalLitter   0.0000000000   0.0000000000        889          3288
+#> 69  4848   TotalLitter   0.0000000000   0.0000000000       1225          3288
+#> 70  5184   TotalLitter   0.0000000000   0.0000000000       1561          3288
+#> 71  5520   TotalLitter   0.3818897637   0.0456182275       1897          3288
+#> 72  5880   TotalLitter   0.6633127734   0.0676627660       2257          3288
+#> 73  6192   TotalLitter   0.9786377952   0.0320523860       2569          3288
+#> 74  6888   TotalLitter   2.5831766621   0.2678295161       3265          3288
+#> 97  4248           lai   0.8715000000   0.0871500000        625          3288
+#> 98  4392           lai   1.3184000000   0.1318400000        769          3288
+#> 99  4560           lai   2.1117000000   0.2111700000        937          3288
+#> 100 4728           lai   3.0615000000   0.3061500000       1105          3288
+#> 101 4896           lai   4.7821000000   0.4782100000       1273          3288
+#> 102 5040           lai   5.9218000000   0.5921800000       1417          3288
+#> 103 5280           lai   6.7598000000   0.6759800000       1657          3288
+#> 104 5448           lai   6.0782000000   0.6078200000       1825          3288
+#> 105 5592           lai   6.2346000000   0.6234600000       1969          3288
+#> 106 5712           lai   6.3352000000   0.6335200000       2089          3288
+#> 107 5928           lai   5.4637000000   0.5463700000       2305          3288
+#> 108 6096           lai   4.5587000000   0.4558700000       2473          3288
+#> 109 6216           lai   3.4637000000   0.3463700000       2593          3288
+#> 110 6408           lai   1.1732000000   0.1173200000       2785          3288
+#> 111 4272         Shell   0.0000000000   0.0000000000        649          3288
+#> 112 4512         Shell   0.0000000000   0.0000000000        889          3288
+#> 113 4848         Shell   0.0003171479   0.0005493162       1225          3288
+#> 114 5184         Shell   0.0793963255   0.0309899985       1561          3288
+#> 115 5520         Shell   1.5545713035   0.2184025435       1897          3288
+#> 116 5880         Shell   1.4956986001   0.6804094230       2257          3288
+#> 117 6192         Shell   1.6977565178   0.9040650516       2569          3288
+#> 118 6888         Shell   1.5955818021   0.1827578015       3265          3288
+#> 137 5520          Root   1.1981988188   0.3678694412       1897          3288
+#>            norm      w_var
+#> 1     53.886943  3.1984472
+#> 2     53.886943  1.8086619
+#> 3     53.886943  2.0115255
+#> 4     53.886943  1.4769342
+#> 5     53.886943  1.5970874
+#> 6     53.886943  2.5838191
+#> 7     53.886943  1.0654869
+#> 8     53.886943 11.5129255
+#> 23   226.031645  4.0692772
+#> 24   226.031645  1.9771808
+#> 25   226.031645  1.6943383
+#> 26   226.031645  0.8012803
+#> 27   226.031645  0.7908538
+#> 28   226.031645  1.2897800
+#> 29   226.031645  1.8901088
+#> 30   226.031645  1.9078489
+#> 45   470.475938 11.5129255
+#> 46   470.475938 11.5129255
+#> 47   470.475938 11.5129255
+#> 48   470.475938 11.5129255
+#> 49   470.475938 11.5129255
+#> 50   470.475938  1.0049352
+#> 51   470.475938  0.6646928
+#> 52   470.475938  2.1604709
+#> 67   108.364827 11.5129255
+#> 68   108.364827 11.5129255
+#> 69   108.364827 11.5129255
+#> 70   108.364827 11.5129255
+#> 71   108.364827  3.0872287
+#> 72   108.364827  2.6930715
+#> 73   108.364827  3.4400717
+#> 74   108.364827  1.3173673
+#> 97  1282.257089  2.4400098
+#> 98  1282.257089  2.0260904
+#> 99  1282.257089  1.5550444
+#> 100 1282.257089  1.1836474
+#> 101 1282.257089  0.7376844
+#> 102 1282.257089  0.5239277
+#> 103 1282.257089  0.3915770
+#> 104 1282.257089  0.4978600
+#> 105 1282.257089  0.4724546
+#> 106 1282.257089  0.4564479
+#> 107 1282.257089  0.6044406
+#> 108 1282.257089  0.7855257
+#> 109 1282.257089  1.0602188
+#> 110 1282.257089  2.1427648
+#> 111   47.718035 11.5129255
+#> 112   47.718035 11.5129255
+#> 113   47.718035  7.4887956
+#> 114   47.718035  3.4737681
+#> 115   47.718035  1.5213696
+#> 116   47.718035  0.3850459
+#> 117   47.718035  0.1008429
+#> 118   47.718035  1.6995388
+#> 137    3.071361  1.0000000
 #> 
 #> $ambient_2005
-#>    time quantity_name quantity_value quantity_stdev time_index expected_npts
-#> 1  4104          Leaf     0.22227188     0.03289659        577          2952
-#> 2  4440          Leaf     0.84603750     0.14679830        913          2952
-#> 3  4776          Leaf     1.18446563     0.33807429       1249          2952
-#> 4  5112          Leaf     2.21805938     0.15217591       1585          2952
-#> 5  5448          Leaf     2.14744687     0.11907759       1921          2952
-#> 6  5784          Leaf     1.51948125     0.51280870       2257          2952
-#> 7  6120          Leaf     0.06575625     0.06168624       2593          2952
-#> 8  6456          Leaf     0.00000000     0.00000000       2929          2952
-#> 9  4104          Stem     0.18880312     0.01431814        577          2952
-#> 10 4440          Stem     0.85220625     0.19883006        913          2952
-#> 11 4776          Stem     1.61896875     0.60528625       1249          2952
-#> 12 5112          Stem     4.04361563     0.55987405       1585          2952
-#> 13 5448          Stem     4.47772500     0.30674464       1921          2952
-#> 14 5784          Stem     3.89208750     0.37910849       2257          2952
-#> 15 6120          Stem     2.89905000     0.22082398       2593          2952
-#> 16 6456          Stem     2.17560000     0.24325473       2929          2952
-#> 17 4104         Grain     0.00000000     0.00000000        577          2952
-#> 18 4440         Grain     0.00000000     0.00000000        913          2952
-#> 19 4776         Grain     0.00000000     0.00000000       1249          2952
-#> 20 5112         Grain     0.00000000     0.00000000       1585          2952
-#> 21 5448         Grain     0.00000000     0.00000000       1921          2952
-#> 22 5784         Grain     3.02249063     0.34171478       2257          2952
-#> 23 6120         Grain     3.99820312     0.39895675       2593          2952
-#> 24 6456         Grain     4.96564688     0.50722409       2929          2952
-#> 25 4104   TotalLitter     0.00000000     0.00000000        577          2952
-#> 26 4440   TotalLitter     0.00000000     0.00000000        913          2952
-#> 27 4776   TotalLitter     0.00000000     0.00000000       1249          2952
-#> 28 5112   TotalLitter     0.06654375     0.06370846       1585          2952
-#> 29 5448   TotalLitter     0.18230625     0.05624687       1921          2952
-#> 30 5784   TotalLitter     0.33593438     0.07334289       2257          2952
-#> 31 6120   TotalLitter     0.86697187     0.21417663       2593          2952
-#> 32 6456   TotalLitter     1.14843750     0.24626746       2929          2952
-#> 33 4104         Shell     0.00000000     0.00000000        577          2952
-#> 34 4440         Shell     0.00000000     0.00000000        913          2952
-#> 35 4776         Shell     0.00000000     0.00000000       1249          2952
-#> 36 5112         Shell     0.29925000     0.16427520       1585          2952
-#> 37 5448         Shell     2.30455312     0.43414807       1921          2952
-#> 38 5784         Shell     2.51028750     0.68049551       2257          2952
-#> 39 6120         Shell     1.37287500     0.65544843       2593          2952
-#> 40 6456         Shell     1.40660625     0.81122149       2929          2952
-#> 45 5448          Root     1.51805325     0.36786944       1921          2952
-#>          norm      w_var
-#> 1   80.316598  3.4140824
-#> 2   80.316598  1.9186276
-#> 3   80.316598  1.0844600
-#> 4   80.316598  1.8826524
-#> 5   80.316598  2.1278960
-#> 6   80.316598  0.6678329
-#> 7   80.316598  2.7855322
-#> 8   80.316598 11.5129255
-#> 9  322.400339  4.2455301
-#> 10 322.400339  1.6152545
-#> 11 322.400339  0.5020373
-#> 12 322.400339  0.5800256
-#> 13 322.400339  1.1817071
-#> 14 322.400339  0.9699065
-#> 15 322.400339  1.5103441
-#> 16 322.400339  1.4136050
-#> 17 396.122382 11.5129255
-#> 18 396.122382 11.5129255
-#> 19 396.122382 11.5129255
-#> 20 396.122382 11.5129255
-#> 21 396.122382 11.5129255
-#> 22 396.122382  1.0737496
-#> 23 396.122382  0.9188772
-#> 24 396.122382  0.6787827
-#> 25  22.702539 11.5129255
-#> 26  22.702539 11.5129255
-#> 27  22.702539 11.5129255
-#> 28  22.702539  2.7532810
-#> 29  22.702539  2.8778272
-#> 30  22.702539  2.6124734
-#> 31  22.702539  1.5409076
-#> 32  22.702539  1.4012965
-#> 33 102.424693 11.5129255
-#> 34 102.424693 11.5129255
-#> 35 102.424693 11.5129255
-#> 36 102.424693  1.8061514
-#> 37 102.424693  0.8343466
-#> 38 102.424693  0.3849194
-#> 39 102.424693  0.4224204
-#> 40 102.424693  0.2092018
-#> 45   4.808971  1.0000000
+#>     time quantity_name quantity_value quantity_stdev time_index expected_npts
+#> 1   4104          Leaf     0.22227188    0.032896589        577          2952
+#> 2   4440          Leaf     0.84603750    0.146798299        913          2952
+#> 3   4776          Leaf     1.18446563    0.338074288       1249          2952
+#> 4   5112          Leaf     2.21805938    0.152175913       1585          2952
+#> 5   5448          Leaf     2.14744687    0.119077589       1921          2952
+#> 6   5784          Leaf     1.51948125    0.512808699       2257          2952
+#> 7   6120          Leaf     0.06575625    0.061686243       2593          2952
+#> 8   6456          Leaf     0.00000000    0.000000000       2929          2952
+#> 25  4104          Stem     0.18880312    0.014318136        577          2952
+#> 26  4440          Stem     0.85220625    0.198830061        913          2952
+#> 27  4776          Stem     1.61896875    0.605286253       1249          2952
+#> 28  5112          Stem     4.04361563    0.559874052       1585          2952
+#> 29  5448          Stem     4.47772500    0.306744644       1921          2952
+#> 30  5784          Stem     3.89208750    0.379108485       2257          2952
+#> 31  6120          Stem     2.89905000    0.220823981       2593          2952
+#> 32  6456          Stem     2.17560000    0.243254729       2929          2952
+#> 49  4104         Grain     0.00000000    0.000000000        577          2952
+#> 50  4440         Grain     0.00000000    0.000000000        913          2952
+#> 51  4776         Grain     0.00000000    0.000000000       1249          2952
+#> 52  5112         Grain     0.00000000    0.000000000       1585          2952
+#> 53  5448         Grain     0.00000000    0.000000000       1921          2952
+#> 54  5784         Grain     3.02249063    0.341714782       2257          2952
+#> 55  6120         Grain     3.99820312    0.398956753       2593          2952
+#> 56  6456         Grain     4.96564688    0.507224090       2929          2952
+#> 73  4104   TotalLitter     0.00000000    0.000000000        577          2952
+#> 74  4440   TotalLitter     0.00000000    0.000000000        913          2952
+#> 75  4776   TotalLitter     0.00000000    0.000000000       1249          2952
+#> 76  5112   TotalLitter     0.06654375    0.063708458       1585          2952
+#> 77  5448   TotalLitter     0.18230625    0.056246866       1921          2952
+#> 78  5784   TotalLitter     0.33593438    0.073342889       2257          2952
+#> 79  6120   TotalLitter     0.86697187    0.214176626       2593          2952
+#> 80  6456   TotalLitter     1.14843750    0.246267464       2929          2952
+#> 105 3744           lai     0.02750000    0.009574271        217          2952
+#> 106 3912           lai     0.14000000    0.021602470        385          2952
+#> 107 4080           lai     0.52250000    0.203367500        553          2952
+#> 108 4248           lai     1.29250000    0.223065800        721          2952
+#> 109 4440           lai     2.79000000    0.613568800        913          2952
+#> 110 4608           lai     4.47500000    0.707601600       1081          2952
+#> 111 4776           lai     5.53250000    0.573083800       1249          2952
+#> 112 4944           lai     6.57000000    0.193563100       1417          2952
+#> 113 5136           lai     6.46666700    0.290229800       1609          2952
+#> 114 5304           lai     6.59250000    0.052519840       1777          2952
+#> 115 5472           lai     5.70250000    0.338070500       1945          2952
+#> 116 5592           lai     5.16000000    0.287518100       2065          2952
+#> 117 5784           lai     4.92666700    0.445009400       2257          2952
+#> 118 5952           lai     3.57750000    0.339546300       2425          2952
+#> 119 6096           lai     1.37750000    0.279448900       2569          2952
+#> 120 6312           lai     1.03750000    0.283945400       2785          2952
+#> 121 4104         Shell     0.00000000    0.000000000        577          2952
+#> 122 4440         Shell     0.00000000    0.000000000        913          2952
+#> 123 4776         Shell     0.00000000    0.000000000       1249          2952
+#> 124 5112         Shell     0.29925000    0.164275197       1585          2952
+#> 125 5448         Shell     2.30455312    0.434148074       1921          2952
+#> 126 5784         Shell     2.51028750    0.680495513       2257          2952
+#> 127 6120         Shell     1.37287500    0.655448433       2593          2952
+#> 128 6456         Shell     1.40660625    0.811221494       2929          2952
+#> 149 5448          Root     1.51805325    0.367869441       1921          2952
+#>            norm      w_var
+#> 1     80.316598  3.4140824
+#> 2     80.316598  1.9186276
+#> 3     80.316598  1.0844600
+#> 4     80.316598  1.8826524
+#> 5     80.316598  2.1278960
+#> 6     80.316598  0.6678329
+#> 7     80.316598  2.7855322
+#> 8     80.316598 11.5129255
+#> 25   322.400339  4.2455301
+#> 26   322.400339  1.6152545
+#> 27   322.400339  0.5020373
+#> 28   322.400339  0.5800256
+#> 29   322.400339  1.1817071
+#> 30   322.400339  0.9699065
+#> 31   322.400339  1.5103441
+#> 32   322.400339  1.4136050
+#> 49   396.122382 11.5129255
+#> 50   396.122382 11.5129255
+#> 51   396.122382 11.5129255
+#> 52   396.122382 11.5129255
+#> 53   396.122382 11.5129255
+#> 54   396.122382  1.0737496
+#> 55   396.122382  0.9188772
+#> 56   396.122382  0.6787827
+#> 73    22.702539 11.5129255
+#> 74    22.702539 11.5129255
+#> 75    22.702539 11.5129255
+#> 76    22.702539  2.7532810
+#> 77    22.702539  2.8778272
+#> 78    22.702539  2.6124734
+#> 79    22.702539  1.5409076
+#> 80    22.702539  1.4012965
+#> 105 1393.953800  4.6476320
+#> 106 1393.953800  3.8344848
+#> 107 1393.953800  1.5926914
+#> 108 1393.953800  1.5002437
+#> 109 1393.953800  0.4884466
+#> 110 1393.953800  0.3458599
+#> 111 1393.953800  0.5567059
+#> 112 1393.953800  1.6421001
+#> 113 1393.953800  1.2370478
+#> 114 1393.953800  2.9463739
+#> 115 1393.953800  1.0844712
+#> 116 1393.953800  1.2464347
+#> 117 1393.953800  0.8096374
+#> 118 1393.953800  1.0801155
+#> 119 1393.953800  1.2749000
+#> 120 1393.953800  1.2589381
+#> 121  102.424693 11.5129255
+#> 122  102.424693 11.5129255
+#> 123  102.424693 11.5129255
+#> 124  102.424693  1.8061514
+#> 125  102.424693  0.8343466
+#> 126  102.424693  0.3849194
+#> 127  102.424693  0.4224204
+#> 128  102.424693  0.2092018
+#> 149    4.808971  1.0000000
 #> 
 #> The user-supplied quantity weights:
 #> 
-#> List of 6
+#> List of 7
 #>  $ Grain      : num [1:2] 1 1
 #>  $ Leaf       : num [1:2] 1 1
 #>  $ Root       : num [1:2] 0.1 0.1
 #>  $ Shell      : num [1:2] 0.5 0.5
 #>  $ Stem       : num [1:2] 1 1
 #>  $ TotalLitter: num [1:2] 0.1 0.1
+#>  $ lai        : num [1:2] 1 1
 #> 
 #> The user-supplied data-driver pair weights:
 #> 
@@ -665,7 +779,7 @@ obj_fun <- objective_function(
 #> {
 #>     list(mrc_stem = ind_args[["mrc_leaf"]])
 #> }
-#> <bytecode: 0x5605a18ccf48>
+#> <bytecode: 0x55e854fec6c0>
 #> 
 #> Post-processing function: user-supplied function:
 #> 
@@ -675,11 +789,11 @@ obj_fun <- objective_function(
 #>         TotalLitter = LeafLitter + StemLitter
 #>     })
 #> }
-#> <bytecode: 0x5605a046ee70>
+#> <bytecode: 0x55e850cea698>
 #> 
 #> Extra penalty function: user-supplied function:
 #> 
-#> function (sim_res) 
+#> function (sim_res, long_form_data) 
 #> {
 #>     PENALTY <- 9999
 #>     k_thresh <- 0.01
@@ -689,6 +803,10 @@ obj_fun <- objective_function(
 #>     time_leaf <- time[sim_res[["kLeaf"]] > k_thresh][1]
 #>     time_shell <- time[sim_res[["kShell"]] > k_thresh][1]
 #>     time_stem <- time[sim_res[["kStem"]] > k_thresh][1]
+#>     seed_obs <- long_form_data[long_form_data[["quantity_name"]] == 
+#>         "Grain", ]
+#>     last_seedless <- max(seed_obs[seed_obs[["quantity_value"]] < 
+#>         0.1, "time"])
 #>     if (is.na(time_grain) | is.na(time_leaf) | is.na(time_shell) | 
 #>         is.na(time_stem)) {
 #>         return(PENALTY)
@@ -698,6 +816,9 @@ obj_fun <- objective_function(
 #>     }
 #>     else if (time_leaf - time[1] > 20 * hpd | time_leaf - time[1] < 
 #>         10 * hpd) {
+#>         return(PENALTY)
+#>     }
+#>     else if (time_grain < last_seedless - 14 * hpd) {
 #>         return(PENALTY)
 #>     }
 #>     else {
@@ -710,28 +831,30 @@ obj_fun <- objective_function(
 #> List of 2
 #>  $ terms_from_data_driver_pairs:List of 2
 #>   ..$ ambient_2002:List of 2
-#>   .. ..$ least_squares_terms:List of 6
-#>   .. .. ..$ Grain      : num 0.00399
-#>   .. .. ..$ Leaf       : num 0.0161
-#>   .. .. ..$ Root       : num 0.00161
-#>   .. .. ..$ Shell      : num 0.0107
-#>   .. .. ..$ Stem       : num 0.00458
-#>   .. .. ..$ TotalLitter: num 0.00199
-#>   .. ..$ extra_penalty      : num 0
+#>   .. ..$ least_squares_terms:List of 7
+#>   .. .. ..$ Grain      : num 0.015
+#>   .. .. ..$ lai        : num 0.0248
+#>   .. .. ..$ Leaf       : num 0.0231
+#>   .. .. ..$ Root       : num 0.016
+#>   .. .. ..$ Shell      : num 0.0141
+#>   .. .. ..$ Stem       : num 0.0108
+#>   .. .. ..$ TotalLitter: num 0.00253
+#>   .. ..$ extra_penalty      : num 9999
 #>   ..$ ambient_2005:List of 2
-#>   .. ..$ least_squares_terms:List of 6
-#>   .. .. ..$ Grain      : num 0.00773
-#>   .. .. ..$ Leaf       : num 0.0085
-#>   .. .. ..$ Root       : num 0.00236
-#>   .. .. ..$ Shell      : num 0.0133
-#>   .. .. ..$ Stem       : num 0.0072
-#>   .. .. ..$ TotalLitter: num 0.00106
-#>   .. ..$ extra_penalty      : num 0
+#>   .. ..$ least_squares_terms:List of 7
+#>   .. .. ..$ Grain      : num 0.015
+#>   .. .. ..$ lai        : num 0.00741
+#>   .. .. ..$ Leaf       : num 0.00704
+#>   .. .. ..$ Root       : num 0.0173
+#>   .. .. ..$ Shell      : num 0.0102
+#>   .. .. ..$ Stem       : num 0.00449
+#>   .. .. ..$ TotalLitter: num 0.0014
+#>   .. ..$ extra_penalty      : num 9999
 #>  $ regularization_penalty      : num 0
 #> 
 #> The initial error metric value:
 #> 
-#> [1] 0.07914579
+#> [1] 19998.17
 ```
 
 ## Optimizing the Parameter Values
@@ -746,12 +869,14 @@ the value of the error metric when using the default Soybean-BioCro
 values:
 
 ``` r
+
 # Evaluate the error function with default Soybean-BioCro parameters
 default_error <- obj_fun(as.numeric(independent_args))
 ```
 
-This evaluates to 0.0791458. This is a low value for a Soybean-BioCro
-parameterization, indicating that good agreement has already been found.
+This evaluates to 1.9998169^{4}. This is a low value for a
+Soybean-BioCro parameterization, indicating that good agreement has
+already been found.
 
 Here, as an example, we will intentionally change each parameter value
 by a small random amount, and then use an optimizer to improve the
@@ -773,6 +898,7 @@ performed. Also note that the initial guess must be a numeric vector,
 where the elements are ordered as they are in `independent_args`.
 
 ``` r
+
 # Set a seed
 set.seed(1234)
 
@@ -787,12 +913,13 @@ Even though the changes to parameter values are small, there is still a
 substantial change in the value of the error metric:
 
 ``` r
+
 # Evaluate the error function with default Soybean-BioCro parameters
 initial_error <- obj_fun(initial_guess)
 ```
 
-This evaluates to 0.1693466, which is about 53 percent larger than with
-the default parameter values.
+This evaluates to 1.9998268^{4}, which is about 0 percent larger than
+with the default parameter values.
 
 ### Choosing Lower and Upper Bounds
 
@@ -827,6 +954,7 @@ more information about this function, see its help page by typing
 from an R terminal.
 
 ``` r
+
 # Specify some bounds
 aul <- 50   # Upper limit for alpha parameters
 bll <- -50  # Lower limit for beta parameters
@@ -874,6 +1002,7 @@ loose tolerance; a more realistic example would probably use `1e-4` or
 `1e-5`.
 
 ``` r
+
 # Run the optimizer
 optim_res <- nmkb(
   initial_guess,
@@ -892,9 +1021,9 @@ When this document was generated, running the optimizer required the
 following amount of time:
 
     #>    user  system elapsed 
-    #>  85.392   0.514  85.915
+    #> 325.384   0.453 325.879
 
-The total time was about 1.43 minutes. For a real parameterization
+The total time was about 5.43 minutes. For a real parameterization
 problem, it can be many times longer, and may even need days to run on a
 personal laptop computer.
 
@@ -902,18 +1031,19 @@ The optimizer also reports how many times the objective function was
 called, among other details:
 
 ``` r
+
 str(optim_res)
 #> List of 6
-#>  $ par        : num [1:16] 23.1 -18 22.1 -16.3 11.7 ...
-#>  $ value      : num 0.0846
-#>  $ feval      : num 213
-#>  $ restarts   : num 6
+#>  $ par        : num [1:16] 22.9 -16.2 22.3 -14.6 11.3 ...
+#>  $ value      : num 0.195
+#>  $ feval      : num 344
+#>  $ restarts   : num 3
 #>  $ convergence: num 0
 #>  $ message    : chr "Successful convergence"
 ```
 
-The value of `feval` is 213, so on average, each call of the objective
-function required approximately 0.403 seconds.
+The value of `feval` is 344, so on average, each call of the objective
+function required approximately 0.947 seconds.
 
 ### Comparing Parameter Values
 
@@ -921,6 +1051,7 @@ Let’s see whether the optimized parameters are closer to the default
 parameters than the initial guess was.
 
 ``` r
+
 # Create a table of the various independent argument values
 ind_arg_table <- data.frame(
   arg_name      = independent_arg_names,
@@ -940,50 +1071,50 @@ ind_arg_table <- within(ind_arg_table, {
 # View results
 print(ind_arg_table)
 #>         arg_name      defaults initial_guess     optimized improved
-#> 1      alphaLeaf  2.336771e+01  2.300664e+01  2.313261e+01     TRUE
-#> 2       betaLeaf -1.811013e+01 -1.819873e+01 -1.803507e+01     TRUE
-#> 3      alphaStem  2.212677e+01  2.222348e+01  2.212825e+01     TRUE
-#> 4       betaStem -1.623396e+01 -1.631408e+01 -1.630942e+01     TRUE
-#> 5     alphaShell  1.154516e+01  1.171184e+01  1.174041e+01    FALSE
-#> 6      betaShell -8.483182e+00 -8.530793e+00 -8.623054e+00    FALSE
-#> 7  alphaSeneLeaf  4.378558e+01  4.292650e+01  4.323630e+01     TRUE
-#> 8   betaSeneLeaf -2.667708e+01 -2.639169e+01 -2.620157e+01    FALSE
-#> 9   rateSeneLeaf  9.993127e-03  1.005952e-02  1.004241e-02     TRUE
-#> 10 alphaSeneStem  1.087963e+01  1.088584e+01  1.121641e+01    FALSE
-#> 11  betaSeneStem -4.610499e+00 -4.646201e+00 -4.482413e+00    FALSE
-#> 12  rateSeneStem  2.156899e-03  2.160779e-03  4.893131e-03    FALSE
-#> 13      grc_stem  1.907754e-02  1.891175e-02  2.780576e-02    FALSE
-#> 14      grc_root  2.500525e-03  2.542878e-03  2.544986e-03    FALSE
-#> 15      mrc_leaf  2.971390e-04  2.946706e-04  2.842385e-04    FALSE
-#> 16      mrc_root  1.000173e-06  1.013667e-06  1.014087e-06    FALSE
+#> 1      alphaLeaf  2.336771e+01  2.300664e+01  2.294409e+01    FALSE
+#> 2       betaLeaf -1.811013e+01 -1.819873e+01 -1.617305e+01    FALSE
+#> 3      alphaStem  2.212677e+01  2.222348e+01  2.227694e+01    FALSE
+#> 4       betaStem -1.623396e+01 -1.631408e+01 -1.464404e+01    FALSE
+#> 5     alphaShell  1.154516e+01  1.171184e+01  1.128535e+01    FALSE
+#> 6      betaShell -8.483182e+00 -8.530793e+00 -7.556035e+00    FALSE
+#> 7  alphaSeneLeaf  4.378558e+01  4.292650e+01  4.490228e+01    FALSE
+#> 8   betaSeneLeaf -2.667708e+01 -2.639169e+01 -2.664906e+01     TRUE
+#> 9   rateSeneLeaf  9.993127e-03  1.005952e-02  1.132078e-02    FALSE
+#> 10 alphaSeneStem  1.087963e+01  1.088584e+01  1.404854e+01    FALSE
+#> 11  betaSeneStem -4.610499e+00 -4.646201e+00 -1.200666e+00    FALSE
+#> 12  rateSeneStem  2.156899e-03  2.160779e-03  3.092973e-03    FALSE
+#> 13      grc_stem  1.907754e-02  1.891175e-02  5.299666e-02    FALSE
+#> 14      grc_root  2.500525e-03  2.542878e-03  2.540052e-03     TRUE
+#> 15      mrc_leaf  2.971390e-04  2.946706e-04  4.004294e-04    FALSE
+#> 16      mrc_root  1.000173e-06  1.013667e-06  1.021751e-06    FALSE
 #>    optimized_diff initial_diff
-#> 1    2.351061e-01 3.610747e-01
-#> 2    7.506421e-02 8.859433e-02
-#> 3    1.481907e-03 9.671587e-02
-#> 4    7.545746e-02 8.011748e-02
-#> 5    1.952510e-01 1.666731e-01
-#> 6    1.398727e-01 4.761121e-02
-#> 7    5.492863e-01 8.590806e-01
-#> 8    4.755047e-01 2.853908e-01
-#> 9    4.928179e-05 6.638785e-05
-#> 10   3.367742e-01 6.201888e-03
-#> 11   1.280857e-01 3.570210e-02
-#> 12   2.736232e-03 3.880247e-06
-#> 13   8.728214e-03 1.657964e-04
-#> 14   4.446047e-05 4.235225e-05
-#> 15   1.290047e-05 2.468443e-06
-#> 16   1.391354e-08 1.349416e-08
+#> 1    4.236282e-01 3.610747e-01
+#> 2    1.937085e+00 8.859433e-02
+#> 3    1.501720e-01 9.671587e-02
+#> 4    1.589925e+00 8.011748e-02
+#> 5    2.598150e-01 1.666731e-01
+#> 6    9.271469e-01 4.761121e-02
+#> 7    1.116697e+00 8.590806e-01
+#> 8    2.801274e-02 2.853908e-01
+#> 9    1.327656e-03 6.638785e-05
+#> 10   3.168903e+00 6.201888e-03
+#> 11   3.409833e+00 3.570210e-02
+#> 12   9.360741e-04 3.880247e-06
+#> 13   3.391912e-02 1.657964e-04
+#> 14   3.952634e-05 4.235225e-05
+#> 15   1.032904e-04 2.468443e-06
+#> 16   2.157733e-08 1.349416e-08
 ```
 
 In this table, when the `improved` column is `TRUE`, this means that the
 optimized parameter value is closer to the default value than the
 initial guess was; in other words, it means that the optimizer truly
-improved on the initial guess. In this example, 6 out of 16 parameter
-estimates were improved (38 percent).
+improved on the initial guess. In this example, 2 out of 16 parameter
+estimates were improved (12 percent).
 
 We can also compare the error metric to its original value. As shown
-above, it is now 0.0846026, which is 6.4 percent larger than with the
-default parameter values.
+above, it is now 0.1952087, which is 1.0244409^{7} percent smaller than
+with the default parameter values.
 
 The optimized parameter values could likely be improved by using a more
 stringent tolerance for the optimizer, but this would require more time
@@ -1003,6 +1134,7 @@ be accomplished using the `update_model` function from
 `BioCroValidation`:
 
 ``` r
+
 # Get model definition lists for the perturbed and re-parameterized versions of
 # the soybean model
 soybean_perturbed <- update_model(
@@ -1024,6 +1156,7 @@ We can check that the three models have different values of key
 parameters, such as the “dependent” argument `mrc_stem`:
 
 ``` r
+
 print(BioCro::soybean$parameters$mrc_stem)
 #> [1] 0.000297139
 
@@ -1031,13 +1164,14 @@ print(soybean_perturbed$parameters$mrc_stem)
 #> [1] 0.0002946706
 
 print(soybean_reparam$parameters$mrc_stem)
-#> [1] 0.0002842385
+#> [1] 0.0004004294
 ```
 
 Now we can run each version of the model for a single year and visually
 compare their outputs:
 
 ``` r
+
 # Define a helper function that runs a single model for the year 2005
 run_2005 <- function(model_definition) {
   with(model_definition, {run_biocro(
@@ -1091,6 +1225,7 @@ written to a text file, making it easy to read and to track with `git`.
 Here we apply `write_model` to the re-optimized soybean model:
 
 ``` r
+
 # Convert the re-parameterized soybean model to an R command string
 r_cmd_string <- with(soybean_reparam, write_model(
   'soybean_reparam',
@@ -1105,6 +1240,7 @@ r_cmd_string <- with(soybean_reparam, write_model(
 We can view the resulting R command string:
 
 ``` r
+
 writeLines(r_cmd_string)
 #> soybean_reparam <- list(
 #>     direct_modules = list(
@@ -1165,58 +1301,61 @@ writeLines(r_cmd_string)
 #>     parameters = list(
 #>         alpha1                      = 0,
 #>         alphab1                     = 0,
-#>         alphaLeaf                   = 23.1326083727177,
+#>         alphaLeaf                   = 22.9440863014579,
 #>         alphaRhizome                = 0,
 #>         alphaRoot                   = 36.967,
-#>         alphaSeneLeaf               = 43.2362961922686,
+#>         alphaSeneLeaf               = 44.9022791740013,
 #>         alphaSeneRhizome            = 10,
 #>         alphaSeneRoot               = 10,
-#>         alphaSeneStem               = 11.2164085577141,
-#>         alphaShell                  = 11.7404148749835,
-#>         alphaStem                   = 22.1282500087717,
+#>         alphaSeneStem               = 14.0485378074515,
+#>         alphaShell                  = 11.2853489477298,
+#>         alphaStem                   = 22.2769400782596,
 #>         atmospheric_pressure        = 101325,
 #>         atmospheric_scattering      = 0.3,
 #>         atmospheric_transmittance   = 0.6,
 #>         b0                          = 0.008,
 #>         b1                          = 10.6,
 #>         beta_PSII                   = 0.5,
-#>         betaLeaf                    = -18.0350666073991,
+#>         betaLeaf                    = -16.1730455535657,
 #>         betaRhizome                 = -Inf,
 #>         betaRoot                    = -40.1915,
-#>         betaSeneLeaf                = -26.2015727728056,
+#>         betaSeneLeaf                = -26.6490647701245,
 #>         betaSeneRhizome             = -10,
 #>         betaSeneRoot                = -10,
-#>         betaSeneStem                = -4.48241292986486,
-#>         betaShell                   = -8.62305416198468,
-#>         betaStem                    = -16.3094172457739,
+#>         betaSeneStem                = -1.20066557320335,
+#>         betaShell                   = -7.55603460796095,
+#>         betaStem                    = -14.6440352766426,
 #>         Catm                        = 372.59,
 #>         chil                        = 0.81,
 #>         dry_biomass_per_carbon      = 30.026,
 #>         electrons_per_carboxylation = 4.5,
 #>         electrons_per_oxygenation   = 5.25,
 #>         emissivity_sky              = 1,
+#>         gm_at_25                    = Inf,
+#>         gm_Ha                       = 49600,
+#>         gm_Hd                       = 437400,
+#>         gm_S                        = 1400,
 #>         grc_grain                   = 0,
 #>         grc_leaf                    = 0,
 #>         grc_rhizome                 = 0,
-#>         grc_root                    = 0.0025449857652663,
+#>         grc_root                    = 0.00254005163396096,
 #>         grc_shell                   = 0,
-#>         grc_stem                    = 0.0278057569564519,
+#>         grc_stem                    = 0.052996662364712,
 #>         growth_respiration_fraction = 0,
 #>         Gs_min                      = 0.001,
-#>         Gstar_c                     = 19.02,
+#>         Gstar_at_25                 = 42.9291,
 #>         Gstar_Ea                    = 37830,
 #>         heightf                     = 6,
 #>         hydrDist                    = 0,
 #>         iSp                         = 3.5,
 #>         Jmax_at_25                  = 195,
 #>         Jmax_at_25_mature           = 195,
-#>         Jmax_c                      = 17.57,
 #>         Jmax_Ea                     = 43540,
 #>         k_diffuse                   = 0.7,
-#>         Kc_c                        = 38.05,
+#>         Kc_at_25                    = 406.7908,
 #>         Kc_Ea                       = 79430,
 #>         km_leaf_litter              = 2,
-#>         Ko_c                        = 20.3,
+#>         Ko_at_25                    = 277.1263,
 #>         Ko_Ea                       = 36380,
 #>         kpLN                        = 0,
 #>         kRhizome_emr                = 0,
@@ -1234,11 +1373,11 @@ writeLines(r_cmd_string)
 #>         maturity_group              = 3,
 #>         min_gbw_canopy              = 0.005,
 #>         mrc_grain                   = 0,
-#>         mrc_leaf                    = 0.000284238541126516,
+#>         mrc_leaf                    = 0.000400429382451476,
 #>         mrc_rhizome                 = 0,
-#>         mrc_root                    = 1.01408683993827e-06,
+#>         mrc_root                    = 1.0217506299993e-06,
 #>         mrc_shell                   = 0,
-#>         mrc_stem                    = 0.000284238541126516,
+#>         mrc_stem                    = 0.000400429382451476,
 #>         O2                          = 210,
 #>         par_energy_content          = 0.219,
 #>         par_energy_fraction         = 0.5,
@@ -1247,16 +1386,15 @@ writeLines(r_cmd_string)
 #>         phi_PSII_2                  = -0.00034,
 #>         phi1                        = 0.01,
 #>         phi2                        = 1.5,
-#>         rateSeneLeaf                = 0.0100424092444427,
+#>         rateSeneLeaf                = 0.0113207831605439,
 #>         rateSeneRhizome             = 0,
 #>         rateSeneRoot                = 0,
-#>         rateSeneStem                = 0.00489313070012892,
+#>         rateSeneStem                = 0.00309297281868245,
 #>         remobilization_fraction     = 0.6,
 #>         retrans                     = 0.9,
 #>         retrans_rhizome             = 1,
 #>         rfl                         = 0.2,
 #>         RL_at_25                    = 1.28,
-#>         RL_c                        = 18.72,
 #>         RL_Ea                       = 46390,
 #>         Rmax_emrV0                  = 0.199,
 #>         rsdf                        = 0.44,
@@ -1281,6 +1419,8 @@ writeLines(r_cmd_string)
 #>         sowing_fractional_doy       = 0,
 #>         Sp_thermal_time_decay       = 0,
 #>         specific_heat_of_air        = 1010,
+#>         StomataWS_gradient          = 1,
+#>         StomataWS_intercept         = 0,
 #>         tbase                       = 10,
 #>         Tbase_emr                   = 10,
 #>         theta_0                     = 0.76,
@@ -1297,13 +1437,11 @@ writeLines(r_cmd_string)
 #>         Topt_R0R1                   = 31.5,
 #>         Topt_R1R7                   = 21.5,
 #>         Tp_at_25                    = 13,
-#>         Tp_c                        = 19.77399,
 #>         Tp_Ha                       = 62990,
 #>         Tp_Hd                       = 182140,
 #>         Tp_S                        = 588,
 #>         TTemr_threshold             = 60,
 #>         Vcmax_at_25                 = 110,
-#>         Vcmax_c                     = 26.35,
 #>         Vcmax_Ea                    = 65330,
 #>         windspeed_height            = 5,
 #>         wsFun                       = 2
@@ -1314,6 +1452,7 @@ writeLines(r_cmd_string)
 It can also be written to a text file:
 
 ``` r
+
 # Save the model definition as an R file in the current working directory
 writeLines(r_cmd_string, './soybean_reparam.R')
 ```
@@ -1321,6 +1460,7 @@ writeLines(r_cmd_string, './soybean_reparam.R')
 ## Commands From This Document
 
 ``` r
+
 ###
 ### Preliminaries
 ###
@@ -1381,19 +1521,37 @@ process_table <- function(data_table, type) {
   data_table
 }
 
+# Helping function to replace precipitation values
+replace_precip <- function(df_orig, df_new) {
+  # Make sure df_new does not extend outside the time range of df_orig
+  df_new_to_keep <- df_new$doy >= df_orig$doy[1] & df_new$doy <= tail(df_orig$doy, 1)
+  df_new <- df_new[df_new_to_keep, ]
+
+  # Overwrite precip in the common time range and return
+  df_orig_to_overwrite <- df_orig$doy >= df_new$doy[1] & df_orig$doy <= tail(df_new$doy, 1)
+  df_orig$precip[df_orig_to_overwrite] <- df_new$precip
+  df_orig
+}
+
+# For 2002, we can just use the default weather data
+drivers_2002 <- soybean_weather[['2002']]
+
+# For 2005, we overwrite the precipitation values
+drivers_2005 <- replace_precip(soybean_weather[['2005']], soyface_precip[['2005']])
+
 # Define the data-driver pairs
 data_driver_pairs <- list(
   ambient_2002 = list(
     data       = process_table(soyface_biomass[['ambient_2002']],     'biomass'),
     data_stdev = process_table(soyface_biomass[['ambient_2002_std']], 'stdev'),
-    drivers    = BioCro::soybean_weather[['2002']],
+    drivers    = drivers_2002,
     parameters = list(Catm = with(BioCro::catm_data, {Catm[year == '2002']})),
     weight     = 1
   ),
   ambient_2005 = list(
     data       = process_table(soyface_biomass[['ambient_2005']],     'biomass'),
     data_stdev = process_table(soyface_biomass[['ambient_2005_std']], 'stdev'),
-    drivers    = BioCro::soybean_weather[['2005']],
+    drivers    = drivers_2005,
     parameters = list(Catm = with(BioCro::catm_data, {Catm[year == '2005']})),
     weight     = 1
   )
@@ -1415,7 +1573,8 @@ data_definitions <- list(
   Root_Mg_per_ha      = 'Root',
   Seed_Mg_per_ha      = 'Grain',
   Shell_Mg_per_ha     = 'Shell',
-  Stem_Mg_per_ha      = 'Stem'
+  Stem_Mg_per_ha      = 'Stem',
+  LAI                 = 'lai'
 )
 
 # Define a list of independent arguments and their initial values
@@ -1460,11 +1619,12 @@ quantity_weights <- list(
   Root        = 0.1,
   Shell       = 0.5,
   Stem        = 1.0,
-  TotalLitter = 0.1
+  TotalLitter = 0.1,
+  lai         = 1.0
 )
 
 # Define an extra penalty function
-extra_penalty_function <- function(sim_res) {
+extra_penalty_function <- function(sim_res, long_form_data) {
   # Set the penalty value
   PENALTY <- 9999
 
@@ -1479,6 +1639,10 @@ extra_penalty_function <- function(sim_res) {
   time_shell <- time[sim_res[['kShell']] > k_thresh][1]
   time_stem  <- time[sim_res[['kStem']]  > k_thresh][1]
 
+  # Get the latest time when the observed seed mass is zero
+  seed_obs      <- long_form_data[long_form_data[['quantity_name']] == 'Grain', ]
+  last_seedless <- max(seed_obs[seed_obs[['quantity_value']] < 0.1, 'time'])
+
   # Return a penalty if necessary
   if (is.na(time_grain) | is.na(time_leaf) | is.na(time_shell) | is.na(time_stem)) {
     # One or more tissues is not growing
@@ -1489,6 +1653,10 @@ extra_penalty_function <- function(sim_res) {
   } else if (time_leaf - time[1] > 20 * hpd | time_leaf - time[1] < 10 * hpd) {
     # The start of leaf growth is too late (more than 20 days after sowing) or
     # too early (fewer than 10 days after sowing)
+    return(PENALTY)
+  } else if (time_grain < last_seedless - 14 * hpd) {
+    # Seeds have started growing too early (more than 2 weeks before the last
+    # seedless day in the observations)
     return(PENALTY)
   } else {
     # No problems were detected
@@ -1657,9 +1825,8 @@ writeLines(r_cmd_string, './soybean_reparam.R')
 
 ## References
 
-Lochocki, Edward B, Scott Rohde, Deepak Jaiswal, Megan L Matthews,
-Fernando Miguez, Stephen P Long, and Justin M McGrath. 2022. “BioCro II:
-A Software Package for Modular Crop Growth Simulations.” *In Silico
+Lochocki, Edward B, Scott Rohde, Deepak Jaiswal, et al. 2022. “BioCro
+II: A Software Package for Modular Crop Growth Simulations.” *In Silico
 Plants* 4 (1): diac003.
 <https://doi.org/10.1093/insilicoplants/diac003>.
 

@@ -10,6 +10,8 @@
   : Generate an objective function for BioCro model validation
 - [`soyface_biomass`](https://biocro.github.io/BioCroValidation/reference/soyface_biomass.md)
   : SoyFACE Soybean Biomass Data
+- [`soyface_precip`](https://biocro.github.io/BioCroValidation/reference/soyface_precip.md)
+  : SoyFACE Precipitation Data
 - [`update_model()`](https://biocro.github.io/BioCroValidation/reference/update_model.md)
   : Update a BioCro model definition
 - [`write_model()`](https://biocro.github.io/BioCroValidation/reference/write_model.md)

@@ -159,10 +159,12 @@ objective_function(
 
 - extra_penalty_function:
 
-  A function whose input argument is a data frame representing the
-  output from
-  [`run_biocro`](https://rdrr.io/pkg/BioCro/man/run_biocro.html), and
-  which returns a numeric penalty to be added to the least-squares term
+  A function with two input arguments. The first is a data frame
+  representing the output from
+  [`run_biocro`](https://rdrr.io/pkg/BioCro/man/run_biocro.html) for a
+  particular year, and the second is a data frame representing the
+  observed data for that year in long form. The extra penalty function
+  should return a numeric penalty to be added to the least-squares term
   when calculating the error metric. If the `extra_penalty_function` is
   `NULL`, no extra penalties will be added.
 
@@ -320,7 +322,7 @@ terms are explained in more detail below:
   runs over all \\k\\ sets of drivers and \\M_k\\ is the model output
   when it is run with the \\k^{th}\\ set of drivers.
 
-  The function \\f\_{user}\\ must accept a single data frame as an input
+  The function \\f\_{user}\\ must accept two data frames as its inputs
   and return a single numeric value as its output, but has no other
   requirements. It is specified via the `extra_penalty_function`. When
   `extra_penalty_function` is `NULL`, \\P\_{user}\\ is zero.
@@ -607,6 +609,7 @@ if (require(BioCro)) {
       Seed_Mg_per_ha      = NULL
       Litter_Mg_per_ha    = NULL
       CumLitter_Mg_per_ha = NULL
+      LAI                 = NULL
     })
   }
 
@@ -674,8 +677,10 @@ if (require(BioCro)) {
   )
 
   # We want to prevent the optimizer from choosing parameters that produce
-  # unreasonably high leaf mass
-  extra_penalty_function <- function(sim_res) {
+  # unreasonably high leaf mass. Note that even though we do not use the
+  # long form data to calculate the error penalty in this example, it must be
+  # included as an input argument to the penalty function.
+  extra_penalty_function <- function(sim_res, long_form_data) {
     max_leaf <- max(sim_res[['Leaf']], na.rm = TRUE)
 
     if (is.na(max_leaf) || max_leaf > 4) {
@@ -770,22 +775,22 @@ if (require(BioCro)) {
 #> 6  5880          Leaf   1.5788136482   0.0754751654       2257          3288
 #> 7  6192          Leaf   0.9475377733   0.3445500325       2569          3288
 #> 8  6888          Leaf   0.0000000000   0.0000000000       3265          3288
-#> 9  4272          Stem   0.0852449694   0.0170797372        649          3288
-#> 10 4512          Stem   0.4188538932   0.1384490248        889          3288
-#> 11 4848          Stem   1.7110673664   0.1837107594       1225          3288
-#> 12 5184          Stem   2.8928258965   0.4487440652       1561          3288
-#> 13 5520          Stem   3.6859142604   0.4534474707       1897          3288
-#> 14 5880          Stem   3.7452607171   0.2753213561       2257          3288
-#> 15 6192          Stem   3.6184015745   0.1510453777       2569          3288
-#> 16 6888          Stem   2.3057012247   0.1483892609       3265          3288
-#> 17 4272           Pod   0.0000000000   0.0000000000        649          3288
-#> 18 4512           Pod   0.0000000000   0.0000000000        889          3288
-#> 19 4848           Pod   0.0003171479   0.0005493162       1225          3288
-#> 20 5184           Pod   0.0793963255   0.0309899985       1561          3288
-#> 21 5520           Pod   1.5545713035   0.2184025435       1897          3288
-#> 22 5880           Pod   3.9760135605   0.5735488281       2257          3288
-#> 23 6192           Pod   6.5446506556   0.7434407011       2569          3288
-#> 24 6888           Pod   7.0089676285   0.1418286169       3265          3288
+#> 23 4272          Stem   0.0852449694   0.0170797372        649          3288
+#> 24 4512          Stem   0.4188538932   0.1384490248        889          3288
+#> 25 4848          Stem   1.7110673664   0.1837107594       1225          3288
+#> 26 5184          Stem   2.8928258965   0.4487440652       1561          3288
+#> 27 5520          Stem   3.6859142604   0.4534474707       1897          3288
+#> 28 5880          Stem   3.7452607171   0.2753213561       2257          3288
+#> 29 6192          Stem   3.6184015745   0.1510453777       2569          3288
+#> 30 6888          Stem   2.3057012247   0.1483892609       3265          3288
+#> 45 4272           Pod   0.0000000000   0.0000000000        649          3288
+#> 46 4512           Pod   0.0000000000   0.0000000000        889          3288
+#> 47 4848           Pod   0.0003171479   0.0005493162       1225          3288
+#> 48 5184           Pod   0.0793963255   0.0309899985       1561          3288
+#> 49 5520           Pod   1.5545713035   0.2184025435       1897          3288
+#> 50 5880           Pod   3.9760135605   0.5735488281       2257          3288
+#> 51 6192           Pod   6.5446506556   0.7434407011       2569          3288
+#> 52 6888           Pod   7.0089676285   0.1418286169       3265          3288
 #>         norm      w_var
 #> 1   53.88694  3.1984472
 #> 2   53.88694  1.8086619
@@ -795,22 +800,22 @@ if (require(BioCro)) {
 #> 6   53.88694  2.5838191
 #> 7   53.88694  1.0654869
 #> 8   53.88694 11.5129255
-#> 9  226.03165  4.0692772
-#> 10 226.03165  1.9771808
-#> 11 226.03165  1.6943383
-#> 12 226.03165  0.8012803
-#> 13 226.03165  0.7908538
-#> 14 226.03165  1.2897800
-#> 15 226.03165  1.8901088
-#> 16 226.03165  1.9078489
-#> 17 787.61004 11.5129255
-#> 18 787.61004 11.5129255
-#> 19 787.61004  7.4887956
-#> 20 787.61004  3.4737681
-#> 21 787.61004  1.5213696
-#> 22 787.61004  0.5558948
-#> 23 787.61004  0.2964528
-#> 24 787.61004  1.9530654
+#> 23 226.03165  4.0692772
+#> 24 226.03165  1.9771808
+#> 25 226.03165  1.6943383
+#> 26 226.03165  0.8012803
+#> 27 226.03165  0.7908538
+#> 28 226.03165  1.2897800
+#> 29 226.03165  1.8901088
+#> 30 226.03165  1.9078489
+#> 45 787.61004 11.5129255
+#> 46 787.61004 11.5129255
+#> 47 787.61004  7.4887956
+#> 48 787.61004  3.4737681
+#> 49 787.61004  1.5213696
+#> 50 787.61004  0.5558948
+#> 51 787.61004  0.2964528
+#> 52 787.61004  1.9530654
 #> 
 #> $ambient_2005
 #>    time quantity_name quantity_value quantity_stdev time_index expected_npts
@@ -822,22 +827,22 @@ if (require(BioCro)) {
 #> 6  5784          Leaf     1.51948125     0.51280870       2257          2952
 #> 7  6120          Leaf     0.06575625     0.06168624       2593          2952
 #> 8  6456          Leaf     0.00000000     0.00000000       2929          2952
-#> 9  4104          Stem     0.18880312     0.01431814        577          2952
-#> 10 4440          Stem     0.85220625     0.19883006        913          2952
-#> 11 4776          Stem     1.61896875     0.60528625       1249          2952
-#> 12 5112          Stem     4.04361563     0.55987405       1585          2952
-#> 13 5448          Stem     4.47772500     0.30674464       1921          2952
-#> 14 5784          Stem     3.89208750     0.37910849       2257          2952
-#> 15 6120          Stem     2.89905000     0.22082398       2593          2952
-#> 16 6456          Stem     2.17560000     0.24325473       2929          2952
-#> 17 4104           Pod     0.00000000     0.00000000        577          2952
-#> 18 4440           Pod     0.00000000     0.00000000        913          2952
-#> 19 4776           Pod     0.00000000     0.00000000       1249          2952
-#> 20 5112           Pod     0.29925000     0.16427520       1585          2952
-#> 21 5448           Pod     2.30455312     0.43414807       1921          2952
-#> 22 5784           Pod     5.53277813     0.58847698       2257          2952
-#> 23 6120           Pod     5.37107813     0.52004438       2593          2952
-#> 24 6456           Pod     6.37225313     0.63309086       2929          2952
+#> 25 4104          Stem     0.18880312     0.01431814        577          2952
+#> 26 4440          Stem     0.85220625     0.19883006        913          2952
+#> 27 4776          Stem     1.61896875     0.60528625       1249          2952
+#> 28 5112          Stem     4.04361563     0.55987405       1585          2952
+#> 29 5448          Stem     4.47772500     0.30674464       1921          2952
+#> 30 5784          Stem     3.89208750     0.37910849       2257          2952
+#> 31 6120          Stem     2.89905000     0.22082398       2593          2952
+#> 32 6456          Stem     2.17560000     0.24325473       2929          2952
+#> 49 4104           Pod     0.00000000     0.00000000        577          2952
+#> 50 4440           Pod     0.00000000     0.00000000        913          2952
+#> 51 4776           Pod     0.00000000     0.00000000       1249          2952
+#> 52 5112           Pod     0.29925000     0.16427520       1585          2952
+#> 53 5448           Pod     2.30455312     0.43414807       1921          2952
+#> 54 5784           Pod     5.53277813     0.58847698       2257          2952
+#> 55 6120           Pod     5.37107813     0.52004438       2593          2952
+#> 56 6456           Pod     6.37225313     0.63309086       2929          2952
 #>        norm      w_var
 #> 1   80.3166  3.4140824
 #> 2   80.3166  1.9186276
@@ -847,22 +852,22 @@ if (require(BioCro)) {
 #> 6   80.3166  0.6678329
 #> 7   80.3166  2.7855322
 #> 8   80.3166 11.5129255
-#> 9  322.4003  4.2455301
-#> 10 322.4003  1.6152545
-#> 11 322.4003  0.5020373
-#> 12 322.4003  0.5800256
-#> 13 322.4003  1.1817071
-#> 14 322.4003  0.9699065
-#> 15 322.4003  1.5103441
-#> 16 322.4003  1.4136050
-#> 17 651.2898 11.5129255
-#> 18 651.2898 11.5129255
-#> 19 651.2898 11.5129255
-#> 20 651.2898  1.8061514
-#> 21 651.2898  0.8343466
-#> 22 651.2898  0.5302005
-#> 23 651.2898  0.6538219
-#> 24 651.2898  0.4571255
+#> 25 322.4003  4.2455301
+#> 26 322.4003  1.6152545
+#> 27 322.4003  0.5020373
+#> 28 322.4003  0.5800256
+#> 29 322.4003  1.1817071
+#> 30 322.4003  0.9699065
+#> 31 322.4003  1.5103441
+#> 32 322.4003  1.4136050
+#> 49 651.2898 11.5129255
+#> 50 651.2898 11.5129255
+#> 51 651.2898 11.5129255
+#> 52 651.2898  1.8061514
+#> 53 651.2898  0.8343466
+#> 54 651.2898  0.5302005
+#> 55 651.2898  0.6538219
+#> 56 651.2898  0.4571255
 #> 
 #> The user-supplied quantity weights:
 #> 
@@ -883,7 +888,7 @@ if (require(BioCro)) {
 #> {
 #>     lambda * sum((x - initial_guess)^2)
 #> }
-#> <environment: 0x559f6ae95a78>
+#> <environment: 0x55a6427ec2c0>
 #> 
 #> Dependent argument function: user-supplied function:
 #> 
@@ -891,7 +896,7 @@ if (require(BioCro)) {
 #> {
 #>     list(alphaStem = ind_args[["alphaLeaf"]])
 #> }
-#> <environment: 0x559f6ae95a78>
+#> <environment: 0x55a6427ec2c0>
 #> 
 #> Post-processing function: user-supplied function:
 #> 
@@ -901,11 +906,11 @@ if (require(BioCro)) {
 #>         Pod = Grain + Shell
 #>     })
 #> }
-#> <environment: 0x559f6ae95a78>
+#> <environment: 0x55a6427ec2c0>
 #> 
 #> Extra penalty function: user-supplied function:
 #> 
-#> function (sim_res) 
+#> function (sim_res, long_form_data) 
 #> {
 #>     max_leaf <- max(sim_res[["Leaf"]], na.rm = TRUE)
 #>     if (is.na(max_leaf) || max_leaf > 4) {
@@ -915,7 +920,7 @@ if (require(BioCro)) {
 #>         0
 #>     }
 #> }
-#> <environment: 0x559f6ae95a78>
+#> <environment: 0x55a6427ec2c0>
 #> 
 #> The initial error metric terms:
 #> 
@@ -923,47 +928,47 @@ if (require(BioCro)) {
 #>  $ terms_from_data_driver_pairs:List of 2
 #>   ..$ ambient_2002:List of 2
 #>   .. ..$ least_squares_terms:List of 3
-#>   .. .. ..$ Leaf: num 0.0908
-#>   .. .. ..$ Pod : num 0.0182
-#>   .. .. ..$ Stem: num 0.00474
+#>   .. .. ..$ Leaf: num 0.0917
+#>   .. .. ..$ Pod : num 0.014
+#>   .. .. ..$ Stem: num 0.00567
 #>   .. ..$ extra_penalty      : num 0
 #>   ..$ ambient_2005:List of 2
 #>   .. ..$ least_squares_terms:List of 3
-#>   .. .. ..$ Leaf: num 0.124
-#>   .. .. ..$ Pod : num 0.0261
-#>   .. .. ..$ Stem: num 0.0376
+#>   .. .. ..$ Leaf: num 0.125
+#>   .. .. ..$ Pod : num 0.0214
+#>   .. .. ..$ Stem: num 0.038
 #>   .. ..$ extra_penalty      : num 0
 #>  $ regularization_penalty      : num 0
 #> 
 #> The initial error metric value:
 #> 
-#> [1] 0.3012756
+#> [1] 0.2958036
 #> 
 #> Error metric calculated by doubling the original argument values:
 #> 
-#> Time: 2026-03-11 23:06:22.096594      Independent argument values : 46.73542898017520030862215207889676, -36.22026162863519971324421931058168
+#> Time: 2026-10-01 23:15:26.999028      Independent argument values : 46.73542898017520030862215207889676, -36.22026162863519971324421931058168
 #> 
-#> Time: 2026-03-11 23:06:22.581442      Error metric : 2.99754729469563185872971189382952
+#> Time: 2026-10-01 23:15:28.033945      Error metric : 2.85522394461770367968256323365495
 #> 
 #> Error metric terms calculated by doubling the original argument values:
 #> 
-#> Time: 2026-03-11 23:06:22.58162      Independent argument values : 46.73542898017520030862215207889676, -36.22026162863519971324421931058168
+#> Time: 2026-10-01 23:15:28.034103      Independent argument values : 46.73542898017520030862215207889676, -36.22026162863519971324421931058168
 #> 
-#> Time: 2026-03-11 23:06:23.081557      Error metric terms : 
+#> Time: 2026-10-01 23:15:28.997256      Error metric terms : 
 #> 
 #> List of 2
 #>  $ terms_from_data_driver_pairs:List of 2
 #>   ..$ ambient_2002:List of 2
 #>   .. ..$ least_squares_terms:List of 3
-#>   .. .. ..$ Leaf: num 0.122
+#>   .. .. ..$ Leaf: num 0.135
 #>   .. .. ..$ Pod : num 0.154
-#>   .. .. ..$ Stem: num 0.39
+#>   .. .. ..$ Stem: num 0.33
 #>   .. ..$ extra_penalty      : num 0
 #>   ..$ ambient_2005:List of 2
 #>   .. ..$ least_squares_terms:List of 3
-#>   .. .. ..$ Leaf: num 0.139
+#>   .. .. ..$ Leaf: num 0.167
 #>   .. .. ..$ Pod : num 0.179
-#>   .. .. ..$ Stem: num 1.14
+#>   .. .. ..$ Stem: num 1.02
 #>   .. ..$ extra_penalty      : num 0
 #>  $ regularization_penalty      : num 0.874
 #> 
