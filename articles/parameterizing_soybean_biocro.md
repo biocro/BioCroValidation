@@ -781,7 +781,7 @@ obj_fun <- objective_function(
 #> {
 #>     list(mrc_stem = ind_args[["mrc_leaf"]])
 #> }
-#> <bytecode: 0x560615f7bfd0>
+#> <bytecode: 0x558932bf3880>
 #> 
 #> Post-processing function: user-supplied function:
 #> 
@@ -791,7 +791,7 @@ obj_fun <- objective_function(
 #>         TotalLitter = LeafLitter + StemLitter
 #>     })
 #> }
-#> <bytecode: 0x560611babb18>
+#> <bytecode: 0x55892e822e68>
 #> 
 #> Extra penalty function: user-supplied function:
 #> 
@@ -1023,9 +1023,9 @@ When this document was generated, running the optimizer required the
 following amount of time:
 
     #>    user  system elapsed 
-    #> 305.930   0.400 306.341
+    #> 398.200   0.244 398.470
 
-The total time was about 5.11 minutes. For a real parameterization
+The total time was about 6.64 minutes. For a real parameterization
 problem, it can be many times longer, and may even need days to run on a
 personal laptop computer.
 
@@ -1045,7 +1045,7 @@ str(optim_res)
 ```
 
 The value of `feval` is 344, so on average, each call of the objective
-function required approximately 0.891 seconds.
+function required approximately 1.158 seconds.
 
 ### Comparing Parameter Values
 
