@@ -30,8 +30,8 @@ parameterize BioCro's soybean model
 
 Since the original publication of Soybean-BioCro, the BioCro module library has
 undergone several changes, and the model has been re-parameterized several
-times. These parameterizations did not use `BioCroValidation`, since they were
-performed before `BioCroValidation` was created.
+times. Many of these parameterizations did not use `BioCroValidation`, since
+they were performed before `BioCroValidation` was created.
 
 However, `BioCroValidation` is able to re-create the objective functions that
 were used for these parameterizations. Here, we re-create the objective function
@@ -181,8 +181,10 @@ replace_precip <- function(df_orig, df_new) {
 # For 2002, we can just use the default weather data
 drivers_2002 <- soybean_weather[['2002']]
 
-# For 2005, we overwrite the precipitation values
+# For 2004 - 2006, we overwrite the precipitation values
+drivers_2004 <- replace_precip(soybean_weather[['2004']], soyface_precip[['2004']])
 drivers_2005 <- replace_precip(soybean_weather[['2005']], soyface_precip[['2005']])
+drivers_2006 <- replace_precip(soybean_weather[['2006']], soyface_precip[['2006']])
 ```
 
 ## The Data-Driver Pairs
@@ -801,6 +803,108 @@ It can also be written to a text file:
 writeLines(r_cmd_string, './soybean_reparam.R')
 ```
 
+## Quantifying Fit Quality
+
+Although the final optimized value of the objective function is an indication of
+the fit quality, the error metric is not simple to interpret and cannot be
+compared easily across different publications or studies. A more straightforward
+way to quantify the quality of a fit is to report root mean square error (RMSE)
+values. Typically this would be reported as individual RMSE values for each
+quantity type (e.g. leaf biomass, stem biomass, etc) and each year, including
+years used to construct the objective function and potentially other years to be
+used for validation. For a good fit:
+
+- RMSE values for each quantity will be similar across years.
+
+- RMSE values for the validation years will be similar to the training years,
+  although typically they will be slightly higher.
+
+- RMSE values for each quantity should be much smaller than the total range of
+  values taken by that quantity.
+
+The `BioCroValidation` package includes a function called `all_rmse` that
+simplifies the process of calculating these RMSE values. It takes several of the
+same input arguments as `objective_function`, including a list of data-driver
+pairs. Here we will use this function to calculate RMSE values for the
+data-driver pairs used during optimization, along with several other years.
+
+```{r calculate_rmse}
+# For elevated CO2, increase the atmospheric CO2 concentration by 180 ppm
+delta_eCO2 <- 180
+
+# Define data-driver pairs for validation years and conditions
+data_driver_pairs_validation <- list(
+  ambient_2004 = list(
+    data       = process_table(soyface_biomass[['ambient_2004']],     'biomass'),
+    data_stdev = process_table(soyface_biomass[['ambient_2004_std']], 'stdev'),
+    drivers    = drivers_2004,
+    parameters = list(Catm = with(BioCro::catm_data, {Catm[year == '2004']})),
+    weight     = 1
+  ),
+  ambient_2006 = list(
+    data       = process_table(soyface_biomass[['ambient_2006']],     'biomass'),
+    data_stdev = process_table(soyface_biomass[['ambient_2006_std']], 'stdev'),
+    drivers    = drivers_2006,
+    parameters = list(Catm = with(BioCro::catm_data, {Catm[year == '2006']})),
+    weight     = 1
+  ),
+  elevated_2002 = list(
+    data       = process_table(soyface_biomass[['elevated_2002']],     'biomass'),
+    data_stdev = process_table(soyface_biomass[['elevated_2002_std']], 'stdev'),
+    drivers    = drivers_2002,
+    parameters = list(Catm = with(BioCro::catm_data, {Catm[year == '2002']}) + delta_eCO2),
+    weight     = 1
+  ),
+  elevated_2004 = list(
+    data       = process_table(soyface_biomass[['elevated_2004']],     'biomass'),
+    data_stdev = process_table(soyface_biomass[['elevated_2004_std']], 'stdev'),
+    drivers    = drivers_2004,
+    parameters = list(Catm = with(BioCro::catm_data, {Catm[year == '2004']}) + delta_eCO2),
+    weight     = 1
+  ),
+  elevated_2005 = list(
+    data       = process_table(soyface_biomass[['elevated_2005']],     'biomass'),
+    data_stdev = process_table(soyface_biomass[['elevated_2005_std']], 'stdev'),
+    drivers    = drivers_2005,
+    parameters = list(Catm = with(BioCro::catm_data, {Catm[year == '2005']}) + delta_eCO2),
+    weight     = 1
+  ),
+  elevated_2006 = list(
+    data       = process_table(soyface_biomass[['elevated_2006']],     'biomass'),
+    data_stdev = process_table(soyface_biomass[['elevated_2006_std']], 'stdev'),
+    drivers    = drivers_2006,
+    parameters = list(Catm = with(BioCro::catm_data, {Catm[year == '2006']}) + delta_eCO2),
+    weight     = 1
+  )
+)
+
+# Get full list of data-driver pairs
+all_data_driver_pairs <- c(data_driver_pairs, data_driver_pairs_validation)
+
+# Calculate RMSE values
+rmse_table <- all_rmse(
+  soybean_reparam,
+  all_data_driver_pairs,
+  data_definitions,
+  post_process_function,
+  verbose_startup = FALSE
+)
+```
+
+The result is table, which can be viewed directly:
+
+```{r}
+# View the RMSE values
+print(rmse_table)
+```
+
+It can also be written to a CSV file:
+
+```{r write_rmse_to_file, eval = FALSE}
+# Save the RMSE values as a CSV file in the current working directory
+write.csv(rmse_table, './soybean_reparam_rmse.csv')
+```
+
 # Commands From This Document
 
 ```{r, eval = FALSE}
@@ -863,6 +967,10 @@ writeLines(r_cmd_string, './soybean_reparam.R')
 <<write_model_command>>
 
 <<write_model_to_file>>
+
+<<calculate_rmse>>
+
+<<write_rmse_to_file>>
 
 ```
 

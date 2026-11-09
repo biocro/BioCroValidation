@@ -316,8 +316,7 @@ add_w_var <- function(
 
 # Helping function that processes and checks the quantity weights
 process_quantity_weights <- function(quantity_weights, long_form_data) {
-    # First make sure that weights have been provided for all measured
-    # quantities
+    # Find all the quantities in the long form data
     all_data_colnames <- lapply(long_form_data, function(x) {
         unique(x[, 'quantity_name'])
     })
@@ -326,6 +325,15 @@ process_quantity_weights <- function(quantity_weights, long_form_data) {
 
     all_data_colnames <- unique(all_data_colnames)
 
+    # If an empty list was provided, set all the quantity weights to 1
+    if (length(quantity_weights) < 1) {
+        quantity_weights <- stats::setNames(
+            as.list(rep(1, length(all_data_colnames))),
+            all_data_colnames
+        )
+    }
+
+    # Make sure that weights have been provided for all measured quantities
     weight_was_supplied <- sapply(all_data_colnames, function(cn) {
         cn %in% names(quantity_weights)
     })
