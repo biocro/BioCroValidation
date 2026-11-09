@@ -1,3 +1,4 @@
+export(all_rmse)
 export(bounds_table)
 export(objective_function)
 export(update_model)

@@ -33,6 +33,11 @@ In the case of a hotfix, a short section headed by the new release number should
 be directly added to this file to describe the related changes.
 -->
 
+# Changes in BioCroValidation Version 0.4.1 (2026-11-06)
+
+- A new function called `all_rmse` has been added to the package; given a set of
+  data-driver pairs, it will return the RMSE term for each observed quantity.
+
 # Changes in BioCroValidation Version 0.4.0 (2026-10-01)
 
 - The extra penalty function must now accept two input arguments, typically
