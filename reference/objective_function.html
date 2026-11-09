@@ -43,7 +43,7 @@ For a detailed example of using objective_function, see the
 
     <a class="navbar-brand me-2" href="../index.html">BioCroValidation</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.4.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.4.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -99,7 +99,7 @@ For a detailed example of using objective_function, see the
 <span>    <span class="va">base_model_definition</span>,</span>
 <span>    <span class="va">data_driver_pairs</span>,</span>
 <span>    <span class="va">independent_args</span>,</span>
-<span>    <span class="va">quantity_weights</span>,</span>
+<span>    quantity_weights <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="op">)</span>,</span>
 <span>    data_definitions <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="op">)</span>,</span>
 <span>    normalization_method <span class="op">=</span> <span class="st">'mean_max'</span>,</span>
 <span>    normalization_param <span class="op">=</span> <span class="cn">NULL</span>,</span>
@@ -162,7 +162,9 @@ For a detailed example of using objective_function, see the
     weight for that output. Each weight can be a single number, or a pair of
     numbers. When the weight is a pair, the first number is the weight that will
     be used for underestimates (when the modeled value is smaller than the
-    observed value), and the second is the weight for overestimates.</p></dd>
+    observed value), and the second is the weight for overestimates.</p>
+<p>If <code>quantity_weights</code> is an empty list (the default value), a weight of
+    1 will be used for all quantities.</p></dd>
 
 
   <dt id="arg-data-definitions">data_definitions<a class="anchor" aria-label="anchor" href="#arg-data-definitions"></a></dt>
@@ -722,7 +724,6 @@ For a detailed example of using objective_function, see the
 <span class="r-in"><span>  <span class="va">error_terms</span> <span class="op">&lt;-</span></span></span>
 <span class="r-in"><span>    <span class="fu">obj_fun</span><span class="op">(</span><span class="fl">2</span> <span class="op">*</span> <span class="va">initial_guess</span>, <span class="fl">0.001</span>, return_terms <span class="op">=</span> <span class="cn">TRUE</span>, debug_mode <span class="op">=</span> <span class="st">'everything'</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="op">}</span></span></span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Loading required package: BioCro</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Driver-specific initial values:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
@@ -883,7 +884,7 @@ For a detailed example of using objective_function, see the
 <span class="r-out co"><span class="r-pr">#&gt;</span> {</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     lambda * sum((x - initial_guess)^2)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> }</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> &lt;environment: 0x55dcfb5513a0&gt;</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> &lt;environment: 0x556313570cf0&gt;</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Dependent argument function: user-supplied function:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
@@ -891,7 +892,7 @@ For a detailed example of using objective_function, see the
 <span class="r-out co"><span class="r-pr">#&gt;</span> {</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     list(alphaStem = ind_args[["alphaLeaf"]])</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> }</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> &lt;environment: 0x55dcfb5513a0&gt;</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> &lt;environment: 0x556313570cf0&gt;</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Post-processing function: user-supplied function:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
@@ -901,7 +902,7 @@ For a detailed example of using objective_function, see the
 <span class="r-out co"><span class="r-pr">#&gt;</span>         Pod = Grain + Shell</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     })</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> }</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> &lt;environment: 0x55dcfb5513a0&gt;</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> &lt;environment: 0x556313570cf0&gt;</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Extra penalty function: user-supplied function:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
@@ -915,7 +916,7 @@ For a detailed example of using objective_function, see the
 <span class="r-out co"><span class="r-pr">#&gt;</span>         0</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     }</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> }</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> &lt;environment: 0x55dcfb5513a0&gt;</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> &lt;environment: 0x556313570cf0&gt;</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> The initial error metric terms:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
@@ -941,15 +942,15 @@ For a detailed example of using objective_function, see the
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Error metric calculated by doubling the original argument values:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Time: 2026-10-01 23:23:21.598406      Independent argument values : 46.73542898017520030862215207889676, -36.22026162863519971324421931058168</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Time: 2026-11-09 18:04:47.194191      Independent argument values : 46.73542898017520030862215207889676, -36.22026162863519971324421931058168</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Time: 2026-10-01 23:23:22.822762      Error metric : 2.85522394461770367968256323365495</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Time: 2026-11-09 18:04:48.075637      Error metric : 2.85522394461770367968256323365495</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Error metric terms calculated by doubling the original argument values:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Time: 2026-10-01 23:23:22.822925      Independent argument values : 46.73542898017520030862215207889676, -36.22026162863519971324421931058168</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Time: 2026-11-09 18:04:48.075804      Independent argument values : 46.73542898017520030862215207889676, -36.22026162863519971324421931058168</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Time: 2026-10-01 23:23:23.983506      Error metric terms : </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Time: 2026-11-09 18:04:48.957013      Error metric terms : </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> List of 2</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  $ terms_from_data_driver_pairs:List of 2</span>

@@ -4,6 +4,8 @@
 
 - [`BioCroValidation`](https://biocro.github.io/BioCroValidation/reference/BioCroValidation.md)
   : The BioCroValidation R package
+- [`all_rmse()`](https://biocro.github.io/BioCroValidation/reference/all_rmse.md)
+  : Calculate RMSE values
 - [`bounds_table()`](https://biocro.github.io/BioCroValidation/reference/bounds_table.md)
   : Create a table of lower and upper bounds
 - [`objective_function()`](https://biocro.github.io/BioCroValidation/reference/objective_function.md)

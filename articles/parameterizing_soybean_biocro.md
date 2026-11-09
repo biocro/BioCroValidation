@@ -9,9 +9,9 @@ to parameterize BioCro’s soybean model ([Matthews et al.
 
 Since the original publication of Soybean-BioCro, the BioCro module
 library has undergone several changes, and the model has been
-re-parameterized several times. These parameterizations did not use
-`BioCroValidation`, since they were performed before `BioCroValidation`
-was created.
+re-parameterized several times. Many of these parameterizations did not
+use `BioCroValidation`, since they were performed before
+`BioCroValidation` was created.
 
 However, `BioCroValidation` is able to re-create the objective functions
 that were used for these parameterizations. Here, we re-create the
@@ -172,8 +172,10 @@ replace_precip <- function(df_orig, df_new) {
 # For 2002, we can just use the default weather data
 drivers_2002 <- soybean_weather[['2002']]
 
-# For 2005, we overwrite the precipitation values
+# For 2004 - 2006, we overwrite the precipitation values
+drivers_2004 <- replace_precip(soybean_weather[['2004']], soyface_precip[['2004']])
 drivers_2005 <- replace_precip(soybean_weather[['2005']], soyface_precip[['2005']])
+drivers_2006 <- replace_precip(soybean_weather[['2006']], soyface_precip[['2006']])
 ```
 
 ### The Data-Driver Pairs
@@ -779,7 +781,7 @@ obj_fun <- objective_function(
 #> {
 #>     list(mrc_stem = ind_args[["mrc_leaf"]])
 #> }
-#> <bytecode: 0x55d8293186b0>
+#> <bytecode: 0x560615f7bfd0>
 #> 
 #> Post-processing function: user-supplied function:
 #> 
@@ -789,7 +791,7 @@ obj_fun <- objective_function(
 #>         TotalLitter = LeafLitter + StemLitter
 #>     })
 #> }
-#> <bytecode: 0x55d825019e38>
+#> <bytecode: 0x560611babb18>
 #> 
 #> Extra penalty function: user-supplied function:
 #> 
@@ -1021,9 +1023,9 @@ When this document was generated, running the optimizer required the
 following amount of time:
 
     #>    user  system elapsed 
-    #> 396.197   0.595 396.856
+    #> 305.930   0.400 306.341
 
-The total time was about 6.61 minutes. For a real parameterization
+The total time was about 5.11 minutes. For a real parameterization
 problem, it can be many times longer, and may even need days to run on a
 personal laptop computer.
 
@@ -1043,7 +1045,7 @@ str(optim_res)
 ```
 
 The value of `feval` is 344, so on average, each call of the objective
-function required approximately 1.154 seconds.
+function required approximately 0.891 seconds.
 
 ### Comparing Parameter Values
 
@@ -1457,6 +1459,131 @@ It can also be written to a text file:
 writeLines(r_cmd_string, './soybean_reparam.R')
 ```
 
+### Quantifying Fit Quality
+
+Although the final optimized value of the objective function is an
+indication of the fit quality, the error metric is not simple to
+interpret and cannot be compared easily across different publications or
+studies. A more straightforward way to quantify the quality of a fit is
+to report root mean square error (RMSE) values. Typically this would be
+reported as individual RMSE values for each quantity type (e.g. leaf
+biomass, stem biomass, etc) and each year, including years used to
+construct the objective function and potentially other years to be used
+for validation. For a good fit:
+
+- RMSE values for each quantity will be similar across years.
+
+- RMSE values for the validation years will be similar to the training
+  years, although typically they will be slightly higher.
+
+- RMSE values for each quantity should be much smaller than the total
+  range of values taken by that quantity.
+
+The `BioCroValidation` package includes a function called `all_rmse`
+that simplifies the process of calculating these RMSE values. It takes
+several of the same input arguments as `objective_function`, including a
+list of data-driver pairs. Here we will use this function to calculate
+RMSE values for the data-driver pairs used during optimization, along
+with several other years.
+
+``` r
+
+# For elevated CO2, increase the atmospheric CO2 concentration by 180 ppm
+delta_eCO2 <- 180
+
+# Define data-driver pairs for validation years and conditions
+data_driver_pairs_validation <- list(
+  ambient_2004 = list(
+    data       = process_table(soyface_biomass[['ambient_2004']],     'biomass'),
+    data_stdev = process_table(soyface_biomass[['ambient_2004_std']], 'stdev'),
+    drivers    = drivers_2004,
+    parameters = list(Catm = with(BioCro::catm_data, {Catm[year == '2004']})),
+    weight     = 1
+  ),
+  ambient_2006 = list(
+    data       = process_table(soyface_biomass[['ambient_2006']],     'biomass'),
+    data_stdev = process_table(soyface_biomass[['ambient_2006_std']], 'stdev'),
+    drivers    = drivers_2006,
+    parameters = list(Catm = with(BioCro::catm_data, {Catm[year == '2006']})),
+    weight     = 1
+  ),
+  elevated_2002 = list(
+    data       = process_table(soyface_biomass[['elevated_2002']],     'biomass'),
+    data_stdev = process_table(soyface_biomass[['elevated_2002_std']], 'stdev'),
+    drivers    = drivers_2002,
+    parameters = list(Catm = with(BioCro::catm_data, {Catm[year == '2002']}) + delta_eCO2),
+    weight     = 1
+  ),
+  elevated_2004 = list(
+    data       = process_table(soyface_biomass[['elevated_2004']],     'biomass'),
+    data_stdev = process_table(soyface_biomass[['elevated_2004_std']], 'stdev'),
+    drivers    = drivers_2004,
+    parameters = list(Catm = with(BioCro::catm_data, {Catm[year == '2004']}) + delta_eCO2),
+    weight     = 1
+  ),
+  elevated_2005 = list(
+    data       = process_table(soyface_biomass[['elevated_2005']],     'biomass'),
+    data_stdev = process_table(soyface_biomass[['elevated_2005_std']], 'stdev'),
+    drivers    = drivers_2005,
+    parameters = list(Catm = with(BioCro::catm_data, {Catm[year == '2005']}) + delta_eCO2),
+    weight     = 1
+  ),
+  elevated_2006 = list(
+    data       = process_table(soyface_biomass[['elevated_2006']],     'biomass'),
+    data_stdev = process_table(soyface_biomass[['elevated_2006_std']], 'stdev'),
+    drivers    = drivers_2006,
+    parameters = list(Catm = with(BioCro::catm_data, {Catm[year == '2006']}) + delta_eCO2),
+    weight     = 1
+  )
+)
+
+# Get full list of data-driver pairs
+all_data_driver_pairs <- c(data_driver_pairs, data_driver_pairs_validation)
+
+# Calculate RMSE values
+rmse_table <- all_rmse(
+  soybean_reparam,
+  all_data_driver_pairs,
+  data_definitions,
+  post_process_function,
+  verbose_startup = FALSE
+)
+```
+
+The result is table, which can be viewed directly:
+
+``` r
+
+# View the RMSE values
+print(rmse_table)
+#>       Grain       lai       Leaf      Root     Shell      Stem TotalLitter
+#> 1 0.7402831 1.3078874 0.29380329 0.7555362 0.3979800 0.2471072   0.7728137
+#> 2 0.9380758 0.6826647 0.26225308 0.9845977 0.8725298 0.6365529   0.2790559
+#> 3 0.3783986 0.8526677 0.17647409 0.4429443 0.3117957 1.1302777   0.7207337
+#> 4 0.6469976 0.9044424 0.09853467 0.9314511 0.3679449 0.5249518   0.9771091
+#> 5 0.3338198        NA 0.42556432 0.8468653 0.4800562 0.4684770   1.0924495
+#> 6 0.5478932 1.4627832 0.32416607 0.4653852 0.3634631 1.1760562   1.1024023
+#> 7 0.7863037 1.6529974 0.45269040 0.6909140 0.4980967 0.7316483   0.2628836
+#> 8 0.7053175 0.8192402 0.14935809 0.9647587 0.2894770 0.6141325   1.2816187
+#>   data_driver_pair
+#> 1     ambient_2002
+#> 2     ambient_2005
+#> 3     ambient_2004
+#> 4     ambient_2006
+#> 5    elevated_2002
+#> 6    elevated_2004
+#> 7    elevated_2005
+#> 8    elevated_2006
+```
+
+It can also be written to a CSV file:
+
+``` r
+
+# Save the RMSE values as a CSV file in the current working directory
+write.csv(rmse_table, './soybean_reparam_rmse.csv')
+```
+
 ## Commands From This Document
 
 ``` r
@@ -1536,8 +1663,10 @@ replace_precip <- function(df_orig, df_new) {
 # For 2002, we can just use the default weather data
 drivers_2002 <- soybean_weather[['2002']]
 
-# For 2005, we overwrite the precipitation values
+# For 2004 - 2006, we overwrite the precipitation values
+drivers_2004 <- replace_precip(soybean_weather[['2004']], soyface_precip[['2004']])
 drivers_2005 <- replace_precip(soybean_weather[['2005']], soyface_precip[['2005']])
+drivers_2006 <- replace_precip(soybean_weather[['2006']], soyface_precip[['2006']])
 
 # Define the data-driver pairs
 data_driver_pairs <- list(
@@ -1821,6 +1950,70 @@ r_cmd_string <- with(soybean_reparam, write_model(
 
 # Save the model definition as an R file in the current working directory
 writeLines(r_cmd_string, './soybean_reparam.R')
+
+# For elevated CO2, increase the atmospheric CO2 concentration by 180 ppm
+delta_eCO2 <- 180
+
+# Define data-driver pairs for validation years and conditions
+data_driver_pairs_validation <- list(
+  ambient_2004 = list(
+    data       = process_table(soyface_biomass[['ambient_2004']],     'biomass'),
+    data_stdev = process_table(soyface_biomass[['ambient_2004_std']], 'stdev'),
+    drivers    = drivers_2004,
+    parameters = list(Catm = with(BioCro::catm_data, {Catm[year == '2004']})),
+    weight     = 1
+  ),
+  ambient_2006 = list(
+    data       = process_table(soyface_biomass[['ambient_2006']],     'biomass'),
+    data_stdev = process_table(soyface_biomass[['ambient_2006_std']], 'stdev'),
+    drivers    = drivers_2006,
+    parameters = list(Catm = with(BioCro::catm_data, {Catm[year == '2006']})),
+    weight     = 1
+  ),
+  elevated_2002 = list(
+    data       = process_table(soyface_biomass[['elevated_2002']],     'biomass'),
+    data_stdev = process_table(soyface_biomass[['elevated_2002_std']], 'stdev'),
+    drivers    = drivers_2002,
+    parameters = list(Catm = with(BioCro::catm_data, {Catm[year == '2002']}) + delta_eCO2),
+    weight     = 1
+  ),
+  elevated_2004 = list(
+    data       = process_table(soyface_biomass[['elevated_2004']],     'biomass'),
+    data_stdev = process_table(soyface_biomass[['elevated_2004_std']], 'stdev'),
+    drivers    = drivers_2004,
+    parameters = list(Catm = with(BioCro::catm_data, {Catm[year == '2004']}) + delta_eCO2),
+    weight     = 1
+  ),
+  elevated_2005 = list(
+    data       = process_table(soyface_biomass[['elevated_2005']],     'biomass'),
+    data_stdev = process_table(soyface_biomass[['elevated_2005_std']], 'stdev'),
+    drivers    = drivers_2005,
+    parameters = list(Catm = with(BioCro::catm_data, {Catm[year == '2005']}) + delta_eCO2),
+    weight     = 1
+  ),
+  elevated_2006 = list(
+    data       = process_table(soyface_biomass[['elevated_2006']],     'biomass'),
+    data_stdev = process_table(soyface_biomass[['elevated_2006_std']], 'stdev'),
+    drivers    = drivers_2006,
+    parameters = list(Catm = with(BioCro::catm_data, {Catm[year == '2006']}) + delta_eCO2),
+    weight     = 1
+  )
+)
+
+# Get full list of data-driver pairs
+all_data_driver_pairs <- c(data_driver_pairs, data_driver_pairs_validation)
+
+# Calculate RMSE values
+rmse_table <- all_rmse(
+  soybean_reparam,
+  all_data_driver_pairs,
+  data_definitions,
+  post_process_function,
+  verbose_startup = FALSE
+)
+
+# Save the RMSE values as a CSV file in the current working directory
+write.csv(rmse_table, './soybean_reparam_rmse.csv')
 ```
 
 ## References

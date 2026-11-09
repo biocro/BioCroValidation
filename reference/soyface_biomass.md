@@ -1,7 +1,7 @@
 # SoyFACE Soybean Biomass Data
 
 Two years of soybean biomass data collected at the SoyFACE facility in
-Champaign, IL during the 2002 and 2005 field seasons.
+Champaign, IL during the 2002, 2004, 2005, and 2006 field seasons.
 
 ## Usage
 
@@ -11,8 +11,8 @@ soyface_biomass
 
 ## Format
 
-A list of four named elements, where each element is a data frame with
-the following columns:
+A list of sixteen named elements, where each element is a data frame
+with the following columns:
 
 - `DOY`: The day of year
 
@@ -32,13 +32,20 @@ the following columns:
 
 - `LAI`: Leaf area index (dimensionless)
 
-The elements named `ambient_2002` and `ambient_2005` represent mean
-biomass values measured from plants grown in ambient CO2 conditions
-during 2002 and 2005, respectively.
+The elements named `ambient_2002`, `ambient_2004`, `ambient_2005`, and
+`ambient_2006` represent mean biomass values measured from plants grown
+in ambient CO2 conditions during 2002, 2004, 2005, and 2006,
+respectively.
 
-The elements named `ambient_2002_std` and `ambient_2005_std` represent
-the standard deviation of biomass values measured from plants grown in
-ambient CO2 conditions during 2002 and 2005, respectively.
+The elements named `ambient_2002_std`, `ambient_2004_std`,
+`ambient_2005_std`, and `ambient_2006_std` represent the standard
+deviation of biomass values measured from plants grown in ambient CO2
+conditions during 2002, 2004, 2005, and 2006, respectively.
+
+For each year, there are also eight analagous elements prefixed with
+`elevated` rather than `ambient`, which represent mean biomass values
+and standard deviations for plants grown in elevated CO2 conditions
+during the same years.
 
 ## Source
 

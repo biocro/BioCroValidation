@@ -6,8 +6,8 @@
     }
   };
 </script><script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no"><link href="../deps/bootstrap-5.3.8/bootstrap.min.css" rel="stylesheet"><script src="../deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet"><link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet"><script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="SoyFACE Soybean Biomass Data — soyface_biomass"><meta name="description" content="Two years of soybean biomass data collected at the SoyFACE facility in
-  Champaign, IL during the 2002 and 2005 field seasons."><meta property="og:description" content="Two years of soybean biomass data collected at the SoyFACE facility in
-  Champaign, IL during the 2002 and 2005 field seasons."></head><body>
+  Champaign, IL during the 2002, 2004, 2005, and 2006 field seasons."><meta property="og:description" content="Two years of soybean biomass data collected at the SoyFACE facility in
+  Champaign, IL during the 2002, 2004, 2005, and 2006 field seasons."></head><body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
     padding-top: 70px;
 
@@ -15,7 +15,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">BioCroValidation</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.4.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.4.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -48,7 +48,7 @@
 
     <div class="ref-description section level2">
     <p>Two years of soybean biomass data collected at the SoyFACE facility in
-  Champaign, IL during the 2002 and 2005 field seasons.</p>
+  Champaign, IL during the 2002, 2004, 2005, and 2006 field seasons.</p>
     </div>
 
     <div class="section level2">
@@ -58,7 +58,7 @@
 
     <div class="section level2">
     <h2 id="format">Format<a class="anchor" aria-label="anchor" href="#format"></a></h2>
-    <p>A list of four named elements, where each element is a data frame with the
+    <p>A list of sixteen named elements, where each element is a data frame with the
   following columns:</p><ul><li><p><code>DOY</code>: The day of year</p></li>
 <li><p><code>Leaf_Mg_per_ha</code>: Leaf biomass per area expressed in Mg / ha</p></li>
 <li><p><code>Stem_Mg_per_ha</code>: Stem biomass per area expressed in Mg / ha</p></li>
@@ -69,12 +69,18 @@
 <li><p><code>CumLitter_Mg_per_ha</code>: Cumulative leaf litter biomass per area
           expressed in Mg / ha</p></li>
 <li><p><code>LAI</code>: Leaf area index (dimensionless)</p></li>
-</ul><p>The elements named <code>ambient_2002</code> and <code>ambient_2005</code> represent mean
-  biomass values measured from plants grown in ambient CO2 conditions during
-  2002 and 2005, respectively.</p>
-<p>The elements named <code>ambient_2002_std</code> and <code>ambient_2005_std</code>
-  represent the standard deviation of biomass values measured from plants grown
-  in ambient CO2 conditions during 2002 and 2005, respectively.</p>
+</ul><p>The elements named <code>ambient_2002</code>, <code>ambient_2004</code>,
+  <code>ambient_2005</code>, and <code>ambient_2006</code> represent mean biomass values
+  measured from plants grown in ambient CO2 conditions during 2002, 2004, 2005,
+  and 2006, respectively.</p>
+<p>The elements named <code>ambient_2002_std</code>, <code>ambient_2004_std</code>,
+  <code>ambient_2005_std</code>, and <code>ambient_2006_std</code> represent the standard
+  deviation of biomass values measured from plants grown in ambient CO2
+  conditions during 2002, 2004, 2005, and 2006, respectively.</p>
+<p>For each year, there are also eight analagous elements prefixed with
+  <code>elevated</code> rather than <code>ambient</code>, which represent mean biomass
+  values and standard deviations for plants grown in elevated CO2 conditions
+  during the same years.</p>
     </div>
     <div class="section level2">
     <h2 id="source">Source<a class="anchor" aria-label="anchor" href="#source"></a></h2>

@@ -26,7 +26,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">BioCroValidation</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.4.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.4.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -66,7 +66,7 @@
       <h1>Parameterizing Soybean-BioCro</h1>
             
       
-      <small class="dont-index">Source: <a href="https://github.com/BioCro/BioCroValidation/blob/v0.4.0/vignettes/parameterizing_soybean_biocro.Rmd" class="external-link"><code>vignettes/parameterizing_soybean_biocro.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/BioCro/BioCroValidation/blob/main/vignettes/parameterizing_soybean_biocro.Rmd" class="external-link"><code>vignettes/parameterizing_soybean_biocro.Rmd</code></a></small>
       <div class="d-none name"><code>parameterizing_soybean_biocro.Rmd</code></div>
     </div>
 
@@ -79,8 +79,8 @@
 used to parameterize BioCro’s soybean model <span class="citation">(<a href="#ref-matthews_soybean_biocro_2021">Matthews et al. 2021</a>; <a href="#ref-lochocki_biocro_2022">Lochocki et al. 2022</a>)</span>.</p>
 <p>Since the original publication of Soybean-BioCro, the BioCro module
 library has undergone several changes, and the model has been
-re-parameterized several times. These parameterizations did not use
-<code>BioCroValidation</code>, since they were performed before
+re-parameterized several times. Many of these parameterizations did not
+use <code>BioCroValidation</code>, since they were performed before
 <code>BioCroValidation</code> was created.</p>
 <p>However, <code>BioCroValidation</code> is able to re-create the
 objective functions that were used for these parameterizations. Here, we
@@ -227,8 +227,10 @@ measurements. These are available in the
 <span><span class="co"># For 2002, we can just use the default weather data</span></span>
 <span><span class="va">drivers_2002</span> <span class="op">&lt;-</span> <span class="va">soybean_weather</span><span class="op">[[</span><span class="st">'2002'</span><span class="op">]</span><span class="op">]</span></span>
 <span></span>
-<span><span class="co"># For 2005, we overwrite the precipitation values</span></span>
-<span><span class="va">drivers_2005</span> <span class="op">&lt;-</span> <span class="fu">replace_precip</span><span class="op">(</span><span class="va">soybean_weather</span><span class="op">[[</span><span class="st">'2005'</span><span class="op">]</span><span class="op">]</span>, <span class="va">soyface_precip</span><span class="op">[[</span><span class="st">'2005'</span><span class="op">]</span><span class="op">]</span><span class="op">)</span></span></code></pre></div>
+<span><span class="co"># For 2004 - 2006, we overwrite the precipitation values</span></span>
+<span><span class="va">drivers_2004</span> <span class="op">&lt;-</span> <span class="fu">replace_precip</span><span class="op">(</span><span class="va">soybean_weather</span><span class="op">[[</span><span class="st">'2004'</span><span class="op">]</span><span class="op">]</span>, <span class="va">soyface_precip</span><span class="op">[[</span><span class="st">'2004'</span><span class="op">]</span><span class="op">]</span><span class="op">)</span></span>
+<span><span class="va">drivers_2005</span> <span class="op">&lt;-</span> <span class="fu">replace_precip</span><span class="op">(</span><span class="va">soybean_weather</span><span class="op">[[</span><span class="st">'2005'</span><span class="op">]</span><span class="op">]</span>, <span class="va">soyface_precip</span><span class="op">[[</span><span class="st">'2005'</span><span class="op">]</span><span class="op">]</span><span class="op">)</span></span>
+<span><span class="va">drivers_2006</span> <span class="op">&lt;-</span> <span class="fu">replace_precip</span><span class="op">(</span><span class="va">soybean_weather</span><span class="op">[[</span><span class="st">'2006'</span><span class="op">]</span><span class="op">]</span>, <span class="va">soyface_precip</span><span class="op">[[</span><span class="st">'2006'</span><span class="op">]</span><span class="op">]</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="the-data-driver-pairs">The Data-Driver Pairs<a class="anchor" aria-label="anchor" href="#the-data-driver-pairs"></a>
@@ -810,7 +812,7 @@ the full list of observed values and their corresponding weights.</p>
 <span><span class="co">#&gt; {</span></span>
 <span><span class="co">#&gt;     list(mrc_stem = ind_args[["mrc_leaf"]])</span></span>
 <span><span class="co">#&gt; }</span></span>
-<span><span class="co">#&gt; &lt;bytecode: 0x55d8293186b0&gt;</span></span>
+<span><span class="co">#&gt; &lt;bytecode: 0x560615f7bfd0&gt;</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Post-processing function: user-supplied function:</span></span>
 <span><span class="co">#&gt; </span></span>
@@ -820,7 +822,7 @@ the full list of observed values and their corresponding weights.</p>
 <span><span class="co">#&gt;         TotalLitter = LeafLitter + StemLitter</span></span>
 <span><span class="co">#&gt;     })</span></span>
 <span><span class="co">#&gt; }</span></span>
-<span><span class="co">#&gt; &lt;bytecode: 0x55d825019e38&gt;</span></span>
+<span><span class="co">#&gt; &lt;bytecode: 0x560611babb18&gt;</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Extra penalty function: user-supplied function:</span></span>
 <span><span class="co">#&gt; </span></span>
@@ -1032,8 +1034,8 @@ loose tolerance; a more realistic example would probably use
 <p>When this document was generated, running the optimizer required the
 following amount of time:</p>
 <pre><code><span><span class="co">#&gt;    user  system elapsed </span></span>
-<span><span class="co">#&gt; 396.197   0.595 396.856</span></span></code></pre>
-<p>The total time was about 6.61 minutes. For a real parameterization
+<span><span class="co">#&gt; 305.930   0.400 306.341</span></span></code></pre>
+<p>The total time was about 5.11 minutes. For a real parameterization
 problem, it can be many times longer, and may even need days to run on a
 personal laptop computer.</p>
 <p>The optimizer also reports how many times the objective function was
@@ -1048,7 +1050,7 @@ called, among other details:</p>
 <span><span class="co">#&gt;  $ convergence: num 0</span></span>
 <span><span class="co">#&gt;  $ message    : chr "Successful convergence"</span></span></code></pre></div>
 <p>The value of <code>feval</code> is 344, so on average, each call of
-the objective function required approximately 1.154 seconds.</p>
+the objective function required approximately 0.891 seconds.</p>
 </div>
 <div class="section level3">
 <h3 id="comparing-parameter-values">Comparing Parameter Values<a class="anchor" aria-label="anchor" href="#comparing-parameter-values"></a>
@@ -1436,11 +1438,127 @@ model:</p>
 <code class="sourceCode R"><span><span class="co"># Save the model definition as an R file in the current working directory</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/writeLines.html" class="external-link">writeLines</a></span><span class="op">(</span><span class="va">r_cmd_string</span>, <span class="st">'./soybean_reparam.R'</span><span class="op">)</span></span></code></pre></div>
 </div>
+<div class="section level3">
+<h3 id="quantifying-fit-quality">Quantifying Fit Quality<a class="anchor" aria-label="anchor" href="#quantifying-fit-quality"></a>
+</h3>
+<p>Although the final optimized value of the objective function is an
+indication of the fit quality, the error metric is not simple to
+interpret and cannot be compared easily across different publications or
+studies. A more straightforward way to quantify the quality of a fit is
+to report root mean square error (RMSE) values. Typically this would be
+reported as individual RMSE values for each quantity type (e.g. leaf
+biomass, stem biomass, etc) and each year, including years used to
+construct the objective function and potentially other years to be used
+for validation. For a good fit:</p>
+<ul>
+<li><p>RMSE values for each quantity will be similar across
+years.</p></li>
+<li><p>RMSE values for the validation years will be similar to the
+training years, although typically they will be slightly
+higher.</p></li>
+<li><p>RMSE values for each quantity should be much smaller than the
+total range of values taken by that quantity.</p></li>
+</ul>
+<p>The <code>BioCroValidation</code> package includes a function called
+<code>all_rmse</code> that simplifies the process of calculating these
+RMSE values. It takes several of the same input arguments as
+<code>objective_function</code>, including a list of data-driver pairs.
+Here we will use this function to calculate RMSE values for the
+data-driver pairs used during optimization, along with several other
+years.</p>
+<div class="sourceCode" id="cb27"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># For elevated CO2, increase the atmospheric CO2 concentration by 180 ppm</span></span>
+<span><span class="va">delta_eCO2</span> <span class="op">&lt;-</span> <span class="fl">180</span></span>
+<span></span>
+<span><span class="co"># Define data-driver pairs for validation years and conditions</span></span>
+<span><span class="va">data_driver_pairs_validation</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>  ambient_2004 <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>    data       <span class="op">=</span> <span class="fu">process_table</span><span class="op">(</span><span class="va">soyface_biomass</span><span class="op">[[</span><span class="st">'ambient_2004'</span><span class="op">]</span><span class="op">]</span>,     <span class="st">'biomass'</span><span class="op">)</span>,</span>
+<span>    data_stdev <span class="op">=</span> <span class="fu">process_table</span><span class="op">(</span><span class="va">soyface_biomass</span><span class="op">[[</span><span class="st">'ambient_2004_std'</span><span class="op">]</span><span class="op">]</span>, <span class="st">'stdev'</span><span class="op">)</span>,</span>
+<span>    drivers    <span class="op">=</span> <span class="va">drivers_2004</span>,</span>
+<span>    parameters <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>Catm <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/with.html" class="external-link">with</a></span><span class="op">(</span><span class="fu">BioCro</span><span class="fu">::</span><span class="va"><a href="https://rdrr.io/pkg/BioCro/man/catm_data.html" class="external-link">catm_data</a></span>, <span class="op">{</span><span class="va">Catm</span><span class="op">[</span><span class="va">year</span> <span class="op">==</span> <span class="st">'2004'</span><span class="op">]</span><span class="op">}</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>    weight     <span class="op">=</span> <span class="fl">1</span></span>
+<span>  <span class="op">)</span>,</span>
+<span>  ambient_2006 <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>    data       <span class="op">=</span> <span class="fu">process_table</span><span class="op">(</span><span class="va">soyface_biomass</span><span class="op">[[</span><span class="st">'ambient_2006'</span><span class="op">]</span><span class="op">]</span>,     <span class="st">'biomass'</span><span class="op">)</span>,</span>
+<span>    data_stdev <span class="op">=</span> <span class="fu">process_table</span><span class="op">(</span><span class="va">soyface_biomass</span><span class="op">[[</span><span class="st">'ambient_2006_std'</span><span class="op">]</span><span class="op">]</span>, <span class="st">'stdev'</span><span class="op">)</span>,</span>
+<span>    drivers    <span class="op">=</span> <span class="va">drivers_2006</span>,</span>
+<span>    parameters <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>Catm <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/with.html" class="external-link">with</a></span><span class="op">(</span><span class="fu">BioCro</span><span class="fu">::</span><span class="va"><a href="https://rdrr.io/pkg/BioCro/man/catm_data.html" class="external-link">catm_data</a></span>, <span class="op">{</span><span class="va">Catm</span><span class="op">[</span><span class="va">year</span> <span class="op">==</span> <span class="st">'2006'</span><span class="op">]</span><span class="op">}</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>    weight     <span class="op">=</span> <span class="fl">1</span></span>
+<span>  <span class="op">)</span>,</span>
+<span>  elevated_2002 <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>    data       <span class="op">=</span> <span class="fu">process_table</span><span class="op">(</span><span class="va">soyface_biomass</span><span class="op">[[</span><span class="st">'elevated_2002'</span><span class="op">]</span><span class="op">]</span>,     <span class="st">'biomass'</span><span class="op">)</span>,</span>
+<span>    data_stdev <span class="op">=</span> <span class="fu">process_table</span><span class="op">(</span><span class="va">soyface_biomass</span><span class="op">[[</span><span class="st">'elevated_2002_std'</span><span class="op">]</span><span class="op">]</span>, <span class="st">'stdev'</span><span class="op">)</span>,</span>
+<span>    drivers    <span class="op">=</span> <span class="va">drivers_2002</span>,</span>
+<span>    parameters <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>Catm <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/with.html" class="external-link">with</a></span><span class="op">(</span><span class="fu">BioCro</span><span class="fu">::</span><span class="va"><a href="https://rdrr.io/pkg/BioCro/man/catm_data.html" class="external-link">catm_data</a></span>, <span class="op">{</span><span class="va">Catm</span><span class="op">[</span><span class="va">year</span> <span class="op">==</span> <span class="st">'2002'</span><span class="op">]</span><span class="op">}</span><span class="op">)</span> <span class="op">+</span> <span class="va">delta_eCO2</span><span class="op">)</span>,</span>
+<span>    weight     <span class="op">=</span> <span class="fl">1</span></span>
+<span>  <span class="op">)</span>,</span>
+<span>  elevated_2004 <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>    data       <span class="op">=</span> <span class="fu">process_table</span><span class="op">(</span><span class="va">soyface_biomass</span><span class="op">[[</span><span class="st">'elevated_2004'</span><span class="op">]</span><span class="op">]</span>,     <span class="st">'biomass'</span><span class="op">)</span>,</span>
+<span>    data_stdev <span class="op">=</span> <span class="fu">process_table</span><span class="op">(</span><span class="va">soyface_biomass</span><span class="op">[[</span><span class="st">'elevated_2004_std'</span><span class="op">]</span><span class="op">]</span>, <span class="st">'stdev'</span><span class="op">)</span>,</span>
+<span>    drivers    <span class="op">=</span> <span class="va">drivers_2004</span>,</span>
+<span>    parameters <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>Catm <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/with.html" class="external-link">with</a></span><span class="op">(</span><span class="fu">BioCro</span><span class="fu">::</span><span class="va"><a href="https://rdrr.io/pkg/BioCro/man/catm_data.html" class="external-link">catm_data</a></span>, <span class="op">{</span><span class="va">Catm</span><span class="op">[</span><span class="va">year</span> <span class="op">==</span> <span class="st">'2004'</span><span class="op">]</span><span class="op">}</span><span class="op">)</span> <span class="op">+</span> <span class="va">delta_eCO2</span><span class="op">)</span>,</span>
+<span>    weight     <span class="op">=</span> <span class="fl">1</span></span>
+<span>  <span class="op">)</span>,</span>
+<span>  elevated_2005 <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>    data       <span class="op">=</span> <span class="fu">process_table</span><span class="op">(</span><span class="va">soyface_biomass</span><span class="op">[[</span><span class="st">'elevated_2005'</span><span class="op">]</span><span class="op">]</span>,     <span class="st">'biomass'</span><span class="op">)</span>,</span>
+<span>    data_stdev <span class="op">=</span> <span class="fu">process_table</span><span class="op">(</span><span class="va">soyface_biomass</span><span class="op">[[</span><span class="st">'elevated_2005_std'</span><span class="op">]</span><span class="op">]</span>, <span class="st">'stdev'</span><span class="op">)</span>,</span>
+<span>    drivers    <span class="op">=</span> <span class="va">drivers_2005</span>,</span>
+<span>    parameters <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>Catm <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/with.html" class="external-link">with</a></span><span class="op">(</span><span class="fu">BioCro</span><span class="fu">::</span><span class="va"><a href="https://rdrr.io/pkg/BioCro/man/catm_data.html" class="external-link">catm_data</a></span>, <span class="op">{</span><span class="va">Catm</span><span class="op">[</span><span class="va">year</span> <span class="op">==</span> <span class="st">'2005'</span><span class="op">]</span><span class="op">}</span><span class="op">)</span> <span class="op">+</span> <span class="va">delta_eCO2</span><span class="op">)</span>,</span>
+<span>    weight     <span class="op">=</span> <span class="fl">1</span></span>
+<span>  <span class="op">)</span>,</span>
+<span>  elevated_2006 <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>    data       <span class="op">=</span> <span class="fu">process_table</span><span class="op">(</span><span class="va">soyface_biomass</span><span class="op">[[</span><span class="st">'elevated_2006'</span><span class="op">]</span><span class="op">]</span>,     <span class="st">'biomass'</span><span class="op">)</span>,</span>
+<span>    data_stdev <span class="op">=</span> <span class="fu">process_table</span><span class="op">(</span><span class="va">soyface_biomass</span><span class="op">[[</span><span class="st">'elevated_2006_std'</span><span class="op">]</span><span class="op">]</span>, <span class="st">'stdev'</span><span class="op">)</span>,</span>
+<span>    drivers    <span class="op">=</span> <span class="va">drivers_2006</span>,</span>
+<span>    parameters <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>Catm <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/with.html" class="external-link">with</a></span><span class="op">(</span><span class="fu">BioCro</span><span class="fu">::</span><span class="va"><a href="https://rdrr.io/pkg/BioCro/man/catm_data.html" class="external-link">catm_data</a></span>, <span class="op">{</span><span class="va">Catm</span><span class="op">[</span><span class="va">year</span> <span class="op">==</span> <span class="st">'2006'</span><span class="op">]</span><span class="op">}</span><span class="op">)</span> <span class="op">+</span> <span class="va">delta_eCO2</span><span class="op">)</span>,</span>
+<span>    weight     <span class="op">=</span> <span class="fl">1</span></span>
+<span>  <span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Get full list of data-driver pairs</span></span>
+<span><span class="va">all_data_driver_pairs</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">data_driver_pairs</span>, <span class="va">data_driver_pairs_validation</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Calculate RMSE values</span></span>
+<span><span class="va">rmse_table</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/all_rmse.html">all_rmse</a></span><span class="op">(</span></span>
+<span>  <span class="va">soybean_reparam</span>,</span>
+<span>  <span class="va">all_data_driver_pairs</span>,</span>
+<span>  <span class="va">data_definitions</span>,</span>
+<span>  <span class="va">post_process_function</span>,</span>
+<span>  verbose_startup <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<p>The result is table, which can be viewed directly:</p>
+<div class="sourceCode" id="cb28"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># View the RMSE values</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">rmse_table</span><span class="op">)</span></span>
+<span><span class="co">#&gt;       Grain       lai       Leaf      Root     Shell      Stem TotalLitter</span></span>
+<span><span class="co">#&gt; 1 0.7402831 1.3078874 0.29380329 0.7555362 0.3979800 0.2471072   0.7728137</span></span>
+<span><span class="co">#&gt; 2 0.9380758 0.6826647 0.26225308 0.9845977 0.8725298 0.6365529   0.2790559</span></span>
+<span><span class="co">#&gt; 3 0.3783986 0.8526677 0.17647409 0.4429443 0.3117957 1.1302777   0.7207337</span></span>
+<span><span class="co">#&gt; 4 0.6469976 0.9044424 0.09853467 0.9314511 0.3679449 0.5249518   0.9771091</span></span>
+<span><span class="co">#&gt; 5 0.3338198        NA 0.42556432 0.8468653 0.4800562 0.4684770   1.0924495</span></span>
+<span><span class="co">#&gt; 6 0.5478932 1.4627832 0.32416607 0.4653852 0.3634631 1.1760562   1.1024023</span></span>
+<span><span class="co">#&gt; 7 0.7863037 1.6529974 0.45269040 0.6909140 0.4980967 0.7316483   0.2628836</span></span>
+<span><span class="co">#&gt; 8 0.7053175 0.8192402 0.14935809 0.9647587 0.2894770 0.6141325   1.2816187</span></span>
+<span><span class="co">#&gt;   data_driver_pair</span></span>
+<span><span class="co">#&gt; 1     ambient_2002</span></span>
+<span><span class="co">#&gt; 2     ambient_2005</span></span>
+<span><span class="co">#&gt; 3     ambient_2004</span></span>
+<span><span class="co">#&gt; 4     ambient_2006</span></span>
+<span><span class="co">#&gt; 5    elevated_2002</span></span>
+<span><span class="co">#&gt; 6    elevated_2004</span></span>
+<span><span class="co">#&gt; 7    elevated_2005</span></span>
+<span><span class="co">#&gt; 8    elevated_2006</span></span></code></pre></div>
+<p>It can also be written to a CSV file:</p>
+<div class="sourceCode" id="cb29"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Save the RMSE values as a CSV file in the current working directory</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/write.table.html" class="external-link">write.csv</a></span><span class="op">(</span><span class="va">rmse_table</span>, <span class="st">'./soybean_reparam_rmse.csv'</span><span class="op">)</span></span></code></pre></div>
+</div>
 </div>
 <div class="section level2">
 <h2 id="commands-from-this-document">Commands From This Document<a class="anchor" aria-label="anchor" href="#commands-from-this-document"></a>
 </h2>
-<div class="sourceCode" id="cb27"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb30"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co">###</span></span>
 <span><span class="co">### Preliminaries</span></span>
 <span><span class="co">###</span></span>
@@ -1516,8 +1634,10 @@ model:</p>
 <span><span class="co"># For 2002, we can just use the default weather data</span></span>
 <span><span class="va">drivers_2002</span> <span class="op">&lt;-</span> <span class="va">soybean_weather</span><span class="op">[[</span><span class="st">'2002'</span><span class="op">]</span><span class="op">]</span></span>
 <span></span>
-<span><span class="co"># For 2005, we overwrite the precipitation values</span></span>
+<span><span class="co"># For 2004 - 2006, we overwrite the precipitation values</span></span>
+<span><span class="va">drivers_2004</span> <span class="op">&lt;-</span> <span class="fu">replace_precip</span><span class="op">(</span><span class="va">soybean_weather</span><span class="op">[[</span><span class="st">'2004'</span><span class="op">]</span><span class="op">]</span>, <span class="va">soyface_precip</span><span class="op">[[</span><span class="st">'2004'</span><span class="op">]</span><span class="op">]</span><span class="op">)</span></span>
 <span><span class="va">drivers_2005</span> <span class="op">&lt;-</span> <span class="fu">replace_precip</span><span class="op">(</span><span class="va">soybean_weather</span><span class="op">[[</span><span class="st">'2005'</span><span class="op">]</span><span class="op">]</span>, <span class="va">soyface_precip</span><span class="op">[[</span><span class="st">'2005'</span><span class="op">]</span><span class="op">]</span><span class="op">)</span></span>
+<span><span class="va">drivers_2006</span> <span class="op">&lt;-</span> <span class="fu">replace_precip</span><span class="op">(</span><span class="va">soybean_weather</span><span class="op">[[</span><span class="st">'2006'</span><span class="op">]</span><span class="op">]</span>, <span class="va">soyface_precip</span><span class="op">[[</span><span class="st">'2006'</span><span class="op">]</span><span class="op">]</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Define the data-driver pairs</span></span>
 <span><span class="va">data_driver_pairs</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
@@ -1800,7 +1920,71 @@ model:</p>
 <span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Save the model definition as an R file in the current working directory</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/writeLines.html" class="external-link">writeLines</a></span><span class="op">(</span><span class="va">r_cmd_string</span>, <span class="st">'./soybean_reparam.R'</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu"><a href="https://rdrr.io/r/base/writeLines.html" class="external-link">writeLines</a></span><span class="op">(</span><span class="va">r_cmd_string</span>, <span class="st">'./soybean_reparam.R'</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># For elevated CO2, increase the atmospheric CO2 concentration by 180 ppm</span></span>
+<span><span class="va">delta_eCO2</span> <span class="op">&lt;-</span> <span class="fl">180</span></span>
+<span></span>
+<span><span class="co"># Define data-driver pairs for validation years and conditions</span></span>
+<span><span class="va">data_driver_pairs_validation</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>  ambient_2004 <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>    data       <span class="op">=</span> <span class="fu">process_table</span><span class="op">(</span><span class="va">soyface_biomass</span><span class="op">[[</span><span class="st">'ambient_2004'</span><span class="op">]</span><span class="op">]</span>,     <span class="st">'biomass'</span><span class="op">)</span>,</span>
+<span>    data_stdev <span class="op">=</span> <span class="fu">process_table</span><span class="op">(</span><span class="va">soyface_biomass</span><span class="op">[[</span><span class="st">'ambient_2004_std'</span><span class="op">]</span><span class="op">]</span>, <span class="st">'stdev'</span><span class="op">)</span>,</span>
+<span>    drivers    <span class="op">=</span> <span class="va">drivers_2004</span>,</span>
+<span>    parameters <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>Catm <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/with.html" class="external-link">with</a></span><span class="op">(</span><span class="fu">BioCro</span><span class="fu">::</span><span class="va"><a href="https://rdrr.io/pkg/BioCro/man/catm_data.html" class="external-link">catm_data</a></span>, <span class="op">{</span><span class="va">Catm</span><span class="op">[</span><span class="va">year</span> <span class="op">==</span> <span class="st">'2004'</span><span class="op">]</span><span class="op">}</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>    weight     <span class="op">=</span> <span class="fl">1</span></span>
+<span>  <span class="op">)</span>,</span>
+<span>  ambient_2006 <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>    data       <span class="op">=</span> <span class="fu">process_table</span><span class="op">(</span><span class="va">soyface_biomass</span><span class="op">[[</span><span class="st">'ambient_2006'</span><span class="op">]</span><span class="op">]</span>,     <span class="st">'biomass'</span><span class="op">)</span>,</span>
+<span>    data_stdev <span class="op">=</span> <span class="fu">process_table</span><span class="op">(</span><span class="va">soyface_biomass</span><span class="op">[[</span><span class="st">'ambient_2006_std'</span><span class="op">]</span><span class="op">]</span>, <span class="st">'stdev'</span><span class="op">)</span>,</span>
+<span>    drivers    <span class="op">=</span> <span class="va">drivers_2006</span>,</span>
+<span>    parameters <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>Catm <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/with.html" class="external-link">with</a></span><span class="op">(</span><span class="fu">BioCro</span><span class="fu">::</span><span class="va"><a href="https://rdrr.io/pkg/BioCro/man/catm_data.html" class="external-link">catm_data</a></span>, <span class="op">{</span><span class="va">Catm</span><span class="op">[</span><span class="va">year</span> <span class="op">==</span> <span class="st">'2006'</span><span class="op">]</span><span class="op">}</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>    weight     <span class="op">=</span> <span class="fl">1</span></span>
+<span>  <span class="op">)</span>,</span>
+<span>  elevated_2002 <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>    data       <span class="op">=</span> <span class="fu">process_table</span><span class="op">(</span><span class="va">soyface_biomass</span><span class="op">[[</span><span class="st">'elevated_2002'</span><span class="op">]</span><span class="op">]</span>,     <span class="st">'biomass'</span><span class="op">)</span>,</span>
+<span>    data_stdev <span class="op">=</span> <span class="fu">process_table</span><span class="op">(</span><span class="va">soyface_biomass</span><span class="op">[[</span><span class="st">'elevated_2002_std'</span><span class="op">]</span><span class="op">]</span>, <span class="st">'stdev'</span><span class="op">)</span>,</span>
+<span>    drivers    <span class="op">=</span> <span class="va">drivers_2002</span>,</span>
+<span>    parameters <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>Catm <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/with.html" class="external-link">with</a></span><span class="op">(</span><span class="fu">BioCro</span><span class="fu">::</span><span class="va"><a href="https://rdrr.io/pkg/BioCro/man/catm_data.html" class="external-link">catm_data</a></span>, <span class="op">{</span><span class="va">Catm</span><span class="op">[</span><span class="va">year</span> <span class="op">==</span> <span class="st">'2002'</span><span class="op">]</span><span class="op">}</span><span class="op">)</span> <span class="op">+</span> <span class="va">delta_eCO2</span><span class="op">)</span>,</span>
+<span>    weight     <span class="op">=</span> <span class="fl">1</span></span>
+<span>  <span class="op">)</span>,</span>
+<span>  elevated_2004 <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>    data       <span class="op">=</span> <span class="fu">process_table</span><span class="op">(</span><span class="va">soyface_biomass</span><span class="op">[[</span><span class="st">'elevated_2004'</span><span class="op">]</span><span class="op">]</span>,     <span class="st">'biomass'</span><span class="op">)</span>,</span>
+<span>    data_stdev <span class="op">=</span> <span class="fu">process_table</span><span class="op">(</span><span class="va">soyface_biomass</span><span class="op">[[</span><span class="st">'elevated_2004_std'</span><span class="op">]</span><span class="op">]</span>, <span class="st">'stdev'</span><span class="op">)</span>,</span>
+<span>    drivers    <span class="op">=</span> <span class="va">drivers_2004</span>,</span>
+<span>    parameters <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>Catm <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/with.html" class="external-link">with</a></span><span class="op">(</span><span class="fu">BioCro</span><span class="fu">::</span><span class="va"><a href="https://rdrr.io/pkg/BioCro/man/catm_data.html" class="external-link">catm_data</a></span>, <span class="op">{</span><span class="va">Catm</span><span class="op">[</span><span class="va">year</span> <span class="op">==</span> <span class="st">'2004'</span><span class="op">]</span><span class="op">}</span><span class="op">)</span> <span class="op">+</span> <span class="va">delta_eCO2</span><span class="op">)</span>,</span>
+<span>    weight     <span class="op">=</span> <span class="fl">1</span></span>
+<span>  <span class="op">)</span>,</span>
+<span>  elevated_2005 <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>    data       <span class="op">=</span> <span class="fu">process_table</span><span class="op">(</span><span class="va">soyface_biomass</span><span class="op">[[</span><span class="st">'elevated_2005'</span><span class="op">]</span><span class="op">]</span>,     <span class="st">'biomass'</span><span class="op">)</span>,</span>
+<span>    data_stdev <span class="op">=</span> <span class="fu">process_table</span><span class="op">(</span><span class="va">soyface_biomass</span><span class="op">[[</span><span class="st">'elevated_2005_std'</span><span class="op">]</span><span class="op">]</span>, <span class="st">'stdev'</span><span class="op">)</span>,</span>
+<span>    drivers    <span class="op">=</span> <span class="va">drivers_2005</span>,</span>
+<span>    parameters <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>Catm <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/with.html" class="external-link">with</a></span><span class="op">(</span><span class="fu">BioCro</span><span class="fu">::</span><span class="va"><a href="https://rdrr.io/pkg/BioCro/man/catm_data.html" class="external-link">catm_data</a></span>, <span class="op">{</span><span class="va">Catm</span><span class="op">[</span><span class="va">year</span> <span class="op">==</span> <span class="st">'2005'</span><span class="op">]</span><span class="op">}</span><span class="op">)</span> <span class="op">+</span> <span class="va">delta_eCO2</span><span class="op">)</span>,</span>
+<span>    weight     <span class="op">=</span> <span class="fl">1</span></span>
+<span>  <span class="op">)</span>,</span>
+<span>  elevated_2006 <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>    data       <span class="op">=</span> <span class="fu">process_table</span><span class="op">(</span><span class="va">soyface_biomass</span><span class="op">[[</span><span class="st">'elevated_2006'</span><span class="op">]</span><span class="op">]</span>,     <span class="st">'biomass'</span><span class="op">)</span>,</span>
+<span>    data_stdev <span class="op">=</span> <span class="fu">process_table</span><span class="op">(</span><span class="va">soyface_biomass</span><span class="op">[[</span><span class="st">'elevated_2006_std'</span><span class="op">]</span><span class="op">]</span>, <span class="st">'stdev'</span><span class="op">)</span>,</span>
+<span>    drivers    <span class="op">=</span> <span class="va">drivers_2006</span>,</span>
+<span>    parameters <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>Catm <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/with.html" class="external-link">with</a></span><span class="op">(</span><span class="fu">BioCro</span><span class="fu">::</span><span class="va"><a href="https://rdrr.io/pkg/BioCro/man/catm_data.html" class="external-link">catm_data</a></span>, <span class="op">{</span><span class="va">Catm</span><span class="op">[</span><span class="va">year</span> <span class="op">==</span> <span class="st">'2006'</span><span class="op">]</span><span class="op">}</span><span class="op">)</span> <span class="op">+</span> <span class="va">delta_eCO2</span><span class="op">)</span>,</span>
+<span>    weight     <span class="op">=</span> <span class="fl">1</span></span>
+<span>  <span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Get full list of data-driver pairs</span></span>
+<span><span class="va">all_data_driver_pairs</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">data_driver_pairs</span>, <span class="va">data_driver_pairs_validation</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Calculate RMSE values</span></span>
+<span><span class="va">rmse_table</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/all_rmse.html">all_rmse</a></span><span class="op">(</span></span>
+<span>  <span class="va">soybean_reparam</span>,</span>
+<span>  <span class="va">all_data_driver_pairs</span>,</span>
+<span>  <span class="va">data_definitions</span>,</span>
+<span>  <span class="va">post_process_function</span>,</span>
+<span>  verbose_startup <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Save the RMSE values as a CSV file in the current working directory</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/write.table.html" class="external-link">write.csv</a></span><span class="op">(</span><span class="va">rmse_table</span>, <span class="st">'./soybean_reparam_rmse.csv'</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 class="unnumbered" id="references">References<a class="anchor" aria-label="anchor" href="#references"></a>
