@@ -32,7 +32,7 @@
     base_model_definition,
     data_driver_pairs,
     independent_args,
-    quantity_weights,
+    quantity_weights = list(),
     data_definitions = list(),
     normalization_method = 'mean_max',
     normalization_param = NULL,
@@ -99,6 +99,9 @@
     numbers. When the weight is a pair, the first number is the weight that will
     be used for underestimates (when the modeled value is smaller than the
     observed value), and the second is the weight for overestimates.
+
+    If \code{quantity_weights} is an empty list (the default value), a weight of
+    1 will be used for all quantities.
   }
 
   \item{data_definitions}{

@@ -5,7 +5,7 @@ objective_function <- function(
     base_model_definition,
     data_driver_pairs,
     independent_args,
-    quantity_weights,
+    quantity_weights = list(),
     data_definitions = list(),
     normalization_method = 'mean_max',
     normalization_param = NULL,

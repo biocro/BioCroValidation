@@ -539,12 +539,12 @@ test_that('Weights must be supplied for all measured quantities', {
             model,
             ddps,
             independent_args,
-            list(),
+            quantity_weights[1],
             data_definitions = data_definitions,
             post_process_function = post_process_function,
             verbose_startup = verbose_startup
         ),
-        'Weights were not supplied for the following measured quantities: Leaf, Stem, Pod'
+        'Weights were not supplied for the following measured quantities: Stem, Pod, lai'
     )
 })
 
